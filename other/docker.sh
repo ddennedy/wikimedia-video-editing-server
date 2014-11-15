@@ -14,7 +14,8 @@
 # $ echo /var/lib/beanstalkd >> /etc/tklbam/overrides
 # $ service beanstalkd start
 
-sudo docker run -d --name php --link mysql:mysql -v "$(pwd)":/var/www/html php:5.5-apache
+CID=$(docker run -d --name php --link mysql:mysql -v "$(pwd)":/var/www ddennedy/debian-php)
+docker inspect --format='{{.NetworkSettings.IPAddress}}' $CID
 
 # Or, to run interactively:
-#docker run -it --rm --name php --link mysql:mysql -v "$(pwd)":/var/www/html php:5.5-apache
+#docker run -it --rm --name php --link mysql:mysql -v "$(pwd)":/var/www ddennedy/debian-php
