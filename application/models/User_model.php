@@ -18,15 +18,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-class User_model extends CI_Model {
+class User_model extends CI_Model
+{
     // If either registration is required or if registered user was demoted.
-    const Role_Guest      = 0;
+    const ROLE_GUEST      = 0;
     // Can create and update data.
-    const Role_User       = 1;
+    const ROLE_USER       = 1;
     // Can also delete data and demote user to guest.
-    const Role_Admin      = 2;
+    const ROLE_ADMIN      = 2;
     // Can do everything including designating managers and admins.
-    const Role_Bureaucrat = 3;
+    const ROLE_BUREAUCRAT = 3;
 
     public function __construct()
     {

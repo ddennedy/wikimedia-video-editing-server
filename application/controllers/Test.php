@@ -20,8 +20,8 @@
 
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Test extends CI_Controller {
-
+class Test extends CI_Controller
+{
     public function __construct()
     {
         parent::__construct();
@@ -72,7 +72,7 @@ class Test extends CI_Controller {
 
         // Test database and models.
         $row = $this->user_model->getByName('admin');
-        $this->unit->run($row['role'], 3, 'admin user in mysql');
+        $this->unit->run($row['role'], User_model::ROLE_BUREAUCRAT, 'admin user in mysql');
 
         echo $this->unit->report();
 
