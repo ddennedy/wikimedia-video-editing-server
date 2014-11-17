@@ -16,6 +16,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --
+-- SCHEMA VERSION 0.1
+--
 
 CREATE DATABASE IF NOT EXISTS videoeditserver DEFAULT CHARACTER SET utf8
   COLLATE utf8_unicode_ci;
@@ -28,10 +30,127 @@ USE videoeditserver;
 DROP TABLE IF EXISTS user;
 CREATE TABLE user (
   id int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
-  name varchar(255),     -- may be mapped to an external auth account
-  password char(41),     -- if not using external auth
-  role tinyint unsigned, -- see PHP enumeration for values
-  updated_at timestamp,
-  comment varchar(1000)
+  name varchar(255) NOT NULL, -- may be mapped to an external auth account
+  password char(41), -- if not using external auth
+  role tinyint unsigned NOT NULL default 0, -- see constants in PHP for values
+  language char(3) DEFAULT 'eng', -- ISO 639-3 code for user interface
+  comment varchar(1000),
+  updated_at timestamp NOT NULL
 );
+CREATE UNIQUE INDEX user_name ON user (name);
 INSERT INTO user (name, password, role) VALUES ('admin', 'password', 3);
+
+DROP TABLE IF EXISTS file;
+CREATE TABLE file (
+  id int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  user_id int unsigned NOT NULL,
+  title varchar(255) NOT NULL,
+  author varchar(255) NOT NULL,
+  description varchar(1000),
+  keywords varchar(1000), -- denormalized, tab-delimited
+  properties text, -- denormalized, JSON object
+  recording_date date,
+  language char(3),
+  license varchar(255),
+  mime_type varchar(255),
+  size_bytes int unsigned,
+  duration_ms int unsigned,
+  source_path varchar(255), -- storage location of uploaded file
+  source_hash char(32), -- md5 hash of source file based on the algorithm Kdenlive uses
+  output_path varchar(255), -- storage location of transcode or render result
+  output_hash char(32), -- md5 hash of output file based on the algorithm Kdenlive uses
+  document_id varchar(32), -- kdenlive's documentid if needed
+  status tinyint unsigned default 0, -- see constants in PHP for values
+  created_at timestamp NOT NULL
+);
+CREATE INDEX file_user_id ON file (user_id);
+CREATE INDEX file_recording_date ON file (recording_date);
+CREATE INDEX file_language ON file (language);
+CREATE INDEX file_license ON file (license);
+
+DROP TABLE IF EXISTS keyword;
+CREATE TABLE keyword (
+  id int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  value varchar(255) NOT NULL,
+  language char(3),
+  updated_at timestamp NOT NULL
+);
+CREATE UNIQUE INDEX keyword_value ON keyword (value);
+CREATE INDEX keyword_language ON keyword (language);
+
+-- This is currently denormalized as file.keywords. Saving in case change mind.
+-- DROP TABLE IF EXISTS file_keywords;
+-- CREATE TABLE file_keywords (
+--   file_id int unsigned NOT NULL,
+--   keyword_id int unsigned NOT NULL,
+--   PRIMARY KEY (file_id, keyword_id)
+-- );
+
+-- This is currently denormalized as file.properties. Saving in case change mind.
+-- DROP TABLE IF EXISTS property;
+-- CREATE TABLE property (
+--   id int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
+--   file_id int unsigned NOT NULL,
+--   name varchar(255) NOT NULL,
+--   value varchar(255) NOT NULL,
+--   updated_at timestamp NOT NULL
+-- );
+
+DROP TABLE IF EXISTS file_children;
+CREATE TABLE file_children (
+  file_id int unsigned NOT NULL,
+  child_id int unsigned NOT NULL,
+  PRIMARY KEY (file_id, child_id)
+);
+CREATE INDEX file_child_id ON file_children (child_id);
+
+DROP TABLE IF EXISTS recent;
+CREATE TABLE recent (
+  id int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  file_id int unsigned NOT NULL,
+  created_at timestamp NOT NULL
+);
+CREATE INDEX recent_file_id ON recent (file_id);
+
+DROP TABLE IF EXISTS file_history;
+CREATE TABLE file_history (
+  id int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  file_id int unsigned NOT NULL,
+  revision smallint unsigned NOT NULL default 0,
+  is_delete tinyint(1) unsigned NOT NULL default 0,
+  comment varchar(255), -- comment about the change
+  created_at timestamp NOT NULL,
+  -- Following are a duplicate of columns from file table. Keep the two in sync.
+  user_id int unsigned NOT NULL,
+  title varchar(255) NOT NULL,
+  author varchar(255) NOT NULL,
+  description varchar(1000),
+  keywords varchar(1000), -- denormalized, tab-delimited
+  properties text, -- denormalized, JSON object
+  recording_date date,
+  language char(3),
+  license varchar(255),
+  mime_type varchar(255),
+  size_bytes int unsigned,
+  duration_ms int unsigned,
+  source_path varchar(255), -- storage location of uploaded file
+  source_hash char(32), -- md5 hash of source file based on the algorithm Kdenlive uses
+  output_path varchar(255), -- storage location of transcode or render result
+  output_hash char(32), -- md5 hash of output file based on the algorithm Kdenlive uses
+  document_id varchar(32), -- kdenlive's documentid if needed
+  status tinyint unsigned default 0 -- see constants in PHP for values
+);
+CREATE INDEX file_history_file_id ON file_history (file_id);
+
+DROP TABLE IF EXISTS searchindex;
+CREATE TABLE searchindex (
+  file_id int unsigned NOT NULL PRIMARY KEY,
+  title varchar(255) NOT NULL,
+  description varchar(1000),
+  keywords varchar(1000),
+  author varchar(255) NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+CREATE FULLTEXT INDEX searchindex_title ON searchindex (title);
+CREATE FULLTEXT INDEX searchindex_description ON searchindex (description);
+CREATE FULLTEXT INDEX searchindex_keywords ON searchindex (keywords);
+CREATE FULLTEXT INDEX searchindex_author ON searchindex (author);
