@@ -37,15 +37,6 @@ class Test extends CI_Controller
 
         $this->unit->run(1 + 1, 2, 'test of unit_test library');
 
-        $settings = [
-            'servers'               => ['mysql:11300'],
-            'select'                => 'random peek',
-            'connection_timeout'    => 0.5,
-            'peek_usleep'           => 2500,
-            'connection_retries'    => 3,
-            'auto_unyaml'           => true
-        ];
-
         // Test beanstalkd connection and library.
         $this->load->library('Beanstalk', ['host' => 'mysql']);
         $isConnected = $this->beanstalk->connect();
