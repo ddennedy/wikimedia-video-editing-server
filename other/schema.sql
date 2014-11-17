@@ -35,6 +35,7 @@ CREATE TABLE user (
   role tinyint unsigned NOT NULL default 0, -- see constants in PHP for values
   language char(3) DEFAULT 'eng', -- ISO 639-3 code for user interface
   comment varchar(1000),
+  access_token varchar(64),
   updated_at timestamp NOT NULL
 );
 CREATE UNIQUE INDEX user_name ON user (name);
@@ -60,7 +61,8 @@ CREATE TABLE file (
   output_path varchar(255), -- storage location of transcode or render result
   output_hash char(32), -- md5 hash of output file based on the algorithm Kdenlive uses
   document_id varchar(32), -- kdenlive's documentid if needed
-  status tinyint unsigned default 0, -- see constants in PHP for values
+  publish_uri varchar(32), -- Wikimedia Commons URI
+  status bit(64) default 0, -- see constants in PHP for values,
   created_at timestamp NOT NULL
 );
 CREATE INDEX file_user_id ON file (user_id);
@@ -138,7 +140,8 @@ CREATE TABLE file_history (
   output_path varchar(255), -- storage location of transcode or render result
   output_hash char(32), -- md5 hash of output file based on the algorithm Kdenlive uses
   document_id varchar(32), -- kdenlive's documentid if needed
-  status tinyint unsigned default 0 -- see constants in PHP for values
+  publish_uri varchar(32), -- Wikimedia Commons URI
+  status bit(64) default 0 -- see constants in PHP for values
 );
 CREATE INDEX file_history_file_id ON file_history (file_id);
 
@@ -154,3 +157,15 @@ CREATE FULLTEXT INDEX searchindex_title ON searchindex (title);
 CREATE FULLTEXT INDEX searchindex_description ON searchindex (description);
 CREATE FULLTEXT INDEX searchindex_keywords ON searchindex (keywords);
 CREATE FULLTEXT INDEX searchindex_author ON searchindex (author);
+
+DROP TABLE IF EXISTS job;
+CREATE TABLE job (
+  id int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  file_id int unsigned NOT NULL,
+  type tinyint unsigned NOT NULL default 0, -- validation, transcode, or render - see PHP constants
+  progress tinyint unsigned NOT NULL default 0,
+  result int, -- result code from worker process
+  log text, -- worker output
+  updated_at timestamp NOT NULL
+);
+CREATE INDEX job_file_id ON job (file_id);
