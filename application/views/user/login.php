@@ -17,16 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+?>
+<?= validation_errors(); ?>
 
-$lang['lang_page_title'] = 'Video Editing Server';
-$lang['lang_search'] = 'Search';
-$lang['lang_login'] = 'Login';
-$lang['lang_register'] = 'Register';
-$lang['lang_upload'] = 'Upload';
-$lang['lang_main'] = 'Main Page';
-$lang['lang_main_greeting'] = '<p>Under construction</p>';
-$lang['lang_login_username'] = 'User ID';
-$lang['lang_login_password'] = 'Password';
-$lang['lang_login_success'] = 'Login successful';
-$lang['lang_error_invalid_user'] = 'The user does not exist.';
-$lang['lang_error_incorrect_password'] = 'The password is incorrect.';
+<?php echo form_open('user/login') ?>
+    <label for="username"><?= $lang_login_username ?></label>
+    <input type="input" name="username" value="<?= set_value('username') ?>"><br>
+
+    <label for="password"><?= $lang_login_password ?></label>
+    <input type="password" name="password"><br>
+
+    <input type="submit" name="submit" value="Login">
+</form>

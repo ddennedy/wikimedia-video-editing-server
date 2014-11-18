@@ -1,8 +1,8 @@
 <?php
 /*
  * Wikimedia Video Editing Server
- * Copyright (C) 2014 Dan Dennedy <dan@dennedy.org>
- * Copyright (C) 2014 C.D.C. Leuphana University Lueneburg
+ * Copyright (C) 2014 Dan R. Dennedy <dan@dennedy.org>
+ * Copyright (C) 2014 CDC Leuphana University Lueneburg
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,11 +37,16 @@ class User_model extends CI_Model
 
     public function getByName($name = false)
     {
-        if ($name === false) {
-            $query = $this->db->get('user');
-            return $query->result_array();
+        if ($name) {
+            $query = $this->db->get_where('user', ['name' => $name]);
+            return $query->row_array();
         }
-        $query = $this->db->get_where('user', ['name' => $name]);
-        return $query->row_array();
+        return array();
+    }
+
+    public function login($name, $password)
+    {
+        $query = $this->db->get_where('user', ['name' => $name, 'password' => $password]);
+        return $query->num_rows();
     }
 }
