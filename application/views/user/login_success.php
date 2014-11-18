@@ -1,1 +1,1 @@
-<p><?= $lang_login_success ?></p>
+<p><?= $lang['login_success'] ?> (<?= $role ?>)</p>

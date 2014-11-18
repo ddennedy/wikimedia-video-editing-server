@@ -18,15 +18,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-$lang['lang_page_title'] = 'Video Editing Server';
-$lang['lang_search'] = 'Search';
-$lang['lang_login'] = 'Login';
-$lang['lang_register'] = 'Register';
-$lang['lang_upload'] = 'Upload';
-$lang['lang_main'] = 'Main Page';
-$lang['lang_main_greeting'] = '<p>Under construction</p>';
-$lang['lang_login_username'] = 'User ID';
-$lang['lang_login_password'] = 'Password';
-$lang['lang_login_success'] = 'Login successful';
-$lang['lang_error_invalid_user'] = 'The user does not exist.';
-$lang['lang_error_incorrect_password'] = 'The password is incorrect.';
+$lang['page_title'] = 'Video Editing Server';
+$lang['search'] = 'Search';
+$lang['login'] = 'Login';
+$lang['logout'] = 'Logout';
+$lang['register'] = 'Register';
+$lang['upload'] = 'Upload';
+$lang['main'] = 'Main Page';
+$lang['main_greeting'] = '<p>Under construction</p>';
+$lang['login_username'] = 'User ID';
+$lang['login_password'] = 'Password';
+$lang['login_success'] = 'Login successful';
+$lang['error_invalid_user'] = 'The user does not exist.';
+$lang['error_incorrect_password'] = 'The password is incorrect.';
+$lang['role_guest'] = 'Guest';
+$lang['role_user'] = 'User';
+$lang['role_admin'] = 'Administrator';
+$lang['role_bureaucrat'] = 'Bureaucrat';

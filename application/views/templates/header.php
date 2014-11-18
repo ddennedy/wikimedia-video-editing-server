@@ -20,15 +20,21 @@
 ?><!DOCTYPE html>
 <html>
   <head>
-    <title><?= $lang_page_title ?></title>
+    <title><?= $lang['page_title'] ?></title>
   </head>
   <body>
-    <h1><?= $lang_page_title ?></h1>
+    <h1><?= $lang['page_title'] ?></h1>
     <hr>
-    <form><a href="<?= site_url('user/login') ?>"><?= $lang_login ?></a> /
-    <?= $lang_register ?> |
-    <?= $lang_upload ?> |
-    <?= $lang_main ?> |
-    <input type="text" value="<?= $lang_search ?>"><input type="submit" value="Go">
+    <form>
+    <?php if (array_key_exists('username', $session)): ?>
+        <a href="<?= site_url('user/' . $session['username']) ?>"><?= $session['username'] ?></a> /
+        <a href="<?= site_url('user/logout') ?>"><?= $lang['logout'] ?></a>
+    <?php else: ?>
+        <a href="<?= site_url('user/login') ?>"><?= $lang['login'] ?></a> /
+        <?= $lang['register'] ?>
+    <?php endif; ?>
+    | <?= $lang['upload'] ?> |
+    <a href="<?= site_url('main') ?>"><?= $lang['main'] ?></a> |
+    <input type="text" value="<?= $lang['search'] ?>"><input type="submit" value="Go">
     </form>
     <hr>

@@ -49,4 +49,18 @@ class User_model extends CI_Model
         $query = $this->db->get_where('user', ['name' => $name, 'password' => $password]);
         return $query->num_rows();
     }
+
+    public function getRoleName($role)
+    {
+        switch ($role) {
+            case User_model::ROLE_USER:
+                return $this->lang->line('role_user');
+            case User_model::ROLE_ADMIN:
+                return $this->lang->line('role_admin');
+            case User_model::ROLE_BUREAUCRAT:
+                return $this->lang->line('role_bureaucrat');
+            default:
+                return $this->lang->line('role_guest');
+        }
+    }
 }

@@ -20,30 +20,40 @@
 
 class User extends CI_Controller
 {
+    private $data = array();
+
     public function __construct()
     {
         parent::__construct();
         $this->load->model('user_model');
+        $this->data['session'] = $this->session->userdata();
+        $this->data['lang'] = $this->lang->language;
     }
 
     public function login()
     {
         $this->load->helper('form');
         $this->load->library('form_validation');
-        $this->form_validation->set_rules('username', 'lang:lang_login_username',
+        $this->form_validation->set_rules('username', 'lang:login_username',
             'required|callback_exists');
-        $this->form_validation->set_rules('password', 'lang:lang_login_password',
+        $this->form_validation->set_rules('password', 'lang:login_password',
             'required|callback_check_password');
 
         // Display login form
-        $data = array();
-        $data = array_merge($data, $this->lang->language);
-        $this->load->view('templates/header', $data);
-        if ($this->form_validation->run())
-            $this->load->view('user/login_success', $data);
-        else
-            $this->load->view('user/login', $data);
-        $this->load->view('templates/footer', $data);
+        if ($this->form_validation->run()) {
+            $username = $this->input->post('username');
+            $user = $this->user_model->getByName($username);
+            $this->session->set_userdata('username', $username);
+            $this->session->set_userdata('role', $user['role']);
+            $this->data['session'] = $this->session->userdata();
+            $this->data['role'] = $this->user_model->getRoleName($user['role']);
+            $this->load->view('templates/header', $this->data);
+            $this->load->view('user/login_success', $this->data);
+        } else {
+            $this->load->view('templates/header', $this->data);
+            $this->load->view('user/login', $this->data);
+        }
+        $this->load->view('templates/footer', $this->data);
     }
 
     function exists($name)
@@ -51,7 +61,7 @@ class User extends CI_Controller
         if (count($this->user_model->getByName($name)))
             return true;
         else
-            $this->form_validation->set_message('exists', $this->lang->line('lang_error_invalid_user'));
+            $this->form_validation->set_message('exists', $this->lang->line('error_invalid_user'));
         return false;
     }
 
@@ -64,7 +74,16 @@ class User extends CI_Controller
             return true;
         else
             $this->form_validation->set_message('check_password',
-                $this->lang->line('lang_error_incorrect_password'));
+                $this->lang->line('error_incorrect_password'));
         return false;
+    }
+
+    function logout()
+    {
+        $this->session->sess_destroy();
+        $this->data['session'] = $this->session->userdata();
+        $this->load->view('templates/header', $this->data);
+        $this->load->view('main/index', $this->data);
+        $this->load->view('templates/footer', $this->data);
     }
 }

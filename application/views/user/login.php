@@ -21,10 +21,10 @@
 <?= validation_errors(); ?>
 
 <?php echo form_open('user/login') ?>
-    <label for="username"><?= $lang_login_username ?></label>
+    <label for="username"><?= $lang['login_username'] ?></label>
     <input type="input" name="username" value="<?= set_value('username') ?>"><br>
 
-    <label for="password"><?= $lang_login_password ?></label>
+    <label for="password"><?= $lang['login_password'] ?></label>
     <input type="password" name="password"><br>
 
     <input type="submit" name="submit" value="Login">

@@ -20,17 +20,19 @@
 
 class Main extends CI_Controller
 {
+    private $data = array();
+
     public function __construct()
     {
         parent::__construct();
+        $this->data['session'] = $this->session->userdata();
+        $this->data['lang'] = $this->lang->language;
     }
 
     public function index()
     {
-        $data = array();
-        $data = array_merge($data, $this->lang->language);
-        $this->load->view('templates/header', $data);
-        $this->load->view('main/index', $data);
-        $this->load->view('templates/footer', $data);
+        $this->load->view('templates/header', $this->data);
+        $this->load->view('main/index', $this->data);
+        $this->load->view('templates/footer', $this->data);
     }
 }
