@@ -169,3 +169,14 @@ CREATE TABLE job (
   updated_at timestamp NOT NULL
 );
 CREATE INDEX job_file_id ON job (file_id);
+
+DROP TABLE IF EXISTS session;
+CREATE TABLE session (
+  session_id varchar(40) DEFAULT '0' NOT NULL,
+  ip_address varchar(45) DEFAULT '0' NOT NULL,
+  user_agent varchar(120) NOT NULL,
+  last_activity int(10) unsigned DEFAULT 0 NOT NULL,
+  user_data text NOT NULL,
+  PRIMARY KEY (session_id, ip_address, user_agent)
+);
+CREATE INDEX session_last_activity ON session (last_activity);
