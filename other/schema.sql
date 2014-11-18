@@ -33,7 +33,7 @@ CREATE TABLE user (
   name varchar(255) NOT NULL, -- may be mapped to an external auth account
   password char(41), -- if not using external auth
   role tinyint unsigned NOT NULL default 0, -- see constants in PHP for values
-  language char(3) DEFAULT 'eng', -- ISO 639-3 code for user interface
+  language char(3) DEFAULT 'en', -- ISO 639 code for user interface
   comment varchar(1000),
   access_token varchar(64),
   updated_at timestamp NOT NULL
