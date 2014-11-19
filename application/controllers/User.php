@@ -224,4 +224,27 @@ class User extends CI_Controller
             }
         }
     }
+
+    public function view($name)
+    {
+        $user = $this->user_model->getByName($name);
+        if ($user) {
+            if (!$user['comment'])
+                $user['comment'] = tr('user_view_nocomment');
+            $this->load->helper('date');
+            //TODO Convert time from UTC to user's timezone.
+            //$user['updated_at'] = date('Y-m-j G:i', gmt_to_local($user['updated_at']));
+            //TODO Use the intl extension to format date.
+            $data = array_merge($user, [
+                'session' => $this->session->userdata(),
+                'heading' => tr('user_view_heading', $user),
+                'footer' => tr('user_view_footer', $user),
+            ]);
+            $this->load->view('templates/header', $data);
+            $this->load->view('user/view', $data);
+            $this->load->view('templates/footer', $data);
+        } else {
+            show_404(tr('user_error_unknown'), tr('user_error_user_heading'));
+        }
+    }
 }

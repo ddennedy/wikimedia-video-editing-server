@@ -46,3 +46,8 @@ $lang['user_error_oauth_init'] = 'OAuth initiation failed.';
 $lang['user_error_oauth_access'] = 'OAuth error receiving access token.';
 $lang['user_error_oauth_request'] = 'OAuth request token mismatch.';
 $lang['user_error_oauth_verify'] = 'OAuth verify code missing.';
+
+$lang['user_view_heading'] = 'User: {name}';
+$lang['user_view_footer'] = 'This page was last modified {updated_at} UTC.';
+$lang['user_view_nocomment'] = 'No comment.';
+$lang['edit'] = 'Edit';

@@ -17,16 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-if (!function_exists('tr'))
-{
-    function tr($line, $data = null)
-    {
-        $s = get_instance()->lang->line($line);
-        if ($s && is_array($data)) {
-            get_instance()->load->library('parser');
-            $s = get_instance()->parser->parse_string($s, $data, true);
-        }
-        return $s;
-    }
-}
+?>
+<h2><?= $heading ?>
+&nbsp;
+<a href="<?= site_url('user/edit') ?>">[<?= tr('edit') ?>]</a></h2>
+<p><?= $comment ?></p>
+<p><small><?= $footer ?></small></p>

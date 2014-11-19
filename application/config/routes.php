@@ -86,6 +86,13 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 |		my-controller/my-method	-> my_controller/my_method
 */
 $route['oauth-callback'] = 'user/oauth_callback';
+
+$route['user/login'] = 'user/login';
+$route['user/register'] = 'user/register';
+$route['user/logout'] = 'user/logout';
+$route['user/(:any)'] = 'user/view/$1';
+$route['user/edit'] = 'user/edit';
+
 $route['default_controller'] = 'main';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = TRUE;
