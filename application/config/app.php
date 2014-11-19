@@ -20,3 +20,8 @@
 
 $config['debug'] = false;
 $config['videos_dir'] = '/media/videos/';
+
+$config['oauth_base_url']= 'https://commons.wikimedia.org/wiki/Special:OAuth';
+$config['oauth_consumer_token'] = '70dcdf4058772ddc6e89a90170e4febe';
+$config['oauth_private_key'] = 'other/mediawiki-oauth-key.pem';
+$config['oauth_jwt_issuer'] = 'http://commons.wikimedia.org';

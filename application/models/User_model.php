@@ -1,4 +1,4 @@
-<?php
+<?php defined('BASEPATH') OR exit('No direct script access allowed');
 /*
  * Wikimedia Video Editing Server
  * Copyright (C) 2014 Dan R. Dennedy <dan@dennedy.org>
@@ -62,5 +62,20 @@ class User_model extends CI_Model
             default:
                 return $this->lang->line('role_guest');
         }
+    }
+
+    public function setAccessTokenByName($name, $token)
+    {
+        $this->db->where('name', $name);
+        $this->db->update('user', ['access_token' => $token]);
+    }
+
+    public function create($data)
+    {
+        $this->db->insert('user', $data);
+        if ($this->db->affected_rows())
+            return $this->db->insert_id();
+        else
+            return false;
     }
 }
