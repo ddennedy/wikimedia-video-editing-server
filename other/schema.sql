@@ -31,11 +31,11 @@ DROP TABLE IF EXISTS user;
 CREATE TABLE user (
   id int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
   name varchar(255) NOT NULL, -- may be mapped to an external auth account
-  password char(41), -- if not using external auth
+  password char(41), -- if not using external auth, should be encrypted
   role tinyint unsigned NOT NULL default 0, -- see constants in PHP for values
   language char(3) DEFAULT 'en', -- ISO 639 code for user interface
   comment varchar(1000),
-  access_token varchar(64),
+  access_token varchar(255), -- encrypted
   updated_at timestamp NOT NULL
 );
 CREATE UNIQUE INDEX user_name ON user (name);

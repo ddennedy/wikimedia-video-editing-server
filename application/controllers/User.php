@@ -21,6 +21,7 @@
 class User extends CI_Controller
 {
     private $data = array();
+    const COOKIE_NAME = 'user';
 
     public function __construct()
     {
@@ -30,7 +31,7 @@ class User extends CI_Controller
         $this->data['lang'] = $this->lang->language;
     }
 
-    public function login()
+    private function oldlogin()
     {
         $this->load->helper('form');
         $this->load->library('form_validation');
@@ -56,7 +57,7 @@ class User extends CI_Controller
         $this->load->view('templates/footer', $this->data);
     }
 
-    function exists($name)
+    private function exists($name)
     {
         if (count($this->user_model->getByName($name)))
             return true;
@@ -65,7 +66,7 @@ class User extends CI_Controller
         return false;
     }
 
-    function check_password($password)
+    private function check_password($password)
     {
         $username = $this->input->post('username');
         if (!$this->exists($username))
@@ -78,9 +79,47 @@ class User extends CI_Controller
         return false;
     }
 
-    function logout()
+    public function login()
+    {
+        // First, see if we remember the user by cookie.
+        $username = $this->getUsernameFromCookie();
+        if ($username) {
+            // Lookup user in database.
+            $user = $this->user_model->getByName($username);
+            if ($user && $user['access_token']) {
+                // User exists and has access token - verify it.
+                $this->load->library('OAuth', $this->config->config);
+
+                // Request the user's identity through OAuth.
+                $accessToken = $user['access_token'];
+                $secret = '__unused__';
+                $issuer = $this->config->item('oauth_jwt_issuer');
+                $identity = $this->oauth->identify($accessToken, $secret, $issuer);
+
+                if ($identity && $identity->username == $username) {
+                    // Login successful.
+                    $this->session->set_userdata('username', $username);
+                    $this->session->set_userdata('role', $user['role']);
+                    $this->data['session'] = $this->session->userdata();
+                    $this->putUsernameInCookie($identity->username);
+
+                    //TODO Take them back to previous page. For now, show main page.
+                    $this->load->view('templates/header', $this->data);
+                    $this->load->view('main/index', $this->data);
+                    $this->load->view('templates/footer', $this->data);
+                    return;
+                }
+            }
+        }
+        // Otherwise, start OAuth.
+        $this->oauth_initiate();
+    }
+
+    public function logout()
     {
         $this->session->sess_destroy();
+        $this->load->helper('cookie');
+        delete_cookie(User::COOKIE_NAME);
         $this->data['session'] = $this->session->userdata();
         $this->load->view('templates/header', $this->data);
         $this->load->view('main/index', $this->data);
@@ -91,34 +130,47 @@ class User extends CI_Controller
     {
         $this->load->library('OAuth', $this->config->config);
         $result = $this->oauth->initiate();
-        $this->session->set_flashdata('oauthRequestToken', $result->key);
-        $this->session->set_flashdata('oauthRequestSecret', $result->secret);
-        redirect($this->oauth->redirect($result->key));
+        if (isset($result->key) && isset($result->secret)) {
+            $this->session->set_flashdata('oauthRequestToken', $result->key);
+            $this->session->set_flashdata('oauthRequestSecret', $result->secret);
+            redirect($this->oauth->redirect($result->key));
+        } else {
+            show_error('OAuth initiation failed.', 'Login');
+        }
     }
 
     function oauth_callback()
     {
+        // Validate callback data.
         $verifyCode = $this->input->get('oauth_verifier');
         $requestToken = $this->input->get('oauth_token');
-        if ($requestToken == $this->session->flashdata('oauthRequestToken')) {
+        if ($requestToken == $this->session->flashdata('oauthRequestToken') && $verifyCode) {
+            // Request an OAuth access token.
             $this->load->library('OAuth', $this->config->config);
             $secret = $this->session->flashdata('oauthRequestSecret');
             $result = $this->oauth->token($requestToken, $secret, $verifyCode);
-            if ($result) {
+            // Verify the access token was received.
+            if ($result && isset($result->key)) {
+                // Request the user's identity through OAuth.
                 $accessToken = $result->key;
                 $secret = $result->secret;
                 $issuer = $this->config->item('oauth_jwt_issuer');
                 $identity = $this->oauth->identify($accessToken, $secret, $issuer);
+
+                // Remember the user.
                 $this->session->set_userdata('username', $identity->username);
-                $this->session->set_userdata('access_token', $accessToken);
+
+                // See if the user is already registered.
                 $row = $this->user_model->getByName($identity->username);
                 if (count($row)) {
-                    // Update the accessToken if they are in database.
+                    // Update the accessToken if they are in the database.
                     $this->user_model->setAccessTokenByName($identity->username, $accessToken);
-                    // Attach identity to session if already registered.
+
+                    // Login successful.
                     $user = $this->user_model->getByName($identity->username);
                     $this->session->set_userdata('role', $user['role']);
                     $this->data['session'] = $this->session->userdata();
+                    $this->putUsernameInCookie($identity->username);
 
                     //TODO Take them back to previous page. For now, show main page.
                     $this->load->view('templates/header', $this->data);
@@ -126,6 +178,7 @@ class User extends CI_Controller
                     $this->load->view('templates/footer', $this->data);
                 } else {
                     // Ask user if they want to register.
+                    $this->session->set_userdata('access_token', $accessToken);
                     $this->load->helper('form');
                     $this->load->view('templates/header', $this->data);
                     $this->session->set_userdata('role', user_model::ROLE_GUEST);
@@ -136,51 +189,76 @@ class User extends CI_Controller
             } else {
                 show_error('Error getting access token.', 'Login');
             }
-        } else {
+        } elseif ($verifyCode) {
             show_error('OAuth request tokens mismatch.', 'Login');
+        } else {
+            show_error('OAuth verification code missing.', 'Login');
         }
     }
 
-    function oauth_redirect($requestToken)
-    {
-        $this->load->library('OAuth', $this->config->config);
-        $result = $this->oauth->redirect($requestToken);
-        $this->output->set_output($result);
-    }
+//     function oauth_redirect($requestToken)
+//     {
+//         $this->load->library('OAuth', $this->config->config);
+//         $result = $this->oauth->redirect($requestToken);
+//         $this->output->set_output($result);
+//     }
+//
+//     function oauth_token($requestToken, $secret, $verifyCode)
+//     {
+//         $this->load->library('OAuth', $this->config->config);
+//         $result = $this->oauth->token($requestToken, $secret, $verifyCode);
+//         //TODO save $result->key as accessToken
+//         $this->output->set_output(json_encode($result));
+//     }
+//
+//     function oauth_identify($accessToken, $secret)
+//     {
+//         $this->load->library('OAuth', $this->config->config);
+//         $issuer = $this->config->item('oauth_jwt_issuer');
+//         $result = $this->oauth->identify($accessToken, $secret, $issuer);
+//         $this->output->set_output(json_encode($result));
+//     }
 
-    function oauth_token($requestToken, $secret, $verifyCode)
-    {
-        $this->load->library('OAuth', $this->config->config);
-        $result = $this->oauth->token($requestToken, $secret, $verifyCode);
-        //TODO save $result->key as accessToken
-        $this->output->set_output(json_encode($result));
-    }
-
-    function oauth_identify($accessToken, $secret)
-    {
-        $this->load->library('OAuth', $this->config->config);
-        $issuer = $this->config->item('oauth_jwt_issuer');
-        $result = $this->oauth->identify($accessToken, $secret, $issuer);
-        $this->output->set_output(json_encode($result));
-    }
-
-    function register()
+    public function register()
     {
         $data = [
             'name' => $this->session->userdata('username'),
             'access_token' => $this->session->userdata('access_token'),
             'role' => user_model::ROLE_USER
         ];
+        // Ensure user does not exist.
         if (!count($this->user_model->getByName($data['name']))) {
+            // Add user to database.
             if ($this->user_model->create($data) !== false) {
+                // Log the user into the session.
                 $this->session->set_userdata('role', $data['role']);
                 $this->data['session'] = $this->session->userdata();
+                $this->putUsernameInCookie($data['name']);
 
                 //TODO Take them back to previous page. For now, show main page.
                 $this->load->view('templates/header', $this->data);
                 $this->load->view('main/index', $this->data);
                 $this->load->view('templates/footer', $this->data);
             }
+        }
+    }
+
+    private function putUsernameInCookie($name)
+    {
+        $this->load->library('encryption');
+        $x = $this->encryption->encrypt($name);
+        $expire = $this->config->item('cookie_expire_seconds');
+        $this->input->set_cookie(User::COOKIE_NAME, $x, $expire);
+    }
+
+    private function getUsernameFromCookie()
+    {
+        $x = $this->input->cookie(User::COOKIE_NAME);
+        if ($x) {
+            $this->load->library('encryption');
+            return $this->encryption->decrypt($x);
+        } else {
+            return false;
         }
     }
 }

@@ -39,7 +39,12 @@ class User_model extends CI_Model
     {
         if ($name) {
             $query = $this->db->get_where('user', ['name' => $name]);
-            return $query->row_array();
+            $data = $query->row_array();
+            if ($data['access_token']) {
+                $this->load->library('encryption');
+                $data['access_token'] = $this->encryption->decrypt($data['access_token']);
+            }
+            return $data;
         }
         return array();
     }
@@ -66,12 +71,16 @@ class User_model extends CI_Model
 
     public function setAccessTokenByName($name, $token)
     {
+        $this->load->library('encryption');
+        $x = $this->encryption->encrypt($token);
         $this->db->where('name', $name);
-        $this->db->update('user', ['access_token' => $token]);
+        $this->db->update('user', ['access_token' => $x]);
     }
 
     public function create($data)
     {
+        $this->load->library('encryption');
+        $data['access_token'] = $this->encryption->encrypt($data['access_token']);
         $this->db->insert('user', $data);
         if ($this->db->affected_rows())
             return $this->db->insert_id();

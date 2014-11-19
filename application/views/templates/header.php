@@ -30,7 +30,7 @@
         <a href="<?= site_url('user/' . $session['username']) ?>"><?= $session['username'] ?></a> /
         <a href="<?= site_url('user/logout') ?>"><?= $lang['logout'] ?></a>
     <?php else: ?>
-        <a href="<?= site_url('user/oauth-initiate') ?>"><?= $lang['login'] ?></a>
+        <a href="<?= site_url('user/login') ?>"><?= $lang['login'] ?></a>
     <?php endif; ?>
     | <?= $lang['upload'] ?> |
     <a href="<?= site_url('main') ?>"><?= $lang['main'] ?></a> |
