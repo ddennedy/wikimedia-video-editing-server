@@ -33,7 +33,7 @@ class Autologin_model extends CI_Model
         log_message('debug', 'Autologin Model Class Initialized');
 
         // If not yet logged in.
-        if ($this->session->userdata('username') && $this->session->userdata('role')) {
+        if (!$this->session->userdata('username') || !$this->session->userdata('role')) {
             // Look for the cookie.
             $this->load->model('user_model');
             $username = $this->user_model->getUsernameFromCookie();
