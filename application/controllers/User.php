@@ -21,7 +21,6 @@
 class User extends CI_Controller
 {
     private $data = array();
-    const COOKIE_NAME = 'user';
 
     public function __construct()
     {
@@ -82,7 +81,7 @@ class User extends CI_Controller
     public function login()
     {
         // First, see if we remember the user by cookie.
-        $username = $this->getUsernameFromCookie();
+        $username = $this->user_model->getUsernameFromCookie();
         if ($username) {
             // Lookup user in database.
             $user = $this->user_model->getByName($username);
@@ -101,7 +100,7 @@ class User extends CI_Controller
                     $this->session->set_userdata('username', $username);
                     $this->session->set_userdata('role', $user['role']);
                     $this->data['session'] = $this->session->userdata();
-                    $this->putUsernameInCookie($identity->username);
+                    $this->user_model->putUsernameInCookie($identity->username);
 
                     //TODO Take them back to previous page. For now, show main page.
                     $this->load->view('templates/header', $this->data);
@@ -170,7 +169,7 @@ class User extends CI_Controller
                     $user = $this->user_model->getByName($identity->username);
                     $this->session->set_userdata('role', $user['role']);
                     $this->data['session'] = $this->session->userdata();
-                    $this->putUsernameInCookie($identity->username);
+                    $this->user_model->putUsernameInCookie($identity->username);
 
                     //TODO Take them back to previous page. For now, show main page.
                     $this->load->view('templates/header', $this->data);
@@ -196,29 +195,6 @@ class User extends CI_Controller
         }
     }
 
-//     function oauth_redirect($requestToken)
-//     {
-//         $this->load->library('OAuth', $this->config->config);
-//         $result = $this->oauth->redirect($requestToken);
-//         $this->output->set_output($result);
-//     }
-//
-//     function oauth_token($requestToken, $secret, $verifyCode)
-//     {
-//         $this->load->library('OAuth', $this->config->config);
-//         $result = $this->oauth->token($requestToken, $secret, $verifyCode);
-//         //TODO save $result->key as accessToken
-//         $this->output->set_output(json_encode($result));
-//     }
-//
-//     function oauth_identify($accessToken, $secret)
-//     {
-//         $this->load->library('OAuth', $this->config->config);
-//         $issuer = $this->config->item('oauth_jwt_issuer');
-//         $result = $this->oauth->identify($accessToken, $secret, $issuer);
-//         $this->output->set_output(json_encode($result));
-//     }
-
     public function register()
     {
         $data = [
@@ -233,32 +209,13 @@ class User extends CI_Controller
                 // Log the user into the session.
                 $this->session->set_userdata('role', $data['role']);
                 $this->data['session'] = $this->session->userdata();
-                $this->putUsernameInCookie($data['name']);
+                $this->user_model->putUsernameInCookie($data['name']);
 
                 //TODO Take them back to previous page. For now, show main page.
                 $this->load->view('templates/header', $this->data);
                 $this->load->view('main/index', $this->data);
                 $this->load->view('templates/footer', $this->data);
             }
-        }
-    }
-
-    private function putUsernameInCookie($name)
-    {
-        $this->load->library('encryption');
-        $x = $this->encryption->encrypt($name);
-        $expire = $this->config->item('cookie_expire_seconds');
-        $this->input->set_cookie(User::COOKIE_NAME, $x, $expire);
-    }
-
-    private function getUsernameFromCookie()
-    {
-        $x = $this->input->cookie(User::COOKIE_NAME);
-        if ($x) {
-            $this->load->library('encryption');
-            return $this->encryption->decrypt($x);
-        } else {
-            return false;
         }
     }
 }

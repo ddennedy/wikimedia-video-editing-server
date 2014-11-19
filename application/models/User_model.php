@@ -20,14 +20,16 @@
 
 class User_model extends CI_Model
 {
-    // If either registration is required or if registered user was demoted.
+    /// If either registration is required or if registered user was demoted.
     const ROLE_GUEST      = 0;
-    // Can create and update data.
+    /// Can create and update data.
     const ROLE_USER       = 1;
-    // Can also delete data and demote user to guest.
+    /// Can also delete data and demote user to guest.
     const ROLE_ADMIN      = 2;
-    // Can do everything including designating managers and admins.
+    /// Can do everything including designating managers and admins.
     const ROLE_BUREAUCRAT = 3;
+
+    const COOKIE_NAME     = 'user';
 
     public function __construct()
     {
@@ -86,5 +88,24 @@ class User_model extends CI_Model
             return $this->db->insert_id();
         else
             return false;
+    }
+
+    public function putUsernameInCookie($name)
+    {
+        $this->load->library('encryption');
+        $x = $this->encryption->encrypt($name);
+        $expire = $this->config->item('cookie_expire_seconds');
+        $this->input->set_cookie(User_model::COOKIE_NAME, $x, $expire);
+    }
+
+    public function getUsernameFromCookie()
+    {
+        $x = $this->input->cookie(User_model::COOKIE_NAME);
+        if ($x) {
+            $this->load->library('encryption');
+            return $this->encryption->decrypt($x);
+        } else {
+            return false;
+        }
     }
 }
