@@ -18,10 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 ?>
-<h2>Welcome, <?= $session['username'] ?></h2>
-<p>Do you want to register on this site as a user? As a user, you will have
-permission to upload and edit media files and projects. If you do not register,
-you may continue to use the site as a guest and browse files.</p>
+<h2><?= $heading ?></h2>
+<p><?= tr('user_register_body') ?></p>
 <?= form_open('user/register') ?>
-<input type="submit" value="<?= $lang['register'] ?>">
+<input type="submit" value="<?= tr('register') ?>">
 </form>

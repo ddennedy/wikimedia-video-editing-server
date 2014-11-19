@@ -35,3 +35,14 @@ $lang['role_guest'] = 'Guest';
 $lang['role_user'] = 'User';
 $lang['role_admin'] = 'Administrator';
 $lang['role_bureaucrat'] = 'Bureaucrat';
+
+$lang['user_register_heading'] = 'Welcome, {username}';
+$lang['user_register_body'] = 'Do you want to register on this site as a user?
+As a user, you will have permission to upload and edit media files and
+projects. If you do not register, you may continue to use the site as a guest
+and browse files.';
+$lang['user_error_login_heading'] = 'Login';
+$lang['user_error_oauth_init'] = 'OAuth initiation failed.';
+$lang['user_error_oauth_access'] = 'OAuth error receiving access token.';
+$lang['user_error_oauth_request'] = 'OAuth request token mismatch.';
+$lang['user_error_oauth_verify'] = 'OAuth verify code missing.';

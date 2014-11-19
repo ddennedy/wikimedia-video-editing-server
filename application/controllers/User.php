@@ -27,7 +27,6 @@ class User extends CI_Controller
         parent::__construct();
         $this->load->model('user_model');
         $this->data['session'] = $this->session->userdata();
-        $this->data['lang'] = $this->lang->language;
     }
 
     private function oldlogin()
@@ -61,7 +60,7 @@ class User extends CI_Controller
         if (count($this->user_model->getByName($name)))
             return true;
         else
-            $this->form_validation->set_message('exists', $this->lang->line('error_invalid_user'));
+            $this->form_validation->set_message('exists', tr('error_invalid_user'));
         return false;
     }
 
@@ -74,7 +73,7 @@ class User extends CI_Controller
             return true;
         else
             $this->form_validation->set_message('check_password',
-                $this->lang->line('error_incorrect_password'));
+                tr('error_incorrect_password'));
         return false;
     }
 
@@ -118,14 +117,14 @@ class User extends CI_Controller
     {
         $this->session->sess_destroy();
         $this->load->helper('cookie');
-        delete_cookie(User::COOKIE_NAME);
+        delete_cookie(User_model::COOKIE_NAME);
         $this->data['session'] = $this->session->userdata();
         $this->load->view('templates/header', $this->data);
         $this->load->view('main/index', $this->data);
         $this->load->view('templates/footer', $this->data);
     }
 
-    function oauth_initiate()
+    private function oauth_initiate()
     {
         $this->load->library('OAuth', $this->config->config);
         $result = $this->oauth->initiate();
@@ -134,11 +133,11 @@ class User extends CI_Controller
             $this->session->set_flashdata('oauthRequestSecret', $result->secret);
             redirect($this->oauth->redirect($result->key));
         } else {
-            show_error('OAuth initiation failed.', 'Login');
+            show_error(tr('user_error_oauth_init'), tr('user_error_login_heading'));
         }
     }
 
-    function oauth_callback()
+    public function oauth_callback()
     {
         // Validate callback data.
         $verifyCode = $this->input->get('oauth_verifier');
@@ -177,21 +176,28 @@ class User extends CI_Controller
                     $this->load->view('templates/footer', $this->data);
                 } else {
                     // Ask user if they want to register.
+                    // Save the access token for the register step.
                     $this->session->set_userdata('access_token', $accessToken);
                     $this->load->helper('form');
+                    $this->load->library('parser');
                     $this->load->view('templates/header', $this->data);
                     $this->session->set_userdata('role', user_model::ROLE_GUEST);
+                    // Reload session data into view data.
                     $this->data['session'] = $this->session->userdata();
+                    $template = tr('user_register_heading');
+                    $templateData = ['username' => $identity->username];
+                    $this->data['heading'] = $this->parser->parse_string($template,
+                        $templateData, true);
                     $this->load->view('user/register', $this->data);
                     $this->load->view('templates/footer', $this->data);
                 }
             } else {
-                show_error('Error getting access token.', 'Login');
+                show_error(tr('user_error_oauth_access'), tr('user_error_login_heading'));
             }
         } elseif ($verifyCode) {
-            show_error('OAuth request tokens mismatch.', 'Login');
+            show_error(tr('user_error_oauth_request'), tr('user_error_login_heading'));
         } else {
-            show_error('OAuth verification code missing.', 'Login');
+            show_error(tr('user_error_oauth_verify'), tr('user_error_login_heading'));
         }
     }
 

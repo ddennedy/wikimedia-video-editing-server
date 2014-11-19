@@ -17,23 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-?><!DOCTYPE html>
-<html>
-  <head>
-    <title><?= tr('page_title') ?></title>
-  </head>
-  <body>
-    <h1><?= tr('page_title') ?></h1>
-    <hr>
-    <form>
-    <?php if (array_key_exists('username', $session)): ?>
-        <a href="<?= site_url('user/' . $session['username']) ?>"><?= $session['username'] ?></a> /
-        <a href="<?= site_url('user/logout') ?>"><?= tr('logout') ?></a>
-    <?php else: ?>
-        <a href="<?= site_url('user/login') ?>"><?= tr('login') ?></a>
-    <?php endif; ?>
-    | <?= tr('upload') ?> |
-    <a href="<?= site_url('main') ?>"><?= tr('main') ?></a> |
-    <input type="text" value="<?= tr('search') ?>"><input type="submit" value="Go">
-    </form>
-    <hr>
+
+if (!function_exists('tr'))
+{
+    function tr($line)
+    {
+        return get_instance()->lang->line($line);
+    }
+}
