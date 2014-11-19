@@ -173,7 +173,7 @@ $autoload['language'] = array('ui');
 |	$autoload['model'] = array('first_model' => 'first');
 */
 
-$autoload['model'] = array();
+$autoload['model'] = array('autologin_model');
 
 
 /* End of file autoload.php */
