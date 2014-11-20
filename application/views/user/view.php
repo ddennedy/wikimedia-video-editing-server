@@ -18,8 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 ?>
-<h2><?= $heading ?>
-&nbsp;
-<a href="<?= site_url('user/edit') ?>">[<?= tr('edit') ?>]</a></h2>
+<h2><?= $heading ?></h2>
 <p><?= $comment ?></p>
+<hr>
+<? if ($isEditable): ?>
+<a href="<?= site_url('user/edit') ?>"><?= tr('edit') ?></a>
+<? endif; ?>
 <p><small><?= $footer ?></small></p>

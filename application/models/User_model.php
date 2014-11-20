@@ -108,4 +108,10 @@ class User_model extends CI_Model
             return false;
         }
     }
+
+    public function update($name, $data)
+    {
+        $this->db->where('name', $name);
+        return $this->db->update('user', $data);
+    }
 }

@@ -26,11 +26,12 @@ $lang['register'] = 'Register';
 $lang['upload'] = 'Upload';
 $lang['main'] = 'Main Page';
 $lang['main_greeting'] = '<p>Under construction</p>';
-$lang['login_username'] = 'User ID';
-$lang['login_password'] = 'Password';
-$lang['login_success'] = 'Login successful';
-$lang['error_invalid_user'] = 'The user does not exist.';
-$lang['error_incorrect_password'] = 'The password is incorrect.';
+$lang['user_role'] = 'Role';
+$lang['user_language'] = 'Language';
+$lang['user_comment'] = 'Comment';
+// $lang['login_success'] = 'Login successful';
+$lang['user_error_comment'] = 'The user does not exist.';
+$lang['user_error_language'] = 'The password is incorrect.';
 $lang['role_guest'] = 'Guest';
 $lang['role_user'] = 'User';
 $lang['role_admin'] = 'Administrator';
@@ -41,13 +42,21 @@ $lang['user_register_body'] = 'Do you want to register on this site as a user?
 As a user, you will have permission to upload and edit media files and
 projects. If you do not register, you may continue to use the site as a guest
 and browse files.';
-$lang['user_error_login_heading'] = 'Login';
+$lang['user_error_login_heading'] = 'Login Error';
 $lang['user_error_oauth_init'] = 'OAuth initiation failed.';
 $lang['user_error_oauth_access'] = 'OAuth error receiving access token.';
 $lang['user_error_oauth_request'] = 'OAuth request token mismatch.';
 $lang['user_error_oauth_verify'] = 'OAuth verify code missing.';
+$lang['user_error_heading'] = 'User Error';
+$lang['user_error_update'] = 'Failed to update user data.';
+$lang['user_error_permission'] = 'You do not have permission to edit this user.';
 
-$lang['user_view_heading'] = 'User: {name}';
+$lang['user_view_heading'] = 'User: {name} ({role})';
 $lang['user_view_footer'] = 'This page was last modified {updated_at} UTC.';
 $lang['user_view_nocomment'] = 'No comment.';
 $lang['edit'] = 'Edit';
+$lang['save'] = 'Save';
+$lang['cancel'] = 'Cancel';
+
+$lang['lang_en'] = 'English';
+$lang['lang_de'] = 'German';

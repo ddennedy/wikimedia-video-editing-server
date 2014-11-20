@@ -20,12 +20,17 @@
 ?>
 <?= validation_errors(); ?>
 
-<?php echo form_open('user/login') ?>
-    <label for="username"><?= tr('login_username') ?></label>
-    <input type="input" name="username" value="<?= set_value('username') ?>"><br>
+<?php echo form_open('user/edit') ?>
+    <label for="role"><?= tr('user_role') ?></label>
+    <?= form_dropdown('role', $roles, set_value('role', $role), $roleAttributes) ?><br>
 
-    <label for="password"><?= tr('login_password') ?></label>
-    <input type="password" name="password"><br>
+    <label for="language"><?= tr('user_language') ?></label>
+    <?= form_dropdown('language', $languages, set_value('language', $language)) ?><br>
 
-    <input type="submit" name="submit" value="Login">
+    <label for="comment"><?= tr('user_comment') ?></label>
+    <textarea name="comment" rows="10" cols="60"><?= set_value('comment', $comment, true) ?></textarea><br>
+
+    <input type="submit" name="submit" value="<?= tr('save') ?>">
+    &nbsp;
+    <a href="<?= site_url('user/' . $session['username']) ?>"><?= tr('cancel') ?></a>
 </form>
