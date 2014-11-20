@@ -18,20 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 ?>
-<h2><?= tr('menu_tools') ?></h2>
-<?php if ($session['role'] == User_model::ROLE_BUREAUCRAT): ?>
-<h3><?= tr('tools_user_mgmt') ?></h3>
-<ul>
-  <li><a href="<?= site_url('user/list/' . User_model::ROLE_BUREAUCRAT) ?>">
-    <?= tr('tools_bureaucrats') ?></a></li>
-  <li><a href="<?= site_url('user/list/' . User_model::ROLE_ADMIN) ?>">
-    <?= tr('tools_administrators') ?></a></li>
-  <li><a href="<?= site_url('user/list/' . User_model::ROLE_USER) ?>">
-    <?= tr('tools_list_users') ?></a></li>
-  <li><a href="<?= site_url('user/list/' . User_model::ROLE_GUEST) ?>">
-    <?= tr('tools_list_guests') ?></a></li>
-  <li><form action="<?= site_url('user') ?>"><?= tr('tools_lookup_user') ?>
-    <input type="text" name="name" placeholder="<?= tr('tools_username_placeholder') ?>"><input
-    type="submit" value="<?= tr('go') ?>"></form></li>
-</ul>
+<h2><?= $heading ?></h2>
+<?php if (count($users)): ?>
+<?= $this->table->generate($users) ?>
 <?php endif; ?>

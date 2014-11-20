@@ -68,11 +68,13 @@ $lang['user_error_permission'] = 'You do not have permission to edit this user.'
 $lang['user_view_heading'] = 'User: {name} ({role})';
 $lang['user_view_footer'] = 'This page was last modified {updated_at} UTC.';
 $lang['user_view_nocomment'] = 'No comment.';
+$lang['user_list_heading'] = 'List Users';
 
 // Tools area
 $lang['tools_user_mgmt'] = 'User Management';
 $lang['tools_bureaucrats'] = 'List bureaucrats';
 $lang['tools_administrators'] = 'List administrators';
 $lang['tools_list_users'] = 'List users';
+$lang['tools_list_guests'] = 'List guests';
 $lang['tools_lookup_user'] = 'Lookup user: ';
 $lang['tools_username_placeholder'] = 'Username';

@@ -280,4 +280,26 @@ class User extends CI_Controller
         $this->load->view('user/edit', $this->data);
         $this->load->view('templates/footer', $this->data);
     }
+
+    public function grid($role = null)
+    {
+        $result = $this->user_model->getByRole($role);
+        // Post-process the data.
+        $this->load->helper('url');
+        foreach ($result as &$row) {
+            $row['name'] = anchor('user/' . $row['name'], htmlspecialchars($row['name']));
+            $row['role'] = $this->user_model->getRoleName($row['role']);
+        }
+        $this->data['users'] = $result;
+
+        $this->data['heading'] = tr('user_list_heading');
+        $this->load->library('table');
+        $this->table->set_heading('Name', 'Role', 'Updated');
+        $this->table->set_template([
+            'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
+        ]);
+        $this->load->view('templates/header', $this->data);
+        $this->load->view('user/grid', $this->data);
+        $this->load->view('templates/footer', $this->data);
+    }
 }

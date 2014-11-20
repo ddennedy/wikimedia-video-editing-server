@@ -114,4 +114,13 @@ class User_model extends CI_Model
         $this->db->where('name', $name);
         return $this->db->update('user', $data);
     }
+
+    public function getByRole($role = null)
+    {
+        if ($role !== null)
+            $this->db->where('role', $role);
+        $this->db->select('name, role, updated_at');
+        $query = $this->db->get('user');
+        return $query->result_array();
+    }
 }
