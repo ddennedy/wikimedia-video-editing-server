@@ -34,6 +34,9 @@
     <?php endif; ?>
     | <?= tr('upload') ?> |
     <a href="<?= site_url('main') ?>"><?= tr('main') ?></a> |
-    <input type="text" value="<?= tr('search') ?>"><input type="submit" value="Go">
+    <?php if ($session['role'] == User_model::ROLE_BUREAUCRAT): ?>
+    <a href="<?= site_url('main/tools') ?>"><?= tr('menu_tools') ?></a> |
+    <?php endif; ?>
+    <input type="text" placeholder="<?= tr('search') ?>"><input type="submit" value="<?= tr('go') ?>">
     </form>
     <hr>

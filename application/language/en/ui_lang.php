@@ -25,6 +25,7 @@ $lang['logout'] = 'Logout';
 $lang['register'] = 'Register';
 $lang['upload'] = 'Upload';
 $lang['main'] = 'Main Page';
+$lang['menu_tools'] = 'Tools';
 $lang['main_greeting'] = '<p>Under construction</p>';
 $lang['user_role'] = 'Role';
 $lang['user_language'] = 'Language';
@@ -54,9 +55,17 @@ $lang['user_error_permission'] = 'You do not have permission to edit this user.'
 $lang['user_view_heading'] = 'User: {name} ({role})';
 $lang['user_view_footer'] = 'This page was last modified {updated_at} UTC.';
 $lang['user_view_nocomment'] = 'No comment.';
+$lang['go'] = 'Go';
 $lang['edit'] = 'Edit';
 $lang['save'] = 'Save';
 $lang['cancel'] = 'Cancel';
 
 $lang['lang_en'] = 'English';
 $lang['lang_de'] = 'German';
+
+$lang['tools_user_mgmt'] = 'User Management';
+$lang['tools_bureaucrats'] = 'List bureaucrats';
+$lang['tools_administrators'] = 'List administrators';
+$lang['tools_list_users'] = 'List users';
+$lang['tools_lookup_user'] = 'Lookup user: ';
+$lang['tools_username_placeholder'] = 'Username';

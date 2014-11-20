@@ -177,11 +177,12 @@ class User extends CI_Controller
         }
     }
 
-    public function view($name = null)
+    public function index($name = null)
     {
         // Get current user name if not provided.
-        if (!$name)
-            $name = $this->session->userdata('username');
+        if (!$name) $name = $this->input->post('name');
+        if (!$name) $name = $this->input->get('name');
+        if (!$name) $name = $this->session->userdata('username');
         $user = $this->user_model->getByName($name);
         if ($user) {
             if (!$user['comment'])
@@ -251,7 +252,7 @@ class User extends CI_Controller
                 if ($this->user_model->update($name, $data)) {
                     // If successful, goto view page.
                     $this->session->set_userdata('role', $this->input->post('role'));
-                    $this->view($name);
+                    $this->index($name);
                 } else {
                     show_error(tr('user_error_update'), 500, tr('user_error_heading'));
                 }

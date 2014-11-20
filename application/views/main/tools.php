@@ -17,22 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-class Main extends CI_Controller
-{
-    private $data = array();
-
-    public function __construct()
-    {
-        parent::__construct();
-        $this->data['session'] = $this->session->userdata();
-        $this->data['lang'] = $this->lang->language;
-    }
-
-    public function index($page = 'index')
-    {
-        $this->load->view('templates/header', $this->data);
-        $this->load->view('main/' . $page, $this->data);
-        $this->load->view('templates/footer', $this->data);
-    }
-}
+?>
+<h2><?= tr('menu_tools') ?></h2>
+<?php if ($session['role'] == User_model::ROLE_BUREAUCRAT): ?>
+<h3><?= tr('tools_user_mgmt') ?></h3>
+<ul>
+  <li><?= tr('tools_bureaucrats') ?></li>
+  <li><?= tr('tools_administrators') ?></li>
+  <li><?= tr('tools_list_users') ?></li>
+  <li><form action="<?= site_url('user') ?>"><?= tr('tools_lookup_user') ?>
+    <input type="text" name="name" placeholder="<?= tr('tools_username_placeholder') ?>"><input
+    type="submit" value="<?= tr('go') ?>"></form></li>
+</ul>
+<?php endif; ?>

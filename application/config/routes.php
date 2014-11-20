@@ -90,9 +90,9 @@ $route['oauth-callback'] = 'user/oauth_callback';
 $route['user/login'] = 'user/login';
 $route['user/register'] = 'user/register';
 $route['user/logout'] = 'user/logout';
-$route['user/view'] = 'user/view';
 $route['user/edit'] = 'user/edit';
-$route['user/(:any)'] = 'user/view/$1';
+$route['user/(:any)'] = 'user/index/$1';
+$route['main/(:any)'] = 'main/index/$1';
 
 $route['default_controller'] = 'main';
 $route['404_override'] = '';
