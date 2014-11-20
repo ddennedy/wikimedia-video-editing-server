@@ -29,54 +29,6 @@ class User extends CI_Controller
         $this->data['session'] = $this->session->userdata();
     }
 
-    private function oldlogin()
-    {
-        $this->load->helper('form');
-        $this->load->library('form_validation');
-        $this->form_validation->set_rules('username', 'lang:login_username',
-            'required|callback_exists');
-        $this->form_validation->set_rules('password', 'lang:login_password',
-            'required|callback_check_password');
-
-        // Display login form
-        if ($this->form_validation->run()) {
-            $username = $this->input->post('username');
-            $user = $this->user_model->getByName($username);
-            $this->session->set_userdata('username', $username);
-            $this->session->set_userdata('role', $user['role']);
-            $this->data['session'] = $this->session->userdata();
-            $this->data['role'] = $this->user_model->getRoleName($user['role']);
-            $this->load->view('templates/header', $this->data);
-            $this->load->view('user/login_success', $this->data);
-        } else {
-            $this->load->view('templates/header', $this->data);
-            $this->load->view('user/login', $this->data);
-        }
-        $this->load->view('templates/footer', $this->data);
-    }
-
-    private function exists($name)
-    {
-        if (count($this->user_model->getByName($name)))
-            return true;
-        else
-            $this->form_validation->set_message('exists', tr('error_invalid_user'));
-        return false;
-    }
-
-    private function check_password($password)
-    {
-        $username = $this->input->post('username');
-        if (!$this->exists($username))
-            return true;
-        if ($this->user_model->login($username, $password))
-            return true;
-        else
-            $this->form_validation->set_message('check_password',
-                tr('error_incorrect_password'));
-        return false;
-    }
-
     public function login()
     {
         // First, see if we remember the user by cookie.
