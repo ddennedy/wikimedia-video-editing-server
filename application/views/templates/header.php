@@ -28,12 +28,12 @@
     <form>
     <?php if (array_key_exists('username', $session)): ?>
         <a href="<?= site_url('user/' . $session['username']) ?>"><?= $session['username'] ?></a> /
-        <a href="<?= site_url('user/logout') ?>"><?= tr('logout') ?></a>
+        <a href="<?= site_url('user/logout') ?>"><?= tr('menu_logout') ?></a>
     <?php else: ?>
-        <a href="<?= site_url('user/login') ?>"><?= tr('login') ?></a>
+        <a href="<?= site_url('user/login') ?>"><?= tr('menu_login') ?></a>
     <?php endif; ?>
-    | <?= tr('upload') ?> |
-    <a href="<?= site_url('main') ?>"><?= tr('main') ?></a> |
+    | <?= tr('menu_upload') ?> |
+    <a href="<?= site_url('main') ?>"><?= tr('menu_main') ?></a> |
     <?php if ($session['role'] == User_model::ROLE_BUREAUCRAT): ?>
     <a href="<?= site_url('main/tools') ?>"><?= tr('menu_tools') ?></a> |
     <?php endif; ?>

@@ -18,26 +18,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-$lang['page_title'] = 'Video Editing Server';
-$lang['search'] = 'Search';
-$lang['login'] = 'Login';
-$lang['logout'] = 'Logout';
-$lang['register'] = 'Register';
-$lang['upload'] = 'Upload';
-$lang['main'] = 'Main Page';
-$lang['menu_tools'] = 'Tools';
-$lang['main_greeting'] = '<p>Under construction</p>';
-$lang['user_role'] = 'Role';
-$lang['user_language'] = 'Language';
-$lang['user_comment'] = 'Comment';
-// $lang['login_success'] = 'Login successful';
-$lang['user_error_comment'] = 'The user does not exist.';
-$lang['user_error_language'] = 'The password is incorrect.';
+// Data lists
 $lang['role_guest'] = 'Guest';
 $lang['role_user'] = 'User';
 $lang['role_admin'] = 'Administrator';
 $lang['role_bureaucrat'] = 'Bureaucrat';
+$lang['lang_en'] = 'English';
+$lang['lang_de'] = 'German';
 
+$lang['page_title'] = 'Video Editing Server';
+
+// Some simple action labels
+$lang['go'] = 'Go';
+$lang['edit'] = 'Edit';
+$lang['save'] = 'Save';
+$lang['cancel'] = 'Cancel';
+$lang['search'] = 'Search';
+
+// Menu items
+$lang['menu_login'] = 'Login';
+$lang['menu_logout'] = 'Logout';
+$lang['menu_upload'] = 'Upload';
+$lang['menu_main'] = 'Main Page';
+$lang['menu_tools'] = 'Tools';
+
+// Main and extra pages
+$lang['main_greeting'] = '<p>Under construction</p>';
+
+// User area
+$lang['user_register_button'] = 'Register';
+$lang['user_role'] = 'Role';
+$lang['user_language'] = 'Language';
+$lang['user_comment'] = 'Comment';
+$lang['user_error_comment'] = 'The user does not exist.';
+$lang['user_error_language'] = 'The password is incorrect.';
 $lang['user_register_heading'] = 'Welcome, {username}';
 $lang['user_register_body'] = 'Do you want to register on this site as a user?
 As a user, you will have permission to upload and edit media files and
@@ -51,18 +65,11 @@ $lang['user_error_oauth_verify'] = 'OAuth verify code missing.';
 $lang['user_error_heading'] = 'User Error';
 $lang['user_error_update'] = 'Failed to update user data.';
 $lang['user_error_permission'] = 'You do not have permission to edit this user.';
-
 $lang['user_view_heading'] = 'User: {name} ({role})';
 $lang['user_view_footer'] = 'This page was last modified {updated_at} UTC.';
 $lang['user_view_nocomment'] = 'No comment.';
-$lang['go'] = 'Go';
-$lang['edit'] = 'Edit';
-$lang['save'] = 'Save';
-$lang['cancel'] = 'Cancel';
 
-$lang['lang_en'] = 'English';
-$lang['lang_de'] = 'German';
-
+// Tools area
 $lang['tools_user_mgmt'] = 'User Management';
 $lang['tools_bureaucrats'] = 'List bureaucrats';
 $lang['tools_administrators'] = 'List administrators';

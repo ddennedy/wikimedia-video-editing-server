@@ -21,5 +21,5 @@
 <h2><?= $heading ?></h2>
 <p><?= tr('user_register_body') ?></p>
 <?= form_open('user/register') ?>
-<input type="submit" value="<?= tr('register') ?>">
+<input type="submit" value="<?= tr('user_register_button') ?>">
 </form>
