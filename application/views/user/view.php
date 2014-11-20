@@ -22,6 +22,6 @@
 <p><?= $comment ?></p>
 <hr>
 <? if ($isEditable): ?>
-<a href="<?= site_url('user/edit') ?>"><?= tr('edit') ?></a>
+<a href="<?= site_url('user/edit/' . $name) ?>"><?= tr('edit') ?></a>
 <? endif; ?>
 <p><small><?= $footer ?></small></p>

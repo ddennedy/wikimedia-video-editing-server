@@ -20,7 +20,7 @@
 ?>
 <?= validation_errors(); ?>
 
-<?php echo form_open('user/edit') ?>
+<?php echo form_open('user/edit/' . $name) ?>
     <label for="role"><?= tr('user_role') ?></label>
     <?= form_dropdown('role', $roles, set_value('role', $role), $roleAttributes) ?><br>
 

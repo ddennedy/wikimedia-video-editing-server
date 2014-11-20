@@ -180,8 +180,7 @@ class User extends CI_Controller
     public function index($name = null)
     {
         // Get current user name if not provided.
-        if (!$name) $name = $this->input->post('name');
-        if (!$name) $name = $this->input->get('name');
+        if (!$name) $name = $this->input->post_get('name');
         if (!$name) $name = $this->session->userdata('username');
         $user = $this->user_model->getByName($name);
         if ($user) {
