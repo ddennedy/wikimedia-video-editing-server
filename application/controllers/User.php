@@ -271,7 +271,11 @@ class User extends CI_Controller
         // Check if initially loading from existing data.
         if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             $user = $this->user_model->getByName($name);
-            $this->data = array_merge($this->data, $user);
+            if ($user) {
+                $this->data = array_merge($this->data, $user);
+            } else {
+                show_404();
+            }
         } else /*TODO assuming POST */ {
             // Validate data.
             $this->load->library('form_validation');
