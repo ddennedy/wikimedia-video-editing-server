@@ -139,10 +139,10 @@ class File extends CI_Controller
             ]);
             $this->table->set_heading('');
             $this->data['metadata'] = $this->table->generate([
-                [tr('file_author'), $file['author']],
-                [tr('file_recording_date'), $file['recording_date']],
-                [tr('file_language'), $this->user_model->getLanguageByKey($file['language'])],
-                [tr('file_license'), $this->file_model->getLicenseByKey($file['license'])],
+                ['<strong>'.tr('file_author').'</strong>', $file['author']],
+                ['<strong>'.tr('file_recording_date').'</strong>', $file['recording_date']],
+                ['<strong>'.tr('file_language').'</strong>', $this->user_model->getLanguageByKey($file['language'])],
+                ['<strong>'.tr('file_license').'</strong>', $this->file_model->getLicenseByKey($file['license'])],
             ]);
             $this->table->clear();
             // Only show the edit action if user-level and higher.
