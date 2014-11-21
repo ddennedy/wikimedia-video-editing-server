@@ -94,7 +94,7 @@ class File_model extends CI_Model
     public function getLicenseByKey($licenseKey)
     {
         $licenses = $this->getLicenses();
-        if (array_key_exists($licenseLKey, $licenses))
+        if (array_key_exists($licenseKey, $licenses))
             return $licenses[$licenseKey];
         else
             $licenses['subst:uwl'];
