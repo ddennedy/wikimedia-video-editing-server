@@ -66,6 +66,7 @@ class File extends CI_Controller
             if ($this->form_validation->run()) {
                 // Update database.
                 $data = [
+                    'user_id' => $this->session->userdata('userid'),
                     'title' => $this->input->post('title'),
                     'author' => $this->input->post('author'),
                     'description' => $this->input->post('description'),
