@@ -48,9 +48,7 @@ class User extends CI_Controller
 
                 if ($identity && $identity->username == $username) {
                     // Login successful.
-                    $this->session->set_userdata('username', $username);
-                    $this->session->set_userdata('role', $user['role']);
-                    $this->data['session'] = $this->session->userdata();
+                    $this->establishSession($username, $user['role']);
                     $this->user_model->putUsernameInCookie($identity->username);
 
                     //TODO Take them back to previous page. For now, show the user page.
@@ -105,9 +103,6 @@ class User extends CI_Controller
                 $issuer = $this->config->item('oauth_jwt_issuer');
                 $identity = $this->oauth->identify($accessToken, $secret, $issuer);
 
-                // Remember the user.
-                $this->session->set_userdata('username', $identity->username);
-
                 // See if the user is already registered.
                 $row = $this->user_model->getByName($identity->username);
                 if (count($row)) {
@@ -116,8 +111,7 @@ class User extends CI_Controller
 
                     // Login successful.
                     $user = $this->user_model->getByName($identity->username);
-                    $this->session->set_userdata('role', $user['role']);
-                    $this->data['session'] = $this->session->userdata();
+                    $this->establishSession($identity->username, $user['role']);
                     $this->user_model->putUsernameInCookie($identity->username);
 
                     //TODO Take them back to previous page. For now, show the user page.
@@ -125,13 +119,17 @@ class User extends CI_Controller
                 } else {
                     // Ask user if they want to register.
                     // Save the access token for the register step.
-                    $this->session->set_userdata('access_token', $accessToken);
+                    $this->session->set_userdata([
+                        'username' => $identity->username,
+                        'role' => User_model::ROLE_GUEST,
+                        'access_token' => $accessToken
+                    ]);
+                    // Reload session data into view data.
+                    $this->data['session'] = $this->session->userdata();
+
                     $this->load->helper('form');
                     $this->load->library('parser');
                     $this->load->view('templates/header', $this->data);
-                    $this->session->set_userdata('role', user_model::ROLE_GUEST);
-                    // Reload session data into view data.
-                    $this->data['session'] = $this->session->userdata();
                     $template = tr('user_register_heading');
                     $templateData = ['username' => $identity->username];
                     $this->data['heading'] = $this->parser->parse_string($template,
@@ -158,16 +156,21 @@ class User extends CI_Controller
         ];
         // Ensure user does not exist.
         if (!count($this->user_model->getByName($data['name']))) {
+            // The first user is a bureaucrat. Subsequent users default to user.
+            if ($this->db->count_all('user') == 0)
+                $data['role'] = User_model::ROLE_BUREAUCRAT;
+
             // Add user to database.
             if ($this->user_model->create($data) !== false) {
                 // Log the user into the session.
-                $this->session->set_userdata('role', $data['role']);
-                $this->data['session'] = $this->session->userdata();
+                $this->establishSession($data['name'], $data['role']);
                 $this->user_model->putUsernameInCookie($data['name']);
 
                 // Show the user page.
                 $this->index($data['name']);
             }
+        } else {
+            show_error(tr('user_error_register'), 500, tr('user_error_login_heading'));
         }
     }
 
@@ -286,5 +289,16 @@ class User extends CI_Controller
         $this->load->view('templates/header', $this->data);
         $this->load->view('user/grid', $this->data);
         $this->load->view('templates/footer', $this->data);
+    }
+
+    private function establishSession($name, $role)
+    {
+        $id = $this->user_model->getUserId($name);
+        $this->session->set_userdata([
+            'userid' => $id,
+            'username' => $name,
+            'role' => $role
+        ]);
+        $this->data['session'] = $this->session->userdata();
     }
 }

@@ -39,7 +39,9 @@ CREATE TABLE user (
   updated_at timestamp NOT NULL
 );
 CREATE UNIQUE INDEX user_name ON user (name);
-INSERT INTO user (name, password, role) VALUES ('admin', 'password', 3);
+-- If using OAuth, leave this commented out. With OAtuh, the first user to login
+-- and register is automatically made a bureaucrat.
+-- INSERT INTO user (name, password, role) VALUES ('admin', 'password', 3);
 
 DROP TABLE IF EXISTS file;
 CREATE TABLE file (
