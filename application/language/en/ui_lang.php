@@ -66,6 +66,7 @@ $lang['menu_logout'] = 'Logout';
 $lang['menu_upload'] = 'Upload';
 $lang['menu_main'] = 'Main Page';
 $lang['menu_tools'] = 'Tools';
+$lang['menu_recent'] = 'Changes';
 
 // Main and extra pages
 $lang['main_greeting'] = '<p>Under construction</p>';
@@ -121,3 +122,4 @@ $lang['file_license'] = 'License';
 $lang['file_error_permission'] = 'You do not have permission to edit this file.';
 $lang['file_error_heading'] = 'File Error';
 $lang['file_error_update'] = 'Failed to update file.';
+$lang['file_recent_heading'] = 'Latest Changes';

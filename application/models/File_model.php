@@ -149,4 +149,16 @@ class File_model extends CI_Model
             $this->db->update('recent', ['updated_at' => null]);
         }
     }
+
+    public function getRecent()
+    {
+        $this->db->select('file_id, title, name, created_at');
+        $this->db->from('recent');
+        $this->db->join('file', 'file.id = recent.file_id');
+        $this->db->join('user', 'file.user_id = user.id');
+        $this->db->order_by('recent.updated_at', 'desc');
+        $this->db->limit($this->config->item('recent_limit'));
+        $query = $this->db->get();
+        return $query->result_array();
+    }
 }
