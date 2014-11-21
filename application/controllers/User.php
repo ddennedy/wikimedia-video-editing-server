@@ -53,9 +53,9 @@ class User extends CI_Controller
                     $this->data['session'] = $this->session->userdata();
                     $this->user_model->putUsernameInCookie($identity->username);
 
-                    //TODO Take them back to previous page. For now, show main page.
+                    //TODO Take them back to previous page. For now, show the user page.
                     $this->load->view('templates/header', $this->data);
-                    $this->load->view('main/index', $this->data);
+                    $this->load->view('user/' . $username, $this->data);
                     $this->load->view('templates/footer', $this->data);
                     return;
                 }
@@ -122,9 +122,9 @@ class User extends CI_Controller
                     $this->data['session'] = $this->session->userdata();
                     $this->user_model->putUsernameInCookie($identity->username);
 
-                    //TODO Take them back to previous page. For now, show main page.
+                    //TODO Take them back to previous page. For now, show the user page.
                     $this->load->view('templates/header', $this->data);
-                    $this->load->view('main/index', $this->data);
+                    $this->load->view('user/' . $identity->username, $this->data);
                     $this->load->view('templates/footer', $this->data);
                 } else {
                     // Ask user if they want to register.
@@ -169,9 +169,9 @@ class User extends CI_Controller
                 $this->data['session'] = $this->session->userdata();
                 $this->user_model->putUsernameInCookie($data['name']);
 
-                //TODO Take them back to previous page. For now, show main page.
+                // Show the user page.
                 $this->load->view('templates/header', $this->data);
-                $this->load->view('main/index', $this->data);
+                $this->load->view('user/' . $data['name'], $this->data);
                 $this->load->view('templates/footer', $this->data);
             }
         }
@@ -228,7 +228,7 @@ class User extends CI_Controller
             } else {
                 show_404();
             }
-        } else /*TODO assuming POST */ {
+        } elseif ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Validate data.
             $this->load->library('form_validation');
             $this->form_validation->set_rules(
