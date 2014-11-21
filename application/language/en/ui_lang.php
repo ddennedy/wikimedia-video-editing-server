@@ -90,6 +90,7 @@ $lang['user_error_oauth_verify'] = 'OAuth verify code missing.';
 $lang['user_error_heading'] = 'User Error';
 $lang['user_error_update'] = 'Failed to update user data.';
 $lang['user_error_permission'] = 'You do not have permission to edit this user.';
+$lang['user_error_register'] = 'A user with this name already exists.';
 $lang['user_view_heading'] = 'User: {name} ({role})';
 $lang['user_view_footer'] = 'This user was last modified {updated_at} UTC.';
 $lang['user_view_nocomment'] = 'No comment.';
