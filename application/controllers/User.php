@@ -186,7 +186,7 @@ class User extends CI_Controller
         if ($user) {
             if (!$user['comment'])
                 $user['comment'] = '<em>'.tr('user_view_nocomment').'</em>';
-            $user['role'] = $this->user_model->getRoleName($user['role']);
+            $user['role'] = $this->user_model->getRoleByKey($user['role']);
             $this->load->helper('date');
             //TODO Convert time from UTC to user's timezone.
             //$user['updated_at'] = date('Y-m-j G:i', gmt_to_local($user['updated_at']));
@@ -203,7 +203,7 @@ class User extends CI_Controller
             $this->load->view('user/view', $data);
             $this->load->view('templates/footer', $data);
         } else {
-            show_404('', false);
+            show_404(uri_string());
         }
     }
 
@@ -221,14 +221,14 @@ class User extends CI_Controller
         }
 
         // Check if initially loading from existing data.
-        if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+        if ('GET' == $this->input->method(true)) {
             $user = $this->user_model->getByName($name);
             if ($user) {
                 $this->data = array_merge($this->data, $user);
             } else {
-                show_404();
+                show_404(uri_string());
             }
-        } elseif ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        } elseif ('POST' == $this->input->method(true)) {
             // Validate data.
             $this->load->library('form_validation');
             $this->form_validation->set_rules(
@@ -261,16 +261,8 @@ class User extends CI_Controller
         // Display form.
         $this->load->helper('form');
         // Build arrays for dropdowns.
-        $this->data['roles'] = [
-            User_model::ROLE_GUEST      => tr('role_guest'),
-            User_model::ROLE_USER       => tr('role_user'),
-            User_model::ROLE_ADMIN      => tr('role_admin'),
-            User_model::ROLE_BUREAUCRAT => tr('role_bureaucrat')
-        ];
-        $this->data['languages'] = [
-            'en' => tr('lang_en'),
-            'de' => tr('lang_de')
-        ];
+        $this->data['roles'] = $this->user_model->getRoles();
+        $this->data['languages'] = $this->user_model->getLanguages();
         // Only a bureaucrat can edit the role.
         $this->data['roleAttributes'] = null;
         if ($this->session->userdata('role') != User_model::ROLE_BUREAUCRAT)
@@ -287,7 +279,7 @@ class User extends CI_Controller
         $this->load->helper('url');
         foreach ($result as &$row) {
             $row['name'] = anchor('user/' . $row['name'], htmlspecialchars($row['name']));
-            $row['role'] = $this->user_model->getRoleName($row['role']);
+            $row['role'] = $this->user_model->getRoleByKey($row['role']);
         }
         $this->data['users'] = $result;
 

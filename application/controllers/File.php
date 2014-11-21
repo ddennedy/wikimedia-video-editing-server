@@ -45,13 +45,13 @@ class File extends CI_Controller
         }
 
         // Check if initially loading from existing data.
-        if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+        if ('GET' == $this->input->method(true)) {
             $file = $this->file_model->getById($id);
             $this->data = array_merge($this->data, $file);
             if ($id === null) {
                 $this->data['author'] = $this->session->userdata('username');
             }
-        } else /*TODO assuming POST */ {
+        } elseif ('POST' == $this->input->method(true)) {
             // Validate data.
             $this->load->library('form_validation');
             $this->form_validation->set_rules(
@@ -99,10 +99,7 @@ class File extends CI_Controller
         // Display form.
         $this->load->helper('form');
         // Build arrays for dropdowns.
-        $this->data['languages'] = [
-            'en' => tr('lang_en'),
-            'de' => tr('lang_de')
-        ];
+        $this->data['languages'] = $this->user_model->getLanguages();
         $this->data['licenses'] = $this->file_model->getLicenses();
         // Only a bureaucrat can edit the role.
 //         $this->data['roleAttributes'] = null;
@@ -126,18 +123,35 @@ class File extends CI_Controller
         if (!$id) $id = $this->input->get('id');
         $file = $this->file_model->getById($id);
         if ($file) {
-            $data = array_merge($file, [
-                'session' => $this->session->userdata(),
-                'heading' => tr('file_view_heading', $file),
-                'footer' => tr('file_view_footer', $file),
+            $this->data = array_merge($this->data, $file);
+            $this->data['heading'] = tr('file_view_heading', $file);
+            $this->data['footer'] = tr('file_view_footer', $file);
+            // Create table of metadata.
+            $this->load->library('table');
+            $this->table->set_template([
+                'table_open'            => '<table border="1" cellpadding="4" cellspacing="0">',
+                'thead_open'            => '',
+                'thead_close'           => '',
+                'heading_row_start'     => '',
+                'heading_row_end'       => '',
+                'heading_cell_start'    => '',
+                'heading_cell_end'      => '',
             ]);
+            $this->table->set_heading('');
+            $this->data['metadata'] = $this->table->generate([
+                [tr('file_author'), $file['author']],
+                [tr('file_recording_date'), $file['recording_date']],
+                [tr('file_language'), $this->user_model->getLanguageByKey($file['language'])],
+                [tr('file_license'), $this->file_model->getLicenseByKey($file['license'])],
+            ]);
+            $this->table->clear();
             // Only show the edit action if user-level and higher.
-            $data['isEditable'] = ($this->session->userdata('role') >= User_model::ROLE_USER);
-            $this->load->view('templates/header', $data);
-            $this->load->view('file/view', $data);
-            $this->load->view('templates/footer', $data);
+            $this->data['isEditable'] = ($this->session->userdata('role') >= User_model::ROLE_USER);
+            $this->load->view('templates/header', $this->data);
+            $this->load->view('file/view', $this->data);
+            $this->load->view('templates/footer', $this->data);
         } else {
-            show_404('', false);
+            show_404(uri_string());
         }
     }
 }

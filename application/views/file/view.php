@@ -20,6 +20,7 @@
 ?>
 <h2><?= $heading ?></h2>
 <p><?= $description ?></p>
+<p><?= $metadata ?></p>
 <hr>
 <? if ($isEditable): ?>
 <a href="<?= site_url('file/edit/' . $id) ?>"><?= tr('edit') ?></a>

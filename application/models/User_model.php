@@ -57,20 +57,6 @@ class User_model extends CI_Model
         return $query->num_rows();
     }
 
-    public function getRoleName($role)
-    {
-        switch ($role) {
-            case User_model::ROLE_USER:
-                return $this->lang->line('role_user');
-            case User_model::ROLE_ADMIN:
-                return $this->lang->line('role_admin');
-            case User_model::ROLE_BUREAUCRAT:
-                return $this->lang->line('role_bureaucrat');
-            default:
-                return $this->lang->line('role_guest');
-        }
-    }
-
     public function setAccessTokenByName($name, $token)
     {
         $this->load->library('encryption');
@@ -122,5 +108,41 @@ class User_model extends CI_Model
         $this->db->select('name, role, updated_at');
         $query = $this->db->get('user');
         return $query->result_array();
+    }
+
+    public function getLanguages()
+    {
+        return [
+            'en' => tr('language_en'),
+            'de' => tr('language_de'),
+        ];
+    }
+
+    public function getLanguageByKey($languageKey)
+    {
+        $languages = $this->getLanguages();
+        if (array_key_exists($languageKey, $languages))
+            return $languages[$languageKey];
+        else
+            return $languages['en'];
+    }
+
+    public function getRoles()
+    {
+        return [
+            User_model::ROLE_GUEST => tr('role_guest'),
+            User_model::ROLE_USER => tr('role_user'),
+            User_model::ROLE_ADMIN => tr('role_admin'),
+            User_model::ROLE_BUREAUCRAT => tr('role_bureaucrat'),
+        ];
+    }
+
+    public function getRoleByKey($roleKey)
+    {
+        $roles = $this->getRoles();
+        if (array_key_exists($roleKey, $roles))
+            return $roles[$roleKey];
+        else
+            return $roles[User_model::ROLE_GUEST];
     }
 }
