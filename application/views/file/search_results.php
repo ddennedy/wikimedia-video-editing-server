@@ -17,14 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-$config['debug'] = false;
-$config['videos_dir'] = '/media/videos/';
-
-$config['oauth_base_url']= 'https://commons.wikimedia.org/wiki/Special:OAuth';
-$config['oauth_consumer_token'] = '70dcdf4058772ddc6e89a90170e4febe';
-$config['oauth_private_key'] = 'other/mediawiki-oauth-key.pem';
-$config['oauth_jwt_issuer'] = 'http://commons.wikimedia.org';
-$config['cookie_expire_seconds'] = 2592000; // 30 days
-$config['recent_limit'] = 100;
-$config['search_limit'] = 25;
+?>
+<h2><?= $heading ?></h2>
+<?php if (count($results)): ?>
+<?= $this->table->generate($results) ?>
+<?php endif; ?>

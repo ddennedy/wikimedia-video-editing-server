@@ -73,6 +73,7 @@ $lang['main_greeting'] = '<p>Under construction</p>';
 
 // User area
 $lang['user_register_button'] = 'Register';
+$lang['user_name'] = 'User';
 $lang['user_role'] = 'Role';
 $lang['user_language'] = 'Language';
 $lang['user_comment'] = 'Comment';
@@ -123,3 +124,5 @@ $lang['file_error_permission'] = 'You do not have permission to edit this file.'
 $lang['file_error_heading'] = 'File Error';
 $lang['file_error_update'] = 'Failed to update file.';
 $lang['file_recent_heading'] = 'Latest Changes';
+$lang['file_search_results_heading'] = 'Search Results: {query}';
+$lang['file_updated_at'] = 'Modified';

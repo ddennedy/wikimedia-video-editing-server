@@ -154,10 +154,25 @@ class File_model extends CI_Model
     {
         $this->db->select('file_id, title, name, created_at');
         $this->db->from('recent');
-        $this->db->join('file', 'file.id = recent.file_id');
-        $this->db->join('user', 'file.user_id = user.id');
+        $this->db->join('file', 'file.id = file_id');
+        $this->db->join('user', 'user_id = user.id');
         $this->db->order_by('recent.updated_at', 'desc');
         $this->db->limit($this->config->item('recent_limit'));
+        $query = $this->db->get();
+        return $query->result_array();
+    }
+
+    public function search($query)
+    {
+        $query = stripslashes(str_replace('&quot;', '"', $query));
+        $match = "MATCH (searchindex.title, searchindex.description, searchindex.author) AGAINST ('$query' IN BOOLEAN MODE)";
+        $this->db->select("file_id, file.title, file.author, name, created_at, $match as relevance");
+        $this->db->from('searchindex');
+        $this->db->join('file', 'file.id = file_id');
+        $this->db->join('user', 'user_id = user.id');
+        $this->db->where($match);
+        $this->db->order_by('relevance', 'desc');
+        $this->db->limit($this->config->item('search_limit'));
         $query = $this->db->get();
         return $query->result_array();
     }

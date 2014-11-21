@@ -25,7 +25,7 @@
   <body>
     <h1><?= tr('site_title') ?></h1>
     <hr>
-    <form>
+    <form method="get" action="<?= site_url('file/search') ?>">
     <?php if (isset($session['username'])): ?>
         <?php if (element('role', $session) != User_model::ROLE_GUEST): ?>
             <a href="<?= site_url('user/' . $session['username']) ?>"><?= $session['username'] ?></a> /
@@ -44,6 +44,6 @@
     <a href="<?= site_url('main/tools') ?>"><?= tr('menu_tools') ?></a> |
     <?php endif; ?>
     <a href="<?= site_url('file/recent') ?>"><?= tr('menu_recent') ?></a> |
-    <input type="text" placeholder="<?= tr('search') ?>"><input type="submit" value="<?= tr('go') ?>">
+    <input type="text" name="q" placeholder="<?= tr('search') ?>"><input type="submit" value="<?= tr('go') ?>">
     </form>
     <hr>
