@@ -25,8 +25,33 @@ $lang['role_admin'] = 'Administrator';
 $lang['role_bureaucrat'] = 'Bureaucrat';
 $lang['lang_en'] = 'English';
 $lang['lang_de'] = 'German';
+$lang['license_self|GFDL|cc-by-sa-all|migration=redundant'] = 'Own work, copyleft, attribution required (Multi-license GFDL, CC-BY-SA all versions)';
+$lang['license_self|Cc-zero'] = 'CC0 1.0 Universal Public Domain Dedication, all rights waived (Public domain)';
+$lang['license_PD-self'] = 'Own work, all rights released (Public domain)';
+$lang['license_self|GFDL|cc-by-sa-3.0|migration=redundant'] = 'Own work, copyleft, attribution required (GFDL, CC-BY-SA-3.0)';
+$lang['license_self|GFDL|cc-by-3.0|migration=redundant'] = 'Own work, attribution required (GFDL, CC-BY 3.0)';
+$lang['license_self|cc-by-sa-3.0'] = 'Own work, copyleft, attribution required (CC-BY-SA-3.0)';
+$lang['license_cc-by-sa-4.0'] = 'Creative Commons Attribution ShareAlike 4.0';
+$lang['license_cc-by-sa-3.0'] = 'Creative Commons Attribution ShareAlike 3.0';
+$lang['license_cc-by-4.0'] = 'Creative Commons Attribution 4.0';
+$lang['license_cc-by-3.0'] = 'Creative Commons Attribution 3.0';
+$lang['license_Cc-zero'] = 'Creative Commons CC0 1.0 Universal Public Domain Dedication';
+$lang['license_FAL'] = 'Free Art License';
+$lang['license_PD-old-100'] = 'Public Domain: Author died more than 100 years ago';
+$lang['license_PD-old-70-1923'] = 'Public Domain: Author died more than 70 years ago AND the work was published before 1923';
+$lang['license_PD-old-70|Unclear-PD-US-old-70'] = 'Public Domain: Author died more than 70 years ago BUT the work was published after 1923';
+$lang['license_PD-US'] = 'Public Domain: First published in the United States before 1923';
+$lang['license-PD-US-no notice'] = 'Public Domain: First published in the United States between 1923 and 1977 without a copyright notice';
+$lang['license_PD-USGov'] = 'Public Domain: Original work of the US Federal Government';
+$lang['license_PD-USGov-NASA'] = 'Public Domain: Original work of NASA';
+$lang['license_PD-USGov-Military-Navy'] = 'Public Domain: Original work of the US Military Navy';
+$lang['license_PD-ineligible'] = 'Public Domain: Too simple to be copyrighted';
+$lang['license_Copyrighted free use'] = 'Copyrighted, but may be used for any purpose, including commercially';
+$lang['license_Attribution'] = 'May be used for any purpose, including commercially, if the copyright holder is properly attributed';
+$lang['license_subst:uwl'] = 'I don\'t know what the license is';
 
 $lang['page_title'] = 'Video Editing Server';
+$lang['site_title'] = 'Video Editing Server';
 
 // Some simple action labels
 $lang['go'] = 'Go';
@@ -66,7 +91,7 @@ $lang['user_error_heading'] = 'User Error';
 $lang['user_error_update'] = 'Failed to update user data.';
 $lang['user_error_permission'] = 'You do not have permission to edit this user.';
 $lang['user_view_heading'] = 'User: {name} ({role})';
-$lang['user_view_footer'] = 'This page was last modified {updated_at} UTC.';
+$lang['user_view_footer'] = 'This user was last modified {updated_at} UTC.';
 $lang['user_view_nocomment'] = 'No comment.';
 $lang['user_list_heading'] = 'List Users';
 
@@ -78,3 +103,20 @@ $lang['tools_list_users'] = 'List users';
 $lang['tools_list_guests'] = 'List guests';
 $lang['tools_lookup_user'] = 'Lookup user: ';
 $lang['tools_username_placeholder'] = 'Username';
+
+// Files area
+$lang['file_new_heading'] = 'Upload File';
+$lang['file_new_message'] = 'Please enter some information about the file you are about to upload.';
+$lang['file_edit_heading'] = 'Editing File: {title}';
+$lang['file_view_heading'] = 'File: {title}';
+$lang['file_view_footer'] = 'This file was last modified {created_at} UTC.';
+$lang['file_title'] = 'Title';
+$lang['file_author'] = 'Author';
+$lang['file_keywords'] = 'Keywords';
+$lang['file_description'] = 'Description';
+$lang['file_recording_date'] = 'Date';
+$lang['file_language'] = 'Language';
+$lang['file_license'] = 'License';
+$lang['file_error_permission'] = 'You do not have permission to edit this file.';
+$lang['file_error_heading'] = 'File Error';
+$lang['file_error_update'] = 'Failed to update file.';

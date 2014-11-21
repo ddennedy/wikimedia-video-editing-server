@@ -23,7 +23,7 @@
     <title><?= tr('page_title') ?></title>
   </head>
   <body>
-    <h1><?= tr('page_title') ?></h1>
+    <h1><?= tr('site_title') ?></h1>
     <hr>
     <form>
     <?php if (array_key_exists('username', $session)): ?>
@@ -32,7 +32,7 @@
     <?php else: ?>
         <a href="<?= site_url('user/login') ?>"><?= tr('menu_login') ?></a>
     <?php endif; ?>
-    | <?= tr('menu_upload') ?> |
+    | <a href="<?= site_url('file/edit') ?>"><?= tr('menu_upload') ?></a> |
     <a href="<?= site_url('main') ?>"><?= tr('menu_main') ?></a> |
     <?php if ($session['role'] == User_model::ROLE_BUREAUCRAT): ?>
     <a href="<?= site_url('main/tools') ?>"><?= tr('menu_tools') ?></a> |

@@ -96,6 +96,9 @@ $route['user/list/(:any)'] = 'user/grid/$1';
 $route['user/(:any)'] = 'user/index/$1';
 $route['main/(:any)'] = 'main/index/$1';
 
+$route['file/edit'] = 'file/edit';
+$route['file/(:any)'] = 'file/view/$1';
+
 $route['default_controller'] = 'main';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = TRUE;
