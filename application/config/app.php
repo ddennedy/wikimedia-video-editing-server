@@ -26,3 +26,4 @@ $config['oauth_consumer_token'] = '70dcdf4058772ddc6e89a90170e4febe';
 $config['oauth_private_key'] = 'other/mediawiki-oauth-key.pem';
 $config['oauth_jwt_issuer'] = 'http://commons.wikimedia.org';
 $config['cookie_expire_seconds'] = 2592000; // 30 days
+$config['recent_limit'] = 100;

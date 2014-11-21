@@ -49,17 +49,46 @@ class File_model extends CI_Model
 
     public function create($data)
     {
+        // Insert into main file table.
         $this->db->insert('file', $data);
-        if ($this->db->affected_rows())
-            return $this->db->insert_id();
-        else
+        if ($this->db->affected_rows()) {
+            $id = $this->db->insert_id();
+
+            // Add to recent table.
+            $this->updateRecent($id);
+
+            // Add to the search index.
+            $this->db->insert('searchindex', [
+                'file_id' => $id,
+                'title' => $data['title'],
+                'description' => $data['description'],
+                'author' => $data['author']
+            ]);
+
+            return $id;
+        } else {
             return null;
+        }
     }
 
     public function update($id, $data)
     {
+        // Update the file table.
         $this->db->where('id', $id);
-        return $this->db->update('file', $data);
+        $result = $this->db->update('file', $data);
+        if ($result) {
+            // Add to recent table.
+            $this->updateRecent($id);
+
+            // Update the search index.
+            $this->db->where('file_id', $id);
+            $this->db->update('searchindex', [
+                'title' => $data['title'],
+                'description' => $data['description'],
+                'author' => $data['author']
+            ]);
+        }
+        return $result;
     }
 
     public function getLicenses()
@@ -98,5 +127,26 @@ class File_model extends CI_Model
             return $licenses[$licenseKey];
         else
             $licenses['subst:uwl'];
+    }
+
+    private function getMostRecent()
+    {
+        $this->db->select('id, file_id');
+        $this->db->order_by('updated_at', 'desc');
+        $this->db->limit(1);
+        $query = $this->db->get('recent');
+        return ($query->num_rows() > 0)? $query->row() : null;
+    }
+
+    public function updateRecent($id)
+    {
+        $recent = $this->getMostRecent();
+        if (!$recent || $id != $recent->file_id) {
+            $this->db->insert('recent', ['file_id' => $id]);
+        } else {
+            // Just update the most recent one so timestamp update.
+            $this->db->where('id', $recent->id);
+            $this->db->update('recent', ['updated_at' => null]);
+        }
     }
 }

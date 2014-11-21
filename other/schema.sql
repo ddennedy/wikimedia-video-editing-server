@@ -110,9 +110,9 @@ CREATE INDEX file_child_id ON file_children (child_id);
 
 DROP TABLE IF EXISTS recent;
 CREATE TABLE recent (
-  id int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  id bigint unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
   file_id int unsigned NOT NULL,
-  created_at timestamp NOT NULL
+  updated_at timestamp NOT NULL
 );
 CREATE INDEX recent_file_id ON recent (file_id);
 
