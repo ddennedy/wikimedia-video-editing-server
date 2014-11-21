@@ -26,15 +26,21 @@
     <h1><?= tr('site_title') ?></h1>
     <hr>
     <form>
-    <?php if (array_key_exists('username', $session)): ?>
-        <a href="<?= site_url('user/' . $session['username']) ?>"><?= $session['username'] ?></a> /
-        <a href="<?= site_url('user/logout') ?>"><?= tr('menu_logout') ?></a>
+    <?php if (isset($session['username'])): ?>
+        <?php if (element('role', $session) != User_model::ROLE_GUEST): ?>
+            <a href="<?= site_url('user/' . $session['username']) ?>"><?= $session['username'] ?></a> /
+        <?php else: ?>
+            <?= $session['username'] ?> /
+        <?php endif; ?>
+        <a href="<?= site_url('user/logout') ?>"><?= tr('menu_logout') ?></a> |
     <?php else: ?>
-        <a href="<?= site_url('user/login') ?>"><?= tr('menu_login') ?></a>
+        <a href="<?= site_url('user/login') ?>"><?= tr('menu_login') ?></a> |
     <?php endif; ?>
-    | <a href="<?= site_url('file/edit') ?>"><?= tr('menu_upload') ?></a> |
+    <?php if (element('role', $session) != User_model::ROLE_GUEST): ?>
+    <a href="<?= site_url('file/edit') ?>"><?= tr('menu_upload') ?></a> |
+    <?php endif; ?>
     <a href="<?= site_url('main') ?>"><?= tr('menu_main') ?></a> |
-    <?php if ($session['role'] == User_model::ROLE_BUREAUCRAT): ?>
+    <?php if (element('role', $session) == User_model::ROLE_BUREAUCRAT): ?>
     <a href="<?= site_url('main/tools') ?>"><?= tr('menu_tools') ?></a> |
     <?php endif; ?>
     <input type="text" placeholder="<?= tr('search') ?>"><input type="submit" value="<?= tr('go') ?>">

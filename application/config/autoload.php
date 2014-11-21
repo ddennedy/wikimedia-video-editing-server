@@ -124,7 +124,7 @@ $autoload['drivers'] = array('session');
 |	$autoload['helper'] = array('url', 'file');
 */
 
-$autoload['helper'] = array('translate', 'url');
+$autoload['helper'] = array('array', 'translate', 'url');
 
 
 /*
