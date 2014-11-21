@@ -54,9 +54,7 @@ class User extends CI_Controller
                     $this->user_model->putUsernameInCookie($identity->username);
 
                     //TODO Take them back to previous page. For now, show the user page.
-                    $this->load->view('templates/header', $this->data);
-                    $this->load->view('user/' . $username, $this->data);
-                    $this->load->view('templates/footer', $this->data);
+                    $this->index($username);
                     return;
                 }
             }
@@ -123,9 +121,7 @@ class User extends CI_Controller
                     $this->user_model->putUsernameInCookie($identity->username);
 
                     //TODO Take them back to previous page. For now, show the user page.
-                    $this->load->view('templates/header', $this->data);
-                    $this->load->view('user/' . $identity->username, $this->data);
-                    $this->load->view('templates/footer', $this->data);
+                    $this->index($identity->username);
                 } else {
                     // Ask user if they want to register.
                     // Save the access token for the register step.
@@ -170,9 +166,7 @@ class User extends CI_Controller
                 $this->user_model->putUsernameInCookie($data['name']);
 
                 // Show the user page.
-                $this->load->view('templates/header', $this->data);
-                $this->load->view('user/' . $data['name'], $this->data);
-                $this->load->view('templates/footer', $this->data);
+                $this->index($data['name']);
             }
         }
     }
