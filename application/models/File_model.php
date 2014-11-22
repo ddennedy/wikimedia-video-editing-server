@@ -192,4 +192,11 @@ class File_model extends CI_Model
         if ($this->db->trans_status())
             $this->db->delete('searchindex', ['file_id' => $id]);
     }
+
+    public function getByUserId($id)
+    {
+        $this->db->select('id, title, author, created_at');
+        $query = $this->db->get_where('file', ['user_id' => $id]);
+        return $query->result_array();
+    }
 }

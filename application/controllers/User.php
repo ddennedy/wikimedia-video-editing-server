@@ -196,6 +196,24 @@ class User extends CI_Controller
             // Only show the edit action if viewing self or are bureaucrat.
             $data['isEditable'] = ($name == $this->session->userdata('username')) ||
                 (User_model::ROLE_BUREAUCRAT == $this->session->userdata('role'));
+
+            // Show the user's files.
+            $this->load->model('file_model');
+            $this->load->helper('url');
+            $result = $this->file_model->getByUserId($this->user_model->getUserId($name));
+            foreach ($result as &$row) {
+                $row['title'] = anchor('file/' . $row['id'], htmlspecialchars($row['title']));
+                unset($row['id']);
+            }
+            $data['files'] = $result;
+            $this->load->library('table');
+            $this->table->set_heading(tr('file_title'), tr('file_author'), tr('file_updated_at'));
+            $this->table->set_caption(tr('user_files_caption'));
+            $this->table->set_template([
+                'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
+            ]);
+
+            // Build the page.
             $this->load->view('templates/header', $data);
             $this->load->view('user/view', $data);
             $this->load->view('templates/footer', $data);

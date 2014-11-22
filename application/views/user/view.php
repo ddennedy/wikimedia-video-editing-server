@@ -24,4 +24,5 @@
 <? if ($isEditable): ?>
 <a href="<?= site_url('user/edit/' . $name) ?>"><?= tr('edit') ?></a>
 <? endif; ?>
+<?php if (count($files)) echo $this->table->generate($files) ?>
 <p><small><?= $footer ?></small></p>

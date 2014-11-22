@@ -98,6 +98,7 @@ $lang['user_view_heading'] = 'User: {name} ({role})';
 $lang['user_view_footer'] = 'This user was last modified {updated_at} UTC.';
 $lang['user_view_nocomment'] = 'No comment.';
 $lang['user_list_heading'] = 'List Users';
+$lang['user_files_caption'] = 'This user\'s files';
 
 // Tools area
 $lang['tools_user_mgmt'] = 'User Management';
