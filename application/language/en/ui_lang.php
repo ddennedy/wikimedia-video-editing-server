@@ -59,6 +59,7 @@ $lang['edit'] = 'Edit';
 $lang['save'] = 'Save';
 $lang['cancel'] = 'Cancel';
 $lang['search'] = 'Search';
+$lang['delete'] = 'Delete';
 
 // Menu items
 $lang['menu_login'] = 'Login';

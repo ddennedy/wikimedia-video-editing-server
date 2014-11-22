@@ -99,6 +99,7 @@ $route['main/(:any)'] = 'main/index/$1';
 $route['file/edit'] = 'file/edit';
 $route['file/recent'] = 'file/recent';
 $route['file/search'] = 'file/search';
+$route['file/delete'] = 'file/delete';
 $route['file/(:any)'] = 'file/view/$1';
 
 $route['default_controller'] = 'main';

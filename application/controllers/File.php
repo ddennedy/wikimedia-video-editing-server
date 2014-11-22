@@ -152,6 +152,8 @@ class File extends CI_Controller
             $this->table->clear();
             // Only show the edit action if user-level and higher.
             $this->data['isEditable'] = ($this->session->userdata('role') >= User_model::ROLE_USER);
+            // Only show the delete action if admin-level and higher.
+            $this->data['isDeletable'] = ($this->session->userdata('role') >= User_model::ROLE_ADMIN);
             $this->load->view('templates/header', $this->data);
             $this->load->view('file/view', $this->data);
             $this->load->view('templates/footer', $this->data);
@@ -209,5 +211,25 @@ class File extends CI_Controller
         $this->load->view('templates/header', $this->data);
         $this->load->view('file/search_results', $this->data);
         $this->load->view('templates/footer', $this->data);
+    }
+
+    public function delete($id = null)
+    {
+        // Check permission.
+        if ($this->session->userdata('role') < User_model::ROLE_ADMIN) {
+            show_error(tr('file_error_permission'), 403, tr('file_error_heading'));
+            return;
+        }
+        if (!$id)
+            $id = $this->input->post_get('id');
+        $file = $this->file_model->getById($id);
+        if ($file && $file['id']) {
+            $this->file_model->delete($id);
+            $this->load->view('templates/header', $this->data);
+            $this->load->view('main/index', $this->data);
+            $this->load->view('templates/footer', $this->data);
+        } else {
+            show_404(uri_string());
+        }
     }
 }

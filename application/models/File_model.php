@@ -176,4 +176,20 @@ class File_model extends CI_Model
         $query = $this->db->get();
         return $query->result_array();
     }
+
+    public function delete($id)
+    {
+        $this->db->trans_start();
+        //TODO Copy current file record to file_history and mark deleted.
+//         $this->db->where('file_id', $id);
+//         $this->db->update('file_history', ['is_delete' => 1]);
+        $this->db->delete('file', ['id' => $id]);
+        $this->db->delete('recent', ['file_id' => $id]);
+        $this->db->where('file_id', $id);
+        $this->db->or_where('child_id', $id);
+        $this->db->delete('file_children');
+        $this->db->trans_complete();
+        if ($this->db->trans_status())
+            $this->db->delete('searchindex', ['file_id' => $id]);
+    }
 }

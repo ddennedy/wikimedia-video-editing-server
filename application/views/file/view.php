@@ -25,4 +25,7 @@
 <? if ($isEditable): ?>
 <a href="<?= site_url('file/edit/' . $id) ?>"><?= tr('edit') ?></a>
 <? endif; ?>
+<? if ($isDeletable): ?>
+| <a href="<?= site_url('file/delete/' . $id) ?>"><?= tr('delete') ?></a>
+<? endif; ?>
 <p><small><?= $footer ?></small></p>
