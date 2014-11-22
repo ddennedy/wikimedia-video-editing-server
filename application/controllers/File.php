@@ -47,9 +47,13 @@ class File extends CI_Controller
         // Check if initially loading from existing data.
         if ('GET' == $this->input->method(true)) {
             $file = $this->file_model->getById($id);
-            $this->data = array_merge($this->data, $file);
-            if ($id === null) {
-                $this->data['author'] = $this->session->userdata('username');
+            if ($file) {
+                $this->data = array_merge($this->data, $file);
+                if ($id === null) {
+                    $this->data['author'] = $this->session->userdata('username');
+                }
+            } else {
+                show_404(uri_string());
             }
         } elseif ('POST' == $this->input->method(true)) {
             // Validate data.
