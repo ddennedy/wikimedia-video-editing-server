@@ -50,6 +50,7 @@ class File_model extends CI_Model
     public function create($data)
     {
         // Insert into main file table.
+        $this->db->trans_start();
         $this->db->insert('file', $data);
         if ($this->db->affected_rows()) {
             $id = $this->db->insert_id();
@@ -64,9 +65,10 @@ class File_model extends CI_Model
                 'description' => $data['description'],
                 'author' => $data['author']
             ]);
-
-            return $id;
+            $this->db->trans_complete();
+            return $this->db->trans_status()? $id : null;
         } else {
+            $this->db->trans_rollback();
             return null;
         }
     }
@@ -74,6 +76,7 @@ class File_model extends CI_Model
     public function update($id, $data)
     {
         // Update the file table.
+        $this->db->trans_start();
         $this->db->where('id', $id);
         $result = $this->db->update('file', $data);
         if ($result) {
@@ -88,6 +91,7 @@ class File_model extends CI_Model
                 'author' => $data['author']
             ]);
         }
+        $this->db->trans_complete();
         return $result;
     }
 
