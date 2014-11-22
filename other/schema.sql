@@ -65,7 +65,7 @@ CREATE TABLE file (
   document_id varchar(32), -- kdenlive's documentid if needed
   publish_uri varchar(32), -- Wikimedia Commons URI
   status bit(64) default 0, -- see constants in PHP for values,
-  created_at timestamp NOT NULL
+  updated_at timestamp NOT NULL
 );
 CREATE INDEX file_user_id ON file (user_id);
 CREATE INDEX file_recording_date ON file (recording_date);
@@ -122,8 +122,8 @@ CREATE TABLE file_history (
   file_id int unsigned NOT NULL,
   revision smallint unsigned NOT NULL default 0,
   is_delete tinyint(1) unsigned NOT NULL default 0,
+  deleted_at timestamp NOT NULL,
   comment varchar(255), -- comment about the change
-  created_at timestamp NOT NULL,
   -- Following are a duplicate of columns from file table. Keep the two in sync.
   user_id int unsigned NOT NULL,
   title varchar(255) NOT NULL,
@@ -143,7 +143,8 @@ CREATE TABLE file_history (
   output_hash char(32), -- md5 hash of output file based on the algorithm Kdenlive uses
   document_id varchar(32), -- kdenlive's documentid if needed
   publish_uri varchar(32), -- Wikimedia Commons URI
-  status bit(64) default 0 -- see constants in PHP for values
+  status bit(64) default 0, -- see constants in PHP for values
+  updated_at timestamp NOT NULL
 );
 CREATE INDEX file_history_file_id ON file_history (file_id);
 

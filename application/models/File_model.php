@@ -51,8 +51,8 @@ class File_model extends CI_Model
     {
         // Insert into main file table.
         $this->db->trans_start();
-        $this->db->insert('file', $data);
-        if ($this->db->affected_rows()) {
+        $result = $this->db->insert('file', $data);
+        if ($result) {
             $id = $this->db->insert_id();
 
             // Add to recent table.
@@ -65,18 +65,40 @@ class File_model extends CI_Model
                 'description' => $data['description'],
                 'author' => $data['author']
             ]);
-            $this->db->trans_complete();
-            return $this->db->trans_status()? $id : null;
-        } else {
-            $this->db->trans_rollback();
-            return null;
         }
+        $this->db->trans_complete();
+        return $this->db->trans_status()? $id : false;
     }
 
-    public function update($id, $data)
+    public function update($id, $data, $comment = null)
     {
-        // Update the file table.
+        // Check if any data changed.
+        $query = $this->db->get_where('file', ['id' => $id]);
+        $current = $query->row_array();
+        unset($current['id']);
+        $diff = array_diff($data, $current);
+        if (!count($diff))
+            return true;
+
         $this->db->trans_start();
+
+        // Get the current revision number.
+        $this->db->select('revision');
+        $this->db->where('file_id', $id);
+        $this->db->order_by('revision', 'desc');
+        $this->db->limit(1);
+        $query = $this->db->get('file_history');
+        if ($query->num_rows()) {
+            // We have previous revisions, get the latest revision number.
+            $revision = $query->row()->revision;
+        } else {
+            // No revision yet exists, copy current record to history.
+            $revision = 0;
+            $current['file_id'] = $id;
+            $this->db->insert('file_history', $current);
+        }
+
+        // Update main table with new values.
         $this->db->where('id', $id);
         $result = $this->db->update('file', $data);
         if ($result) {
@@ -91,8 +113,15 @@ class File_model extends CI_Model
                 'author' => $data['author']
             ]);
         }
+
+        // Insert new values into history.
+        $data['file_id'] = $id;
+        $data['revision'] = $revision + 1;
+        $data['updated_at'] = null;
+        $this->db->insert('file_history', $data);
+
         $this->db->trans_complete();
-        return $result;
+        return $this->db->trans_status();
     }
 
     public function getLicenses()
@@ -156,7 +185,7 @@ class File_model extends CI_Model
 
     public function getRecent()
     {
-        $this->db->select('file_id, title, name, created_at');
+        $this->db->select('file_id, title, name, file.updated_at');
         $this->db->from('recent');
         $this->db->join('file', 'file.id = file_id');
         $this->db->join('user', 'user_id = user.id');
@@ -170,7 +199,7 @@ class File_model extends CI_Model
     {
         $query = stripslashes(str_replace('&quot;', '"', $query));
         $match = "MATCH (searchindex.title, searchindex.description, searchindex.author) AGAINST ('$query' IN BOOLEAN MODE)";
-        $this->db->select("file_id, file.title, file.author, name, created_at, $match as relevance");
+        $this->db->select("file_id, file.title, file.author, name, updated_at, $match as relevance");
         $this->db->from('searchindex');
         $this->db->join('file', 'file.id = file_id');
         $this->db->join('user', 'user_id = user.id');
@@ -184,23 +213,40 @@ class File_model extends CI_Model
     public function delete($id)
     {
         $this->db->trans_start();
-        //TODO Copy current file record to file_history and mark deleted.
-//         $this->db->where('file_id', $id);
-//         $this->db->update('file_history', ['is_delete' => 1]);
+
+        // Mark latest record in file_history as deleted.
+        $this->db->set('is_delete', 1);
+        $this->db->set('deleted_at', null);
+        $this->db->where('file_id', $id);
+        $this->db->order_by('revision', 'desc');
+        $this->db->limit(1);
+        $this->db->update('file_history');
+
+        // Delete records from main file and related tables.
         $this->db->delete('file', ['id' => $id]);
         $this->db->delete('recent', ['file_id' => $id]);
         $this->db->where('file_id', $id);
         $this->db->or_where('child_id', $id);
         $this->db->delete('file_children');
         $this->db->trans_complete();
+        // searchindex is MyISAM, which does not support transactions.
         if ($this->db->trans_status())
             $this->db->delete('searchindex', ['file_id' => $id]);
     }
 
     public function getByUserId($id)
     {
-        $this->db->select('id, title, author, created_at');
+        $this->db->select('id, title, author, updated_at');
         $query = $this->db->get_where('file', ['user_id' => $id]);
         return $query->result_array();
+    }
+
+    public function getHistory($id)
+    {
+        $this->db->select('file_history.id, revision, name, file_history.updated_at');
+        $this->db->join('user', 'user_id = user.id');
+        $this->db->where('file_id', $id);
+        $this->db->order_by('revision', 'desc');
+        return $this->db->get('file_history')->result_array();
     }
 }

@@ -154,6 +154,28 @@ class File extends CI_Controller
             $this->data['isEditable'] = ($this->session->userdata('role') >= User_model::ROLE_USER);
             // Only show the delete action if admin-level and higher.
             $this->data['isDeletable'] = ($this->session->userdata('role') >= User_model::ROLE_ADMIN);
+
+            // Create history table.
+            $this->load->helper('url');
+            $result = $this->file_model->getHistory($id);
+            if (count($result)) {
+                foreach ($result as &$row) {
+                    $row['updated_at'] = anchor('file/history/' . $row['id'], htmlspecialchars($row['updated_at']));
+                    $row['name'] = anchor('user/' . $row['name'], htmlspecialchars($row['name']));
+                    unset($row['id']);
+                }
+                $this->load->library('table');
+                $this->table->set_heading(tr('file_revision'), tr('user_name'), tr('file_updated_at'));
+                $this->table->set_caption(tr('file_history_caption'));
+                $this->table->set_template([
+                    'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
+                ]);
+                $this->data['history'] = $this->table->generate($result);
+            } else {
+                $this->data['history'] = '<em>' . tr('file_history_none') . '</em>';
+            }
+
+            // Build the page.
             $this->load->view('templates/header', $this->data);
             $this->load->view('file/view', $this->data);
             $this->load->view('templates/footer', $this->data);

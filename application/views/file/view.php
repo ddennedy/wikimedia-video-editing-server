@@ -29,3 +29,4 @@
 | <a href="<?= site_url('file/delete/' . $id) ?>"><?= tr('delete') ?></a>
 <? endif; ?>
 <p><small><?= $footer ?></small></p>
+<?= $history ?>
