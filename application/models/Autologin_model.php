@@ -57,6 +57,7 @@ class Autologin_model extends CI_Model
                     if ($identity && $identity->username == $username) {
                         // Login successful.
                         $this->session->set_userdata('username', $username);
+                        $this->session->set_userdata('userid', $user['id']);
                         $this->session->set_userdata('role', $user['role']);
                         $this->user_model->putUsernameInCookie($identity->username);
                     } else {
