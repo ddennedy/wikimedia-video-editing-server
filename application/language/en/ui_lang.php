@@ -60,6 +60,7 @@ $lang['save'] = 'Save';
 $lang['cancel'] = 'Cancel';
 $lang['search'] = 'Search';
 $lang['delete'] = 'Delete';
+$lang['restore'] = 'Restore';
 
 // Menu items
 $lang['menu_login'] = 'Login';
@@ -131,3 +132,4 @@ $lang['file_updated_at'] = 'Modified';
 $lang['file_revision'] = '#';
 $lang['file_history_caption'] = 'Change History';
 $lang['file_history_none'] = 'No Change History';
+$lang['file_differences_heading'] = 'Change {revision} made on {updated_at}';

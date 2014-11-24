@@ -249,4 +249,19 @@ class File_model extends CI_Model
         $this->db->order_by('revision', 'desc');
         return $this->db->get('file_history')->result_array();
     }
+
+    public function getHistoryById($id)
+    {
+        $this->db->where('id', $id);
+        $query = $this->db->get('file_history');
+        return $query->row_array();
+    }
+
+    public function getHistoryByRevision($file_id, $revision)
+    {
+        $this->db->select('title, author, description, language, license, recording_date, updated_at');
+        $this->db->where(['file_id' => $file_id, 'revision' => $revision]);
+        $query = $this->db->get('file_history');
+        return $query->row_array();
+    }
 }

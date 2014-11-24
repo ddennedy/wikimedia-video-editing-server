@@ -76,11 +76,8 @@ class File extends CI_Controller
                     'description' => $this->input->post('description'),
                     'language' => $this->input->post('language'),
                     'license' => $this->input->post('license'),
+                    'recording_date' => $this->input->post('recording_date'),
                 ];
-                // Only the bureaucrat can change the role.
-//                 if ($this->session->userdata('role') == User_model::ROLE_BUREAUCRAT)
-//                     $data['role'] = $this->input->post('role');
-
                 if ($id === null) {
                     $id = $this->file_model->create($data);
                     if ($id !== null) {
@@ -106,10 +103,6 @@ class File extends CI_Controller
         // Build arrays for dropdowns.
         $this->data['languages'] = $this->user_model->getLanguages();
         $this->data['licenses'] = $this->file_model->getLicenses();
-        // Only a bureaucrat can edit the role.
-//         $this->data['roleAttributes'] = null;
-//         if ($this->session->userdata('role') != User_model::ROLE_BUREAUCRAT)
-//             $this->data['roleAttributes'] = 'disabled';
         if (isset($this->data['id'])) {
             $this->data['heading'] = tr('file_edit_heading', $this->data);
             $this->data['message'] = tr('file_edit_message', $this->data);
@@ -131,6 +124,7 @@ class File extends CI_Controller
             $this->data = array_merge($this->data, $file);
             $this->data['heading'] = tr('file_view_heading', $file);
             $this->data['footer'] = tr('file_view_footer', $file);
+
             // Create table of metadata.
             $this->load->library('table');
             $this->table->set_template([
@@ -150,6 +144,7 @@ class File extends CI_Controller
                 ['<strong>'.tr('file_license').'</strong>', $this->file_model->getLicenseByKey($file['license'])],
             ]);
             $this->table->clear();
+
             // Only show the edit action if user-level and higher.
             $this->data['isEditable'] = ($this->session->userdata('role') >= User_model::ROLE_USER);
             // Only show the delete action if admin-level and higher.
@@ -160,7 +155,7 @@ class File extends CI_Controller
             $result = $this->file_model->getHistory($id);
             if (count($result)) {
                 foreach ($result as &$row) {
-                    $row['updated_at'] = anchor('file/history/' . $row['id'], htmlspecialchars($row['updated_at']));
+                    $row['updated_at'] = anchor("file/history/$id/" . $row['revision'], htmlspecialchars($row['updated_at']));
                     $row['name'] = anchor('user/' . $row['name'], htmlspecialchars($row['name']));
                     unset($row['id']);
                 }
@@ -253,5 +248,53 @@ class File extends CI_Controller
         } else {
             show_404(uri_string());
         }
+    }
+
+    public function history($id = null, $revision = null)
+    {
+        if ($id && $revision !== null) {
+            $file = $this->file_model->getById($id);
+            if ($file) {
+                // Make an array of the changes.
+                $current = $this->file_model->getHistoryByRevision($id, $revision);
+                $file['updated_at'] = $current['updated_at'];
+                unset($current['updated_at']);
+                if ($revision > 0) {
+                    $previous = $this->file_model->getHistoryByRevision($id, $revision - 1);
+                    unset($previous['updated_at']);
+                    $changes = array_diff($previous, $current);
+                } else {
+                    $changes = $current;
+                    foreach ($changes as &$value)
+                        $value = null;
+                }
+                if (isset($changes['language']))
+                    $changes['language'] = $this->user_model->getLanguageByKey($changes['language']);
+                if (isset($current['language']))
+                    $current['language'] = $this->user_model->getLanguageByKey($current['language']);
+                if (isset($changes['license']))
+                    $changes['license'] = $this->file_model->getLicenseByKey($changes['license']);
+                if (isset($current['license']))
+                    $current['license'] = $this->file_model->getLicenseByKey($current['license']);
+
+                $this->data = array_merge($this->data, $file);
+                $this->data['revision'] = ($revision > 0)? $revision : '';
+                $this->data['current'] = $current;
+                $this->data['changes'] = $changes;
+                $this->data['heading'] = tr('file_view_heading', $this->data);
+                $this->data['subheading'] = tr('file_differences_heading', $this->data);
+                $this->data['footer'] = tr('file_view_footer', $this->data);
+
+                // Only show the restore action if admin-level and higher.
+                $this->data['isRestorable'] = false && ($this->session->userdata('role') >= User_model::ROLE_ADMIN);
+
+                // Build the page.
+                $this->load->view('templates/header', $this->data);
+                $this->load->view('file/history', $this->data);
+                $this->load->view('templates/footer', $this->data);
+                return;
+            }
+        }
+        show_404(uri_string());
     }
 }
