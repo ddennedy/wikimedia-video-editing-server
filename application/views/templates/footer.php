@@ -20,4 +20,4 @@
 ?>
     <p><em>&copy; 2014 Dan R. Dennedy / CDC Leuphana University Lüneburg</em></p>
   </body>
-<html>
+</html>
