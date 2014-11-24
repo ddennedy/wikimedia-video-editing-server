@@ -22,7 +22,13 @@ $config['debug'] = false;
 $config['videos_dir'] = '/media/videos/';
 
 $config['oauth_base_url']= 'https://commons.wikimedia.org/wiki/Special:OAuth';
-$config['oauth_consumer_token'] = '70dcdf4058772ddc6e89a90170e4febe';
+
+// http://php.local/index.php?oath-callback
+// $config['oauth_consumer_token'] = '70dcdf4058772ddc6e89a90170e4febe';
+// https://wikimedia-video-editing-server-ddennedy.c9.io/index.php/oauth-callback
+$config['oauth_consumer_token'] = '7d5a9d401d351da32c8ef0e6df71ae02';
+// secret = 95cc2d20d1682bc85fb6cc4d984bed3b809a72fb
+
 $config['oauth_private_key'] = 'other/mediawiki-oauth-key.pem';
 $config['oauth_jwt_issuer'] = 'http://commons.wikimedia.org';
 $config['cookie_expire_seconds'] = 2592000; // 30 days

@@ -101,7 +101,7 @@ $query_builder = TRUE;
 
 $db['default'] = array(
 	'dsn'	=> '',
-	'hostname' => 'mysql',
+	'hostname' => '0.0.0.0',
 	'username' => 'videoeditserver',
 	'password' => 'Tx2brXmhi5o3',
 	'database' => 'videoeditserver',
