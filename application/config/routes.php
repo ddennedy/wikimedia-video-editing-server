@@ -101,6 +101,7 @@ $route['file/recent'] = 'file/recent';
 $route['file/search'] = 'file/search';
 $route['file/delete'] = 'file/delete';
 $route['file/history'] = 'file/history';
+$route['file/(:any)/(:any)'] = 'file/view/$1/$2';
 $route['file/(:any)'] = 'file/view/$1';
 
 $route['default_controller'] = 'main';

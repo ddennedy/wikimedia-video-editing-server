@@ -115,7 +115,7 @@ class File extends CI_Controller
         $this->load->view('templates/footer', $this->data);
     }
 
-    public function view($id = null)
+    public function view($id = null, $offset = null)
     {
         if (!$id) $id = $this->input->post('id');
         if (!$id) $id = $this->input->get('id');
@@ -154,7 +154,17 @@ class File extends CI_Controller
             $this->load->helper('url');
             $result = $this->file_model->getHistory($id);
             if (count($result)) {
-                foreach ($result as &$row) {
+                // History table pagination.
+                $offset |= $this->input->get('offset');
+                $this->load->library('pagination');
+                $this->pagination->initialize([
+                    'base_url' => site_url('file/'. $id),
+                    'total_rows' => count($result)
+                ]);
+                $this->data['pagination'] = $this->pagination->create_links();
+
+                $subset = array_slice($result, $offset, $this->pagination->per_page);
+                foreach ($subset as &$row) {
                     $row['updated_at'] = anchor("file/history/$id/" . $row['revision'], htmlspecialchars($row['updated_at']));
                     $row['name'] = anchor('user/' . $row['name'], htmlspecialchars($row['name']));
                     unset($row['id']);
@@ -165,7 +175,7 @@ class File extends CI_Controller
                 $this->table->set_template([
                     'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
                 ]);
-                $this->data['history'] = $this->table->generate($result);
+                $this->data['history'] = $this->table->generate($subset);
             } else {
                 $this->data['history'] = '<em>' . tr('file_history_none') . '</em>';
             }

@@ -17,17 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-?>
-<h2><?= $heading ?></h2>
-<p><?= $description ?></p>
-<p><?= $metadata ?></p>
-<hr>
-<? if ($isEditable): ?>
-<a href="<?= site_url('file/edit/' . $id) ?>"><?= tr('edit') ?></a>
-<? endif; ?>
-<? if ($isDeletable): ?>
-| <a href="<?= site_url('file/delete/' . $id) ?>"><?= tr('delete') ?></a>
-<? endif; ?>
-<p><small><?= $footer ?></small></p>
-<?= $history ?>
-<?= $pagination ?>
+$config['reuse_query_string'] = true;
+$config['first_tag_close'] = '&nbsp;';
+$config['prev_tag_close'] = '&nbsp;';
+$config['cur_tag_close'] = '&nbsp;';
+$config['num_tag_close'] = '&nbsp;';
+$config['next_tag_close'] = '&nbsp;';
+$config['per_page'] = 3;
