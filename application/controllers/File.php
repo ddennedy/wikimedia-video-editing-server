@@ -189,9 +189,20 @@ class File extends CI_Controller
         }
     }
 
-    public function recent()
+    public function recent($offset = 0)
     {
         $result = $this->file_model->getRecent();
+
+        // Pagination.
+        $this->load->library('pagination');
+        if (count($result) > $this->pagination->per_page) {
+            $subset = array_slice($result, $offset, $this->pagination->per_page);
+            $this->pagination->initialize([
+                'base_url' => site_url('file/recent'),
+                'total_rows' => count($result)
+            ]);
+            $result = $subset;
+        }
 
         // Post-process the data.
         $this->load->helper('url');

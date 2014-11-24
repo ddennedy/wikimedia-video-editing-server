@@ -21,4 +21,5 @@
 <h2><?= $heading ?></h2>
 <?php if (count($recent)): ?>
 <?= $this->table->generate($recent) ?>
+<?php if (isset($this->pagination)) echo $this->pagination->create_links(); ?>
 <?php endif; ?>
