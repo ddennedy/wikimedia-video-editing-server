@@ -30,4 +30,4 @@
 <? endif; ?>
 <p><small><?= $footer ?></small></p>
 <?= $history ?>
-<?= $pagination ?>
+<?php if (isset($pagination)) echo $pagination; ?>
