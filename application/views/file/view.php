@@ -22,12 +22,12 @@
 <p><?= $description ?></p>
 <p><?= $metadata ?></p>
 <hr>
-<? if ($isEditable): ?>
+<?php if ($isEditable): ?>
 <a href="<?= site_url('file/edit/' . $id) ?>"><?= tr('edit') ?></a>
-<? endif; ?>
-<? if ($isDeletable): ?>
+<?php endif; ?>
+<?php if ($isDeletable): ?>
 | <a href="<?= site_url('file/delete/' . $id) ?>"><?= tr('delete') ?></a>
-<? endif; ?>
+<?php endif; ?>
 <p><small><?= $footer ?></small></p>
 <?= $history ?>
 <?php if (isset($pagination)) echo $pagination; ?>

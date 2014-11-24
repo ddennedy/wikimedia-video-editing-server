@@ -68,4 +68,11 @@ class Test extends CI_Controller
         echo $this->unit->report();
 
     }
+
+    public function session()
+    {
+        var_dump($this->session->userdata());
+        if ($this->session->userdata('role') >= User_model::ROLE_USER)
+            echo '<p>Role >= User</p>';
+    }
 }

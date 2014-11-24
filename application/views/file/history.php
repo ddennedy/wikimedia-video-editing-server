@@ -29,7 +29,7 @@
 <dd><code>+</code> <?= $current[$key] ?></dd>
 <?php endforeach ?>
 </dl>
-<? if ($isRestorable): ?>
+<?php if ($isRestorable): ?>
 <hr>
 <a href="<?= site_url("file/restore/$id") ?>"><?= tr('restore') ?></a>
-<? endif; ?>
+<?php endif; ?>
