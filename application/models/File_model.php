@@ -29,7 +29,9 @@ class File_model extends CI_Model
     public function getById($id = null)
     {
         if ($id) {
-            $query = $this->db->get_where('file', ['id' => $id]);
+            $this->db->select('file.*, user.name as username');
+            $this->db->join('user', 'user_id = user.id');
+            $query = $this->db->get_where('file', ['file.id' => $id]);
             $data = $query->row_array();
         } else {
             $data = [
@@ -243,7 +245,7 @@ class File_model extends CI_Model
 
     public function getHistory($id)
     {
-        $this->db->select('file_history.id, revision, name, file_history.updated_at');
+        $this->db->select('file_history.id, revision, file_history.updated_at, name');
         $this->db->join('user', 'user_id = user.id');
         $this->db->where('file_id', $id);
         $this->db->order_by('revision', 'desc');

@@ -170,7 +170,7 @@ class File extends CI_Controller
                     unset($row['id']);
                 }
                 $this->load->library('table');
-                $this->table->set_heading(tr('file_revision'), tr('user_name'), tr('file_updated_at'));
+                $this->table->set_heading(tr('file_revision'), tr('file_updated_at'), tr('user_name'));
                 $this->table->set_caption(tr('file_history_caption'));
                 $this->table->set_template([
                     'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
@@ -299,6 +299,7 @@ class File extends CI_Controller
                     $current['license'] = $this->file_model->getLicenseByKey($current['license']);
 
                 $this->data = array_merge($this->data, $file);
+                $this->data['username'] = anchor('user/' . $this->data['username'], $this->data['username']);
                 $this->data['revision'] = ($revision > 0)? $revision : '';
                 $this->data['current'] = $current;
                 $this->data['changes'] = $changes;
