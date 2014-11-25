@@ -133,3 +133,4 @@ $lang['file_revision'] = '#';
 $lang['file_history_caption'] = 'Change History';
 $lang['file_history_none'] = 'No Change History';
 $lang['file_differences_heading'] = 'Change {revision} made on {updated_at} by {username}';
+$lang['file_keywords_placeholder'] = 'Press Enter to separate keywords';

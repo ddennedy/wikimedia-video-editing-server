@@ -52,6 +52,7 @@ class File extends CI_Controller
                 if ($id === null) {
                     $this->data['author'] = $this->session->userdata('username');
                     $this->data['language'] = config_item('language');
+                    $this->data['recording_date'] = strftime('%Y-%m-%d');
                 }
             } else {
                 show_404(uri_string());
@@ -78,6 +79,7 @@ class File extends CI_Controller
                     'language' => $this->input->post('language'),
                     'license' => $this->input->post('license'),
                     'recording_date' => $this->input->post('recording_date'),
+                    'keywords' => $this->input->post('keywords')
                 ];
                 if ($id === null) {
                     $id = $this->file_model->create($data);
@@ -140,6 +142,7 @@ class File extends CI_Controller
             $this->table->set_heading('');
             $this->data['metadata'] = $this->table->generate([
                 ['<strong>'.tr('file_author').'</strong>', $file['author']],
+                ['<strong>'.tr('file_keywords').'</strong>', implode(', ', explode("\t", $file['keywords']))],
                 ['<strong>'.tr('file_recording_date').'</strong>', $file['recording_date']],
                 ['<strong>'.tr('file_language').'</strong>', $this->user_model->getLanguageByKey($file['language'])],
                 ['<strong>'.tr('file_license').'</strong>', $this->file_model->getLicenseByKey($file['license'])],
@@ -298,6 +301,10 @@ class File extends CI_Controller
                     $changes['license'] = $this->file_model->getLicenseByKey($changes['license']);
                 if (isset($current['license']))
                     $current['license'] = $this->file_model->getLicenseByKey($current['license']);
+                if (isset($changes['keywords']))
+                    $changes['keywords'] = implode(', ', explode("\t", $changes['keywords']));
+                if (isset($current['keywords']))
+                    $current['keywords'] = implode(', ', explode("\t", $current['keywords']));
 
                 $this->data = array_merge($this->data, $file);
                 $this->data['username'] = anchor('user/' . $this->data['username'], $this->data['username']);

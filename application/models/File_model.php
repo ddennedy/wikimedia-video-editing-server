@@ -60,12 +60,42 @@ class File_model extends CI_Model
             // Add to recent table.
             $this->updateRecent($id);
 
+            // Add keywords.
+            $keywords = explode("\t", $data['keywords']);
+            if (count($keywords)) {
+                foreach ($keywords as $value) {
+                    // keyword table
+                    $entry = [
+                        'value' => $value,
+                        'language' => $this->config->item('language')
+                    ];
+                    $sql = $this->db->set($entry)->get_compiled_insert('keyword');
+                    $sql .= ' ON DUPLICATE KEY UPDATE id=id';
+                    $this->db->simple_query($sql);
+
+                }
+                // get keywords by their ids
+                $this->db->select('id');
+                $this->db->where_in('value', $keywords);
+                $query = $this->db->get('keyword');
+                // add to file_keywords table
+                $keywords = array();
+                foreach ($query->result() as $row) {
+                    array_push($keywords, [
+                        'file_id' => $id,
+                        'keyword_id' => $row->id
+                    ]);
+                }
+                $this->db->insert_batch('file_keywords', $keywords);
+            }
+
             // Add to the search index.
             $this->db->insert('searchindex', [
                 'file_id' => $id,
                 'title' => $data['title'],
                 'description' => $data['description'],
-                'author' => $data['author']
+                'author' => $data['author'],
+                'keywords' => $data['keywords']
             ]);
         }
         $this->db->trans_complete();
@@ -107,12 +137,46 @@ class File_model extends CI_Model
             // Add to recent table.
             $this->updateRecent($id);
 
+            // Add keywords.
+            $keywords = explode("\t", $data['keywords']);
+            if (count($keywords)) {
+                foreach ($keywords as $value) {
+                    // keyword table
+                    $entry = [
+                        'value' => $value,
+                        'language' => $this->config->item('language')
+                    ];
+                    $sql = $this->db->set($entry)->get_compiled_insert('keyword');
+                    $sql .= ' ON DUPLICATE KEY UPDATE id=id';
+                    $this->db->simple_query($sql);
+
+                }
+                // get keywords by their ids
+                $this->db->select('id');
+                $this->db->where_in('value', $keywords);
+                $query = $this->db->get('keyword');
+                // convert result set into array for batch insert
+                $keywords = array();
+                foreach ($query->result() as $row) {
+                    array_push($keywords, [
+                        'file_id' => $id,
+                        'keyword_id' => $row->id
+                    ]);
+                }
+                // remove existing records in file_keywords
+                $this->db->where('file_id', $id);
+                $this->db->delete('file_keywords');
+                // add to file_keywords table
+                $this->db->insert_batch('file_keywords', $keywords);
+            }
+
             // Update the search index.
             $this->db->where('file_id', $id);
             $this->db->update('searchindex', [
                 'title' => $data['title'],
                 'description' => $data['description'],
-                'author' => $data['author']
+                'author' => $data['author'],
+                'keywords' => $data['keywords']
             ]);
         }
 
@@ -262,7 +326,7 @@ class File_model extends CI_Model
 
     public function getHistoryByRevision($file_id, $revision)
     {
-        $this->db->select('title, author, description, language, license, recording_date, updated_at');
+        $this->db->select('title, author, description, keywords, language, license, recording_date, updated_at');
         $this->db->where(['file_id' => $file_id, 'revision' => $revision]);
         $query = $this->db->get('file_history');
         return $query->row_array();
