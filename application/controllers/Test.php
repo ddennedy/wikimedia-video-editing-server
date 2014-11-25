@@ -62,8 +62,8 @@ class Test extends CI_Controller
 
 
         // Test database and models.
-        $row = $this->user_model->getByName('admin');
-        $this->unit->run($row['role'], User_model::ROLE_BUREAUCRAT, 'admin user in mysql');
+        $rows = $this->user_model->getByRole(User_model::ROLE_BUREAUCRAT);
+        $this->unit->run($rows[0]['role'], User_model::ROLE_BUREAUCRAT, 'admin user in mysql');
 
         echo $this->unit->report();
 
