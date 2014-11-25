@@ -91,6 +91,7 @@ $route['user/login'] = 'user/login';
 $route['user/register'] = 'user/register';
 $route['user/logout'] = 'user/logout';
 $route['user/edit'] = 'user/edit';
+$route['user/edit/(:any)'] = 'user/edit/$1';
 $route['user/list'] = 'user/grid';
 $route['user/list/(:any)'] = 'user/grid/$1';
 $route['user/(:any)/(:any)'] = 'user/index/$1/$2';
