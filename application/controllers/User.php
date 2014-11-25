@@ -48,7 +48,7 @@ class User extends CI_Controller
 
                 if ($identity && $identity->username == $username) {
                     // Login successful.
-                    $this->establishSession($username, $user['role']);
+                    $this->establishSession($username, $user['role'], $user['language']);
                     $this->user_model->putUsernameInCookie($identity->username);
 
                     //TODO Take them back to previous page. For now, show the user page.
@@ -111,7 +111,7 @@ class User extends CI_Controller
 
                     // Login successful.
                     $user = $this->user_model->getByName($identity->username);
-                    $this->establishSession($identity->username, $user['role']);
+                    $this->establishSession($identity->username, $user['role'], $user['language']);
                     $this->user_model->putUsernameInCookie($identity->username);
 
                     //TODO Take them back to previous page. For now, show the user page.
@@ -163,7 +163,7 @@ class User extends CI_Controller
             // Add user to database.
             if ($this->user_model->create($data) !== false) {
                 // Log the user into the session.
-                $this->establishSession($data['name'], $data['role']);
+                $this->establishSession($data['name'], $data['role'], config_item('language'));
                 $this->user_model->putUsernameInCookie($data['name']);
 
                 // Show the user page.
@@ -266,6 +266,8 @@ class User extends CI_Controller
                 if ($this->user_model->update($name, $data)) {
                     // If successful, goto view page.
                     $this->session->set_userdata('role', $this->input->post('role'));
+                    $this->session->set_userdata('language', $data['language']);
+                    $this->load->language('ui', $data['language']);
                     $this->index($name);
                 } else {
                     show_error(tr('user_error_update'), 500, tr('user_error_heading'));
@@ -309,13 +311,14 @@ class User extends CI_Controller
         $this->load->view('templates/footer', $this->data);
     }
 
-    private function establishSession($name, $role)
+    private function establishSession($name, $role, $language)
     {
         $id = $this->user_model->getUserId($name);
         $this->session->set_userdata([
             'userid' => $id,
             'username' => $name,
-            'role' => $role
+            'role' => $role,
+            'language' => $language
         ]);
         $this->data['session'] = $this->session->userdata();
     }

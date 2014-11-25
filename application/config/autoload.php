@@ -156,7 +156,7 @@ $autoload['config'] = array('app');
 |
 */
 
-$autoload['language'] = array('ui');
+$autoload['language'] = array();
 
 
 /*

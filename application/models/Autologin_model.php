@@ -59,6 +59,7 @@ class Autologin_model extends CI_Model
                         $this->session->set_userdata('username', $username);
                         $this->session->set_userdata('userid', $user['id']);
                         $this->session->set_userdata('role', $user['role']);
+                        $this->session->set_userdata('language', $user['language']);
                         $this->user_model->putUsernameInCookie($identity->username);
                     } else {
                         log_message('debug', 'Autologin: OAuth access token is NOT valid.');
@@ -67,6 +68,12 @@ class Autologin_model extends CI_Model
                     log_message('debug', 'Autologin: user is NOT registered.');
                 }
             }
+        }
+
+        // Load the user's chosen language.
+        if ($this->session->userdata('language')) {
+            $this->config->set_item('language', $this->session->userdata('language'));
+            $this->load->language('ui', $this->session->userdata('language'));
         }
     }
 }
