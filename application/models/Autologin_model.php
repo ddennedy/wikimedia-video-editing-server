@@ -74,6 +74,9 @@ class Autologin_model extends CI_Model
         if ($this->session->userdata('language')) {
             $this->config->set_item('language', $this->session->userdata('language'));
             $this->load->language('ui', $this->session->userdata('language'));
+        } else {
+            // Load English if all else fails.
+            $this->load->language('ui', 'en');
         }
     }
 }
