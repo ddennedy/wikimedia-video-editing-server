@@ -57,6 +57,7 @@
     $.datepicker.setDefaults($.datepicker.regional["<?= config_item('language') ?>"]);
     $("input.datepicker").datepicker({
         changeYear: true,
+        changeMonth: true,
         autoSize: true,
         dateFormat: "yy-mm-dd"
     });
