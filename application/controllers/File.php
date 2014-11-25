@@ -51,6 +51,7 @@ class File extends CI_Controller
                 $this->data = array_merge($this->data, $file);
                 if ($id === null) {
                     $this->data['author'] = $this->session->userdata('username');
+                    $this->data['language'] = config_item('language');
                 }
             } else {
                 show_404(uri_string());
