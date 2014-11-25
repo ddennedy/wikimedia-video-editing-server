@@ -82,13 +82,24 @@ CREATE TABLE keyword (
 CREATE UNIQUE INDEX keyword_value ON keyword (value);
 CREATE INDEX keyword_language ON keyword (language);
 
--- This is currently denormalized as file.keywords. Saving in case change mind.
--- DROP TABLE IF EXISTS file_keywords;
--- CREATE TABLE file_keywords (
---   file_id int unsigned NOT NULL,
---   keyword_id int unsigned NOT NULL,
---   PRIMARY KEY (file_id, keyword_id)
--- );
+-- This gets denormalized from keyword.value into searchindex.keywords for
+-- fulltext searching.
+-- This gets denormalized from keyword_id into file_history.keywords for revisioning.
+DROP TABLE IF EXISTS file_keywords;
+CREATE TABLE file_keywords (
+  file_id int unsigned NOT NULL,
+  keyword_id int unsigned NOT NULL,
+  PRIMARY KEY (file_id, keyword_id)
+);
+
+-- This stores a file's associated wikidata by its language-independent Q-ID.
+-- This gets denormalized from qid into file_history.keywords for revisioning.
+DROP TABLE IF EXISTS file_wikidata;
+CREATE TABLE file_wikidata (
+  file_id int unsigned NOT NULL,
+  wikidata_qid varchar(30) NOT NULL,
+  PRIMARY KEY (file_id, wikidata_qid)
+);
 
 -- This is currently denormalized as file.properties. Saving in case change mind.
 -- DROP TABLE IF EXISTS property;
@@ -116,6 +127,10 @@ CREATE TABLE recent (
 );
 CREATE INDEX recent_file_id ON recent (file_id);
 
+-- When exploding file_history.keywords into an array of IDs, if the ID begins
+-- with 'Q' then restore into the file_wikidata table, otherwise restore the ID
+-- into the file_keywords table. Also, don't forget to update
+-- searchindex.keywords.
 DROP TABLE IF EXISTS file_history;
 CREATE TABLE file_history (
   id int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
