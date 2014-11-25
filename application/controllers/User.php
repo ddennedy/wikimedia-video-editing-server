@@ -174,7 +174,7 @@ class User extends CI_Controller
         }
     }
 
-    public function index($name = null)
+    public function index($name = null, $offset = 0)
     {
         // Get current user name if not provided.
         if (!$name) $name = $this->input->post_get('name');
@@ -201,6 +201,19 @@ class User extends CI_Controller
             $this->load->model('file_model');
             $this->load->helper('url');
             $result = $this->file_model->getByUserId($this->user_model->getUserId($name));
+
+            // Files table pagination.
+            $this->load->library('pagination');
+            if (count($result) > $this->pagination->per_page) {
+                $offset |= $this->input->get('offset');
+                $this->pagination->initialize([
+                    'base_url' => site_url('user/'. $name),
+                    'total_rows' => count($result)
+                ]);
+                $result = array_slice($result, $offset, $this->pagination->per_page);
+            }
+
+            // Files table.
             foreach ($result as &$row) {
                 $row['title'] = anchor('file/' . $row['id'], htmlspecialchars($row['title']));
                 unset($row['id']);

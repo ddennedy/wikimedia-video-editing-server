@@ -25,4 +25,5 @@
 <a href="<?= site_url('user/edit/' . $name) ?>"><?= tr('edit') ?></a>
 <?php endif; ?>
 <?php if (count($files)) echo $this->table->generate($files) ?>
+<?php if (isset($this->pagination)) echo $this->pagination->create_links(); ?>
 <p><small><?= $footer ?></small></p>

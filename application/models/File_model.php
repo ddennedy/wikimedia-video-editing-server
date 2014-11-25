@@ -239,6 +239,7 @@ class File_model extends CI_Model
     public function getByUserId($id)
     {
         $this->db->select('id, title, author, updated_at');
+        $this->db->order_by('updated_at', 'desc');
         $query = $this->db->get_where('file', ['user_id' => $id]);
         return $query->result_array();
     }

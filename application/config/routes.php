@@ -93,6 +93,7 @@ $route['user/logout'] = 'user/logout';
 $route['user/edit'] = 'user/edit';
 $route['user/list'] = 'user/grid';
 $route['user/list/(:any)'] = 'user/grid/$1';
+$route['user/(:any)/(:any)'] = 'user/index/$1/$2';
 $route['user/(:any)'] = 'user/index/$1';
 $route['main/(:any)'] = 'main/index/$1';
 
