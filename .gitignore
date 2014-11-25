@@ -4,3 +4,5 @@ user_guide_src
 application/logs
 .directory
 other/mediawiki-oauth-key.pem
+.c9
+**.pem

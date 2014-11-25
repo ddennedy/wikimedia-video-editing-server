@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 ?>
+<link rel="stylesheet" href="/css/jquery-ui.min.css">
 <h2><?= $heading ?></h2>
 <p><?= $message ?></p>
 <?= validation_errors(); ?>
@@ -33,7 +34,7 @@
     <input name="author" maxlength="255" size="60" value="<?= set_value('author', $author) ?>"><br>
 
     <label for="recording_date"><?= tr('file_recording_date') ?></label>
-    <input name="recording_date" maxlength="255" size="60" value="<?= set_value('recording_date', $recording_date) ?>"><br>
+    <input name="recording_date" class="datepicker" maxlength="255" size="60" value="<?= set_value('recording_date', $recording_date) ?>"><br>
 
     <label for="language"><?= tr('file_language') ?></label>
     <?= form_dropdown('language', $languages, set_value('language', $language)) ?><br>
@@ -44,6 +45,19 @@
     <input type="submit" name="submit" value="<?= tr('save') ?>">
     <?php if ($id !== null): ?>
     &nbsp;
-    <a href="<?= site_url('file/view/' . $id) ?>"><?= tr('cancel') ?></a>
+    <a href="<?= site_url('file/' . $id) ?>"><?= tr('cancel') ?></a>
     <?php endif; ?>
 </form>
+<script src="/js/jquery.min.js"></script>
+<script src="/js/jquery-ui.min.js"></script>
+<?php if (config_item('language') != 'en'): ?>
+<script src="/js/i18n/datepicker-<?= config_item('language') ?>.js"></script>
+<?php endif; ?>
+<script>
+    $.datepicker.setDefaults($.datepicker.regional["<?= config_item('language') ?>"]);
+    $("input.datepicker").datepicker({
+        changeYear: true,
+        autoSize: true,
+        dateFormat: "yy-mm-dd"
+    });
+</script>
