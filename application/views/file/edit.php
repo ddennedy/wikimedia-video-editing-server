@@ -18,7 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 ?>
-<link rel="stylesheet" href="/css/jquery-ui.min.css">
 <h2><?= $heading ?></h2>
 <p><?= $message ?></p>
 <?= validation_errors(); ?>

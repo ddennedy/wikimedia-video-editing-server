@@ -21,10 +21,12 @@
 <html>
   <head>
     <title><?= tr('page_title') ?></title>
+    <link rel="stylesheet" href="<?= base_url('/css/jquery-ui.structure.min.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('/css/jquery-ui.theme.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('/css/app.css') ?>">
   </head>
   <body>
     <h1><?= tr('site_title') ?></h1>
-    <hr>
     <form method="get" action="<?= site_url('file/search') ?>">
     <?php if (isset($session['username'])): ?>
         <?php if (element('role', $session) != User_model::ROLE_GUEST): ?>
@@ -46,4 +48,3 @@
     <a href="<?= site_url('file/recent') ?>"><?= tr('menu_recent') ?></a> |
     <input type="text" name="q" placeholder="<?= tr('search') ?>"><input type="submit" value="<?= tr('go') ?>">
     </form>
-    <hr>
