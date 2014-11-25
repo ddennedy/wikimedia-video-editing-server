@@ -264,7 +264,7 @@ class File_model extends CI_Model
     public function search($query)
     {
         $query = stripslashes(str_replace('&quot;', '"', $query));
-        $match = "MATCH (searchindex.title, searchindex.description, searchindex.author) AGAINST ('$query' IN BOOLEAN MODE)";
+        $match = "MATCH (searchindex.title, searchindex.description, searchindex.author, searchindex.keywords) AGAINST ('$query' IN BOOLEAN MODE)";
         $this->db->select("file_id, file.title, file.author, name, file.updated_at, $match as relevance");
         $this->db->from('searchindex');
         $this->db->join('file', 'file.id = file_id');

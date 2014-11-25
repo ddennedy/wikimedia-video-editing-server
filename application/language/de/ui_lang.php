@@ -134,3 +134,4 @@ $lang['file_history_caption'] = 'Versionsgeschichte';
 $lang['file_history_none'] = 'Keine Versionsgeschichte';
 $lang['file_differences_heading'] = 'Änderung {revision} gemacht am {updated_at} by {username}';
 $lang['file_keywords_placeholder'] = 'Press Enter to separate keywords';
+$lang['file_search_results_none'] = 'No results';

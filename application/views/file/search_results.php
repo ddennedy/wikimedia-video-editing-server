@@ -19,6 +19,8 @@
  */
 ?>
 <h2><?= $heading ?></h2>
-<?php if (count($results)): ?>
+<?php if (isset($results) && count($results)): ?>
 <?= $this->table->generate($results) ?>
+<?php else: ?>
+<p><em><?= tr('file_search_results_none') ?></em></p>
 <?php endif; ?>

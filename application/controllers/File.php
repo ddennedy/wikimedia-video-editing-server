@@ -231,25 +231,26 @@ class File extends CI_Controller
     public function search()
     {
         $query = $this->input->get_post('q');
-        if (strlen($query) > 0)
-        $results = $this->file_model->search($query);
+        if (strlen($query) > 0) {
+            $results = $this->file_model->search($query);
 
-        // Post-process the data.
-        $this->load->helper('url');
-        foreach ($results as &$row) {
-            $row['name'] = anchor('user/' . $row['name'], htmlspecialchars($row['name']));
-            $row['title'] = anchor('file/' . $row['file_id'], htmlspecialchars($row['title']));
-            unset($row['file_id']);
-            unset($row['relevance']);
+            // Post-process the data.
+            $this->load->helper('url');
+            foreach ($results as &$row) {
+                $row['name'] = anchor('user/' . $row['name'], htmlspecialchars($row['name']));
+                $row['title'] = anchor('file/' . $row['file_id'], htmlspecialchars($row['title']));
+                unset($row['file_id']);
+                unset($row['relevance']);
+            }
+            $this->data['results'] = $results;
+
+            $this->load->library('table');
+            $this->table->set_heading(tr('file_title'), tr('file_author'), tr('user_name'), tr('file_updated_at'));
+            $this->table->set_template([
+                'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
+            ]);
         }
-        $this->data['results'] = $results;
-
         $this->data['heading'] = tr('file_search_results_heading', ['query' => $query]);
-        $this->load->library('table');
-        $this->table->set_heading(tr('file_title'), tr('file_author'), tr('user_name'), tr('file_updated_at'));
-        $this->table->set_template([
-            'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
-        ]);
         $this->load->view('templates/header', $this->data);
         $this->load->view('file/search_results', $this->data);
         $this->load->view('templates/footer', $this->data);
