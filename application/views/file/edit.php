@@ -70,7 +70,20 @@
         $(".select2").select2({
             placeholder: "<?= tr('file_keywords_placeholder') ?>",
             tags: <?= empty($keywords)? '[]' : json_encode(explode("\t", $keywords)) ?>,
-            separator: "\t"
+            separator: "\t",
+            ajax: {
+                url: "<?= site_url('file/keywords') ?>",
+                dataType: 'json',
+                quietMillis: 250,
+                minimumInputLength: 2,
+                data: function (term, page) {
+                    return { q: term };
+                },
+                results: function (data, page) {
+                    return { results: data };
+                },
+                cache: true
+            }
         });
     })
 </script>

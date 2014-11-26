@@ -103,6 +103,7 @@ $route['file/edit/(:any)'] = 'file/edit/$1';
 $route['file/recent/(:any)'] = 'file/recent/$1';
 $route['file/recent'] = 'file/recent';
 $route['file/search'] = 'file/search';
+$route['file/keywords'] = 'file/keywords';
 $route['file/delete'] = 'file/delete';
 $route['file/delete/(:any)'] = 'file/delete/$1';
 $route['file/history'] = 'file/history';

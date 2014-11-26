@@ -328,4 +328,19 @@ class File extends CI_Controller
         }
         show_404(uri_string());
     }
+
+    public function keywords()
+    {
+        $this->output->set_content_type('');
+        $result = array('application/json');
+        if ($this->input->get('q')) {
+            $this->db->select('id, value as text');
+            $this->db->like('value', $this->input->get('q'));
+            $this->db->where('language', $this->config->item('language'));
+            $this->db->order_by('value', 'asc');
+            $query = $this->db->get('keyword');
+            $result = $query->result();
+        }
+        $this->output->set_output(json_encode($result));
+    }
 }
