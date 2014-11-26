@@ -24,33 +24,54 @@
 <?= validation_errors(); ?>
 
 <?php echo form_open('file/edit/' . $id) ?>
-    <label for="title"><?= tr('file_title') ?></label>
-    <input name="title" maxlength="255" size="60" value="<?= set_value('title', $title) ?>"><br>
+    <div class="field">
+        <label for="title"><?= tr('file_title') ?></label>
+        <input class="select2-input" name="title" maxlength="255" size="60"
+         value="<?= set_value('title', $title) ?>">
+    </div>
 
-    <label for="description"><?= tr('file_description') ?></label>
-    <textarea name="description" rows="10" cols="60"><?= set_value('description', $description, true) ?></textarea><br>
+    <div class="field">
+        <label for="description"><?= tr('file_description') ?></label>
+        <textarea name="description" rows="10" cols="60"><?= set_value('description', $description, true) ?></textarea>
+    </div>
 
-    <label for="author"><?= tr('file_author') ?></label>
-    <input name="author" maxlength="255" size="60" value="<?= set_value('author', $author) ?>"><br>
+    <div class="field">
+        <label for="author"><?= tr('file_author') ?></label>
+        <input name="author" maxlength="255" size="60"
+         value="<?= set_value('author', $author) ?>">
+     </div>
 
-    <label for="keywords"><?= tr('file_keywords') ?></label>
-    <input name="keywords" class="select2" maxlength="1000" style="width:60%" value="<?= set_value('keywords', $keywords) ?>"><br>
+    <div class="field">
+        <label for="keywords"><?= tr('file_keywords') ?></label>
+        <input name="keywords" class="select2" maxlength="1000" style="width:60%"
+         value="<?= set_value('keywords', $keywords) ?>">
+    </div>
 
-    <label for="recording_date"><?= tr('file_recording_date') ?></label>
-    <input name="recording_date" class="datepicker" maxlength="255" size="60" value="<?= set_value('recording_date', $recording_date) ?>"><br>
+    <div class="field">
+        <label for="recording_date"><?= tr('file_recording_date') ?></label>
+        <input name="recording_date" class="datepicker" maxlength="255" size="60"
+         value="<?= set_value('recording_date', $recording_date) ?>">
+    </div>
 
-    <label for="language"><?= tr('file_language') ?></label>
-    <?= form_dropdown('language', $languages, set_value('language', $language)) ?><br>
+    <div class="field">
+        <label for="language"><?= tr('file_language') ?></label>
+        <?= form_dropdown('language', $languages, set_value('language', $language)) ?>
+    </div>
 
-    <label for="license"><?= tr('file_license') ?></label>
-    <?= form_dropdown('license', $licenses, set_value('license', $license)) ?><br>
+    <div class="field">
+        <label for="license"><?= tr('file_license') ?></label>
+        <?= form_dropdown('license', $licenses, set_value('license', $license)) ?>
+    </div>
 
-    <input type="submit" name="submit" value="<?= tr('save') ?>">
-    <?php if ($id !== null): ?>
-    &nbsp;
-    <a href="<?= site_url('file/' . $id) ?>"><?= tr('cancel') ?></a>
-    <?php endif; ?>
+    <div class="action-bar">
+        <input class="button" type="submit" name="submit" value="<?= tr('save') ?>">
+        <?php if ($id !== null): ?>
+        &nbsp;
+        <a href="<?= site_url('file/' . $id) ?>"><?= tr('cancel') ?></a>
+        <?php endif; ?>
+    </div>
 </form>
+
 <script src="<?= base_url('/js/jquery.min.js') ?>"></script>
 <script src="<?= base_url('/js/jquery-ui.min.js') ?>"></script>
 <script src="<?= base_url('/js/select2/select2.min.js') ?>"></script>
@@ -67,7 +88,7 @@
             autoSize: true,
             dateFormat: "yy-mm-dd"
         });
-        $(".select2").select2({
+        $("input.select2").select2({
             placeholder: "<?= tr('file_keywords_placeholder') ?>",
             tags: <?= empty($keywords)? '[]' : json_encode(explode("\t", $keywords)) ?>,
             separator: "\t",

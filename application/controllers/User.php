@@ -297,6 +297,8 @@ class User extends CI_Controller
         $this->data['roleAttributes'] = null;
         if ($this->session->userdata('role') != User_model::ROLE_BUREAUCRAT)
             $this->data['roleAttributes'] = 'disabled';
+        $user['role'] = $this->user_model->getRoleByKey($user['role']);
+        $this->data['heading'] = tr('user_view_heading', $user);
         $this->load->view('templates/header', $this->data);
         $this->load->view('user/edit', $this->data);
         $this->load->view('templates/footer', $this->data);

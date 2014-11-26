@@ -18,19 +18,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 ?>
+<h2><?= $heading ?></h2>
 <?= validation_errors(); ?>
 
 <?php echo form_open('user/edit/' . $name) ?>
-    <label for="role"><?= tr('user_role') ?></label>
-    <?= form_dropdown('role', $roles, set_value('role', $role), $roleAttributes) ?><br>
+    <div class="field">
+        <label for="role"><?= tr('user_role') ?></label>
+        <?= form_dropdown('role', $roles, set_value('role', $role), $roleAttributes) ?>
+    </div>
 
-    <label for="language"><?= tr('user_language') ?></label>
-    <?= form_dropdown('language', $languages, set_value('language', $language)) ?><br>
+    <div class="field">
+        <label for="language"><?= tr('user_language') ?></label>
+        <?= form_dropdown('language', $languages, set_value('language', $language)) ?>
+    </div>
 
-    <label for="comment"><?= tr('user_comment') ?></label>
-    <textarea name="comment" rows="10" cols="60"><?= set_value('comment', $comment, true) ?></textarea><br>
+    <div class="field">
+        <label for="comment"><?= tr('user_comment') ?></label>
+        <textarea name="comment" rows="10" cols="60"><?= set_value('comment', $comment, true) ?></textarea>
+    </div>
 
-    <input type="submit" name="submit" value="<?= tr('save') ?>">
-    &nbsp;
-    <a href="<?= site_url('user/' . $session['username']) ?>"><?= tr('cancel') ?></a>
+    <div class="action-bar">
+        <input type="submit" name="submit" value="<?= tr('save') ?>">
+        &nbsp;
+        <a href="<?= site_url('user/' . $session['username']) ?>"><?= tr('cancel') ?></a>
+    </div>
 </form>

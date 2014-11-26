@@ -21,6 +21,7 @@
 <html>
   <head>
     <title><?= tr('page_title') ?></title>
+    <link rel="stylesheet" href="<?= base_url('/css/normalize.css') ?>">
     <link rel="stylesheet" href="<?= base_url('/css/jquery-ui.structure.min.css') ?>">
     <link rel="stylesheet" href="<?= base_url('/css/jquery-ui.theme.css') ?>">
     <link rel="stylesheet" href="<?= base_url('/css/app.css') ?>">
