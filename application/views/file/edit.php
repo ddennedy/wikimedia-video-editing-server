@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 ?>
-<link rel="stylesheet" href="<?= base_url('/js/select2/select2.css') ?>" type="text/css" />
+<link rel="stylesheet" href="<?= base_url('js/select2/select2.css') ?>" type="text/css" />
 <h2><?= $heading ?></h2>
 <p><?= $message ?></p>
 <?= validation_errors(); ?>
@@ -72,12 +72,12 @@
     </div>
 </form>
 
-<script src="<?= base_url('/js/jquery.min.js') ?>"></script>
-<script src="<?= base_url('/js/jquery-ui.min.js') ?>"></script>
-<script src="<?= base_url('/js/select2/select2.min.js') ?>"></script>
+<script src="<?= base_url('js/jquery.min.js') ?>"></script>
+<script src="<?= base_url('js/jquery-ui.min.js') ?>"></script>
+<script src="<?= base_url('js/select2/select2.min.js') ?>"></script>
 <?php if (config_item('language') != 'en'): ?>
-<script src="<?= base_url('/js/i18n/datepicker-' . config_item('language') . '.js') ?>"></script>
-<script src="<?= base_url('/js/i18n/select2_locale_' . config_item('language') . '.js') ?>"></script>
+<script src="<?= base_url('js/i18n/datepicker-' . config_item('language') . '.js') ?>"></script>
+<script src="<?= base_url('js/i18n/select2_locale_' . config_item('language') . '.js') ?>"></script>
 <?php endif; ?>
 <script>
     $(document).ready(function() {

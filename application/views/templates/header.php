@@ -21,10 +21,10 @@
 <html>
   <head>
     <title><?= tr('page_title') ?></title>
-    <link rel="stylesheet" href="<?= base_url('/css/normalize.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('/css/jquery-ui.structure.min.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('/css/jquery-ui.theme.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('/css/app.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/normalize.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/jquery-ui.structure.min.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/jquery-ui.theme.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/app.css') ?>">
   </head>
   <body>
     <h1><?= tr('site_title') ?></h1>
