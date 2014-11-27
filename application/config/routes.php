@@ -100,6 +100,7 @@ $route['main/(:any)'] = 'main/index/$1';
 
 $route['file/edit'] = 'file/edit';
 $route['file/edit/(:any)'] = 'file/edit/$1';
+$route['file/upload/(:any)'] = 'file/upload/$1';
 $route['file/recent/(:any)'] = 'file/recent/$1';
 $route['file/recent'] = 'file/recent';
 $route['file/search'] = 'file/search';

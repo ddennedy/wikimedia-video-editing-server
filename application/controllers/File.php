@@ -343,4 +343,47 @@ class File extends CI_Controller
         }
         $this->output->set_output(json_encode($result));
     }
+
+    public function upload($id)
+    {
+        if ('GET' == $this->input->method(true)) {
+            // Display the upload page.
+            $file = $this->file_model->getById($id);
+            if ($file) {
+                // The form validation config contains error html snippets that
+                // we use to show upload errors.
+                $this->load->config('form_validation');
+                $this->data = array_merge($this->data, $file);
+                $this->data['author'] = $this->session->userdata('username');
+                $this->data['language'] = config_item('language');
+                $this->data['heading'] = tr('file_edit_heading', $this->data);
+                $this->data['message'] = tr('file_edit_message', $this->data);
+                $this->load->view('templates/header', $this->data);
+                $this->load->view('file/upload', $this->data);
+                $this->load->view('templates/footer', $this->data);
+            } else {
+                show_404(uri_string());
+            }
+        } elseif ('POST' == $this->input->method(true)) {
+            // handle file upload.
+            $this->load->library('upload');
+            if (!$this->upload->do_upload()) {
+                $result['name'] = $this->upload->data('client_name');
+                $result['error'] = $this->upload->display_errors('', '');
+            } else {
+                $result['name'] = $this->upload->data('client_name');
+                $result['size'] = $this->upload->data('file_size');
+                $result['type'] = $this->upload->data('file_type');
+                $result['url'] = base_url('uploads/' . $this->upload->data('file_name'));
+            }
+            $accept = $this->input->server('HTTP_ACCEPT');
+            $this->output->set_header('Vary: Accept');
+            if ($accept && strpos($accept, 'application/json') !== false) {
+                $this->output->set_content_type('application/json');
+            } else {
+                $this->output->set_content_type('text/plain');
+            }
+            $this->output->set_output(json_encode(['files' => [$result]]));
+        }
+    }
 }

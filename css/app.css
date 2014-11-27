@@ -75,3 +75,12 @@ button, input, select, textarea {
 em {
     font-weight: normal;
 }
+
+#progress-bar {
+    width: 0%;
+    height: 1.6em;
+    color: white;
+    background: green;
+    padding-top: 0.25em;
+    font-weight: bold;
+}
