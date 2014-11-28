@@ -1,0 +1,5 @@
+
+The commands to generate the OAuth RSA key:
+openssl genrsa -out mediawiki-oauth-key.pem 4096
+openssl rsa -in mediawiki-oauth-key.pem -pubout
+
