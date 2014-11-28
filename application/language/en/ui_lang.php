@@ -135,3 +135,7 @@ $lang['file_history_none'] = 'No Change History';
 $lang['file_differences_heading'] = 'Change {revision} made on {updated_at} by {username}';
 $lang['file_keywords_placeholder'] = 'Press Enter to separate keywords';
 $lang['file_search_results_none'] = 'No results';
+$lang['file_edit_message'] = '';
+$lang['file_upload_button'] = 'Click to choose a file or drag &amp; drop a file onto the page.';
+$lang['file_upload_success'] = 'File upload completed successfully!';
+$lang['file_upload_resume'] = 'Incomplete: choose "{filename}" to resume.';

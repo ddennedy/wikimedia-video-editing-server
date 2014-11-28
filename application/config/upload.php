@@ -17,5 +17,5 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-$config['upload_path'] = '/home/ubuntu/workspace/uploads/';
+$config['upload_path'] = '/var/www/uploads/';
 $config['allowed_types'] = '*';

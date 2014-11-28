@@ -19,37 +19,58 @@
  */
 ?>
 <link rel="stylesheet" href="<?= base_url('js/select2/select2.css') ?>" type="text/css" />
+
 <h2><?= $heading ?></h2>
 <p><?= $message ?></p>
 <?= validation_errors(); ?>
 
-<?php echo form_open('file/edit/' . $id) ?>
+<?= form_open_multipart('file/edit/' . $id) ?>
+    <?php if ($id && empty($source_path)): ?>
+    <link rel="stylesheet" href="<?= base_url('css/jquery.fileupload-ui.css') ?>">
+    <!-- CSS adjustments for browsers with JavaScript disabled -->
+    <noscript><link rel="stylesheet" href="<?= base_url('css/jquery.fileupload-ui-noscript.css') ?>"></noscript>
+    <div class="field">
+        <label for="files"><?= tr('menu_upload') ?></label>
+        <span id="upload-button" class="fileinput-button">
+            <span><?= $upload_button_text ?></span>
+            <input id="fileupload" type="file" name="files">
+        </span>
+        <span id="cancel-button" type="reset" style="display:none" >
+            <span><?= tr('cancel') ?></span>
+        </span>
+        <p class="fileupload-progress">
+            <div id="progress-bar" class="ui-corner-all"></div>
+        </p>
+    </div>
+    <div id="status" style="clear:both"></div>
+    <?php endif; ?>
+
     <div class="field">
         <label for="title"><?= tr('file_title') ?></label>
-        <input class="select2-input" name="title" maxlength="255" size="60"
+        <input class="select2-input" name="title" maxlength="255" style="width:60%"
          value="<?= set_value('title', $title) ?>">
     </div>
 
     <div class="field">
         <label for="description"><?= tr('file_description') ?></label>
-        <textarea name="description" rows="10" cols="60"><?= set_value('description', $description, true) ?></textarea>
+        <textarea name="description" rows="10" style="width:60%"><?= set_value('description', $description, true) ?></textarea>
     </div>
 
     <div class="field">
         <label for="author"><?= tr('file_author') ?></label>
-        <input name="author" maxlength="255" size="60"
+        <input name="author" maxlength="255" style="width:60%"
          value="<?= set_value('author', $author) ?>">
      </div>
 
     <div class="field">
         <label for="keywords"><?= tr('file_keywords') ?></label>
-        <input name="keywords" class="select2" maxlength="1000" style="width:30em"
+        <input name="keywords" class="select2" maxlength="1000" style="width:60%"
          value="<?= set_value('keywords', $keywords) ?>">
     </div>
 
     <div class="field">
         <label for="recording_date"><?= tr('file_recording_date') ?></label>
-        <input name="recording_date" class="datepicker" maxlength="255" size="60"
+        <input name="recording_date" class="datepicker" maxlength="255"
          value="<?= set_value('recording_date', $recording_date) ?>">
     </div>
 
@@ -64,10 +85,10 @@
     </div>
 
     <div class="action-bar">
-        <input class="button" type="submit" name="submit" value="<?= tr('save') ?>">
-        <?php if ($id !== null): ?>
+        <input id="save-button" class="button" type="submit" name="submit" value="<?= tr('save') ?>">
+        <?php if ($id): ?>
         &nbsp;
-        <a href="<?= site_url('file/' . $id) ?>"><?= tr('cancel') ?></a>
+        <a id="cancel-link" href="<?= site_url('file/' . $id) ?>"><?= tr('cancel') ?></a>
         <?php endif; ?>
     </div>
 </form>
@@ -75,12 +96,69 @@
 <script src="<?= base_url('js/jquery.min.js') ?>"></script>
 <script src="<?= base_url('js/jquery-ui.min.js') ?>"></script>
 <script src="<?= base_url('js/select2/select2.min.js') ?>"></script>
+<?php if (empty($source_path)): ?>
+<script src="<?= base_url('js/jquery.iframe-transport.js') ?>"></script>
+<script src="<?= base_url('js/jquery.fileupload.js') ?>"></script>
+<?php endif; ?>
 <?php if (config_item('language') != 'en'): ?>
 <script src="<?= base_url('js/i18n/datepicker-' . config_item('language') . '.js') ?>"></script>
 <script src="<?= base_url('js/i18n/select2_locale_' . config_item('language') . '.js') ?>"></script>
 <?php endif; ?>
 <script>
     $(document).ready(function() {
+<?php if (empty($source_path)): ?>
+        $('#upload-button').button();
+        $('#cancel-button').button();
+        $('#fileupload').fileupload({
+            url: '<?= site_url('upload/index/' . $id) ?>',
+            dataType: 'json',
+            maxChunkSize: 10000000, // 10 MB
+            uploadedBytes: <?= $size_bytes? $size_bytes : 0 ?>,
+            add: function(e, data) {
+                $('#upload-button').hide();
+                $('#cancel-button').show();
+                $('#status').text('');
+                $('#save-button').hide();
+                $('#cancel-link').hide();
+                jqXHR = data.submit();
+            },
+            done: function (e, data) {
+                $.each(data.result.files, function (index, file) {
+                    $('#progress-bar').hide();
+                    $('#cancel-button').hide();
+                    $('#save-button').show();
+                    if (file.error) {
+                        $('#upload-button').show();
+                        $('#cancel-link').show();
+                        html = '<?= str_replace("\n", '', config_item('error_prefix')) ?>';
+                        html += file.error;
+                        html += '<?= str_replace("\n", '', config_item('error_suffix')) ?>';
+                        $('<p/>').html(html).appendTo($('#status'));
+                    } else {
+                        html = '<?= str_replace("\n", '', config_item('highlight_prefix')) ?>';
+                        html += "<?= tr('file_upload_success') ?>";
+                        html += '<?= str_replace("\n", '', config_item('highlight_suffix')) ?>';
+                        $('<p/>').html(html).appendTo($('#status'));
+                    }
+                });
+            },
+            progress: function(e, data) {
+                var progress = parseInt(data.loaded / data.total * 100, 10);
+                $('#progress-bar').css('width', progress + '%');
+                $('#progress-bar').html('&nbsp;' + progress + '%');
+                $('#progress-bar').show();
+            }
+        });
+        $('#cancel-button').click(function (e) {
+            jqXHR.abort();
+            $('#progress-bar').hide();
+            $('#upload-button').show();
+            $('#cancel-button').hide();
+            $('#save-button').show();
+            $('#cancel-link').show();
+        });
+<?php endif; ?>
+
         $.datepicker.setDefaults($.datepicker.regional["<?= config_item('language') ?>"]);
         $("input.datepicker").datepicker({
             changeYear: true,

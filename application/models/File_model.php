@@ -44,6 +44,8 @@ class File_model extends CI_Model
                 'recording_date' => null,
                 'language' => null,
                 'license' => null,
+                'source_path' => null,
+                'size_bytes' => null
             ];
         }
         return $data;

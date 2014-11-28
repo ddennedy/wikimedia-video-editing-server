@@ -20,5 +20,9 @@
 
 $config['error_prefix'] = '<div class="ui-widget">
 	<div class="ui-state-error ui-corner-all" style="padding: 0 .7em;">
-		<p><span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;"></span>';
+		<p><span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em; line-height: inherit;"></span>';
 $config['error_suffix'] = '</p></div></div><br>';
+$config['highlight_prefix'] = '<div class="ui-widget">
+    <div class="ui-state-highlight ui-corner-all" style="margin-top: 20px; padding: 0 .7em; line-height: inherit;">
+        <p><span class="ui-icon ui-icon-info" style="float: left; margin-right: .3em;"></span>';
+$config['highlight_suffix'] = '</p></div></div><br>';

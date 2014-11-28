@@ -48,6 +48,15 @@ class File extends CI_Controller
         if ('GET' == $this->input->method(true)) {
             $file = $this->file_model->getById($id);
             if ($file) {
+                if (!empty($file['source_path']) && is_file($file['source_path'])) {
+                    $size = filesize($file['source_path']);
+                    if ($size != $file['size_bytes']) {
+                        // Need to resume file upload.
+                        $file['size_bytes'] = $size;
+                        $file['upload_button_text'] = tr('file_upload_resume', ['filename' => basename($file['source_path'])]);
+                        unset($file['source_path']);
+                    }
+                }
                 $this->data = array_merge($this->data, $file);
                 if ($id === null) {
                     $this->data['author'] = $this->session->userdata('username');
@@ -83,19 +92,32 @@ class File extends CI_Controller
                 ];
                 if ($id === null) {
                     $id = $this->file_model->create($data);
-                    if ($id !== null) {
-                        // If successful, goto view page.
-                        $this->view($id);
+                    if ($id) {
+                        // If successful, redisplay edit form with upload control.
+                        $file = $this->file_model->getById($id);
+                        if ($file) {
+                            $this->data = array_merge($this->data, $file);
+                            if ($id === null) {
+                                $this->data['author'] = $this->session->userdata('username');
+                                $this->data['language'] = config_item('language');
+                                $this->data['recording_date'] = strftime('%Y-%m-%d');
+                            }
+                        } else {
+                            show_404(uri_string());
+                            return;
+                        }
                     } else {
                         show_error(tr('file_error_update'), 500, tr('file_error_heading'));
+                        return;
                     }
                 } else if ($this->file_model->update($id, $data)) {
                     // If successful, goto view page.
                     $this->view($id);
+                    return;
                 } else {
                     show_error(tr('file_error_update'), 500, tr('file_error_heading'));
+                    return;
                 }
-                return;
             } else {
                 $this->data['id'] = $id;
                 $this->data = array_merge($this->data, $_POST);
@@ -103,6 +125,7 @@ class File extends CI_Controller
         }
         // Display form.
         $this->load->helper('form');
+        $this->load->config('form_validation');
         // Build arrays for dropdowns.
         $this->data['languages'] = $this->user_model->getLanguages();
         $this->data['licenses'] = $this->file_model->getLicenses();
@@ -113,6 +136,8 @@ class File extends CI_Controller
             $this->data['heading'] = tr('file_new_heading');
             $this->data['message'] = tr('file_new_message');
         }
+        if (!isset($this->data['upload_button_text']))
+            $this->data['upload_button_text'] = tr('file_upload_button');
         $this->load->view('templates/header', $this->data);
         $this->load->view('file/edit', $this->data);
         $this->load->view('templates/footer', $this->data);
@@ -345,48 +370,5 @@ class File extends CI_Controller
                 $result = [['id' => $this->input->get('q'), 'text' => $this->input->get('q')]];
         }
         $this->output->set_output(json_encode($result));
-    }
-
-    public function upload($id)
-    {
-        if ('GET' == $this->input->method(true)) {
-            // Display the upload page.
-            $file = $this->file_model->getById($id);
-            if ($file) {
-                // The form validation config contains error html snippets that
-                // we use to show upload errors.
-                $this->load->config('form_validation');
-                $this->data = array_merge($this->data, $file);
-                $this->data['author'] = $this->session->userdata('username');
-                $this->data['language'] = config_item('language');
-                $this->data['heading'] = tr('file_edit_heading', $this->data);
-                $this->data['message'] = tr('file_edit_message', $this->data);
-                $this->load->view('templates/header', $this->data);
-                $this->load->view('file/upload', $this->data);
-                $this->load->view('templates/footer', $this->data);
-            } else {
-                show_404(uri_string());
-            }
-        } elseif ('POST' == $this->input->method(true)) {
-            // handle file upload.
-            $this->load->library('upload');
-            if (!$this->upload->do_upload()) {
-                $result['name'] = $this->upload->data('client_name');
-                $result['error'] = $this->upload->display_errors('', '');
-            } else {
-                $result['name'] = $this->upload->data('client_name');
-                $result['size'] = $this->upload->data('file_size');
-                $result['type'] = $this->upload->data('file_type');
-                $result['url'] = base_url('uploads/' . $this->upload->data('file_name'));
-            }
-            $accept = $this->input->server('HTTP_ACCEPT');
-            $this->output->set_header('Vary: Accept');
-            if ($accept && strpos($accept, 'application/json') !== false) {
-                $this->output->set_content_type('application/json');
-            } else {
-                $this->output->set_content_type('text/plain');
-            }
-            $this->output->set_output(json_encode(['files' => [$result]]));
-        }
     }
 }
