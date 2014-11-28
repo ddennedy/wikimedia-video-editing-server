@@ -14,8 +14,11 @@
 # $ echo /var/lib/beanstalkd >> /etc/tklbam/overrides
 # $ service beanstalkd start
 
-CID=$(docker run -d --name php --link mysql:mysql -p 8080:80 \
-    -v "$(pwd)":/var/www -v "$HOME/Videos/wikimedia":/media ddennedy/debian-php)
+# To build ddennedy/debian-php:
+# $ docker build -t ddennedy/debian-php other/
+
+CID=$(docker run -d --name php --link mysql:mysql -p 80:80 \
+    -v "$(pwd)":/var/www ddennedy/debian-php)
 docker inspect --format='{{.NetworkSettings.IPAddress}}' $CID
 
 # Or, to run interactively:
