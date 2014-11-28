@@ -331,15 +331,18 @@ class File extends CI_Controller
 
     public function keywords()
     {
-        $this->output->set_content_type('');
-        $result = array('application/json');
+        $this->output->set_content_type('application/json');
+        $result = array();
         if ($this->input->get('q')) {
-            $this->db->select('id, value as text');
+            $this->db->select('value as id, value as text');
             $this->db->like('value', $this->input->get('q'));
             $this->db->where('language', $this->config->item('language'));
             $this->db->order_by('value', 'asc');
             $query = $this->db->get('keyword');
-            $result = $query->result();
+            if (count($query->result()))
+                $result = $query->result();
+            else
+                $result = [['id' => $this->input->get('q'), 'text' => $this->input->get('q')]];
         }
         $this->output->set_output(json_encode($result));
     }

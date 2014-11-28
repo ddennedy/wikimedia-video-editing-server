@@ -43,7 +43,7 @@
 
     <div class="field">
         <label for="keywords"><?= tr('file_keywords') ?></label>
-        <input name="keywords" class="select2" maxlength="1000" style="width:60%"
+        <input name="keywords" class="select2" maxlength="1000" style="width:30em"
          value="<?= set_value('keywords', $keywords) ?>">
     </div>
 
@@ -90,13 +90,20 @@
         });
         $("input.select2").select2({
             placeholder: "<?= tr('file_keywords_placeholder') ?>",
-            tags: <?= empty($keywords)? '[]' : json_encode(explode("\t", $keywords)) ?>,
+            tags: [],
             separator: "\t",
+            minimumInputLength: 1,
+            initSelection: function (element, callback) {
+                var data = [];
+                $(element.val().split("\t")).each(function () {
+                    data.push({id: this, text: this});
+                });
+                callback(data);
+            },
             ajax: {
                 url: "<?= site_url('file/keywords') ?>",
                 dataType: 'json',
                 quietMillis: 250,
-                minimumInputLength: 2,
                 data: function (term, page) {
                     return { q: term };
                 },
