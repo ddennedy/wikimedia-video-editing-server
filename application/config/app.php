@@ -34,3 +34,4 @@ $config['oauth_jwt_issuer'] = 'http://commons.wikimedia.org';
 $config['cookie_expire_seconds'] = 2592000; // 30 days
 $config['recent_limit'] = 100;
 $config['search_limit'] = 25;
+$config['upload_path'] = '/var/www/uploads/';

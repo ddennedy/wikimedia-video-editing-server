@@ -23,34 +23,36 @@ class Upload extends CI_Controller
     public function index($file_id = null)
     {
         if ('POST' == $this->input->method(true) && $file_id) {
-            $this->load->config('upload');
             $this->load->library('MyUploadHandler', [
                 'upload_dir' => config_item('upload_path'),
                 'upload_url' => base_url('uploads') . '/', // This is actually for making a download url.
                 'image_versions' => array()
             ]);
             $file = $this->myuploadhandler->result['files'][0];
-            $file->name = config_item('upload_path') . $file->name;
 
             // If done, move the file into sub-folder.
             // UploadHandler sets $file->url when the download is complete.
             if (isset($file->url)) {
-                $name = basename($file->name);
-                if (strlen($name) > 2) {
+                if (strlen($file->name) > 2) {
                     // Change the file name to something more useful.
                     $this->load->model('file_model');
                     $record = $this->file_model->getById($file_id);
                     if (!empty($record['title'])) {
                         // Use CodeIgniter's url_title() to convert the file's title
                         // into a filename.
-                        $extension = strrchr($name, '.');
+                        $extension = strrchr($file->name, '.');
                         $extension = ($extension !== false)? strtolower($extension) : '';
-                        $basename = url_title($record['title'], '-', true);
+                        $lowerCase = true;
+                        $maxLength = 250;
+                        $basename = substr(url_title($record['title'], '-', $lowerCase), 0, $maxLength);
                         // Put file into sub-folder to make directories more manageable.
-                        $name = config_item('upload_path') . "$basename[0]/$basename[1]/$basename$extension";
-                        $name = $this->myuploadhandler->getUniqueFilename($name);
-                        if ($this->myuploadhandler->moveFile($file->name, $name))
+                        $name = "$basename[0]/$basename[1]/$basename$extension";
+                        $fullname = config_item('upload_path') . $name;
+                        $fullname = $this->myuploadhandler->getUniqueFilename($fullname);
+                        if ($this->myuploadhandler->moveFile(
+                                config_item('upload_path') . $file->name, $fullname)) {
                             $file->name = $name;
+                        }
                     }
                 }
             }
