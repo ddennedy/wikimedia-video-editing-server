@@ -30,7 +30,7 @@
     <!-- CSS adjustments for browsers with JavaScript disabled -->
     <noscript><link rel="stylesheet" href="<?= base_url('css/jquery.fileupload-ui-noscript.css') ?>"></noscript>
     <div class="field">
-        <label for="files"><?= tr('menu_upload') ?></label>
+        <label for="files"><?= tr('file_upload') ?></label>
         <span id="upload-button" class="fileinput-button">
             <span><?= $upload_button_text ?></span>
             <input id="fileupload" type="file" name="files">

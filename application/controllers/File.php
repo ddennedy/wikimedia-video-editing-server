@@ -152,6 +152,18 @@ class File extends CI_Controller
         $file = $this->file_model->getById($id);
         if ($file) {
             $this->data = array_merge($this->data, $file);
+
+            // Determine upload status.
+            if (!empty($file['source_path']) &&
+                    is_file(config_item('upload_path').$file['source_path'])) {
+                $size = filesize(config_item('upload_path').$file['source_path']);
+                if ($size != $file['size_bytes'])
+                    $this->data['upload_status'] = tr('upload_status_partial');
+                else
+                    $this->data['upload_status'] = tr('upload_status_complete');
+            } else {
+                $this->data['upload_status'] = tr('upload_status_notstarted');
+            }
             $this->data['heading'] = tr('file_view_heading', $file);
             $this->data['footer'] = tr('file_view_footer', $file);
 
@@ -167,13 +179,20 @@ class File extends CI_Controller
                 'heading_cell_end'      => '',
             ]);
             $this->table->set_heading('');
-            $this->data['metadata'] = $this->table->generate([
+            $tableData = [
                 ['<strong>'.tr('file_author').'</strong>', $file['author']],
                 ['<strong>'.tr('file_keywords').'</strong>', implode(', ', explode("\t", $file['keywords']))],
                 ['<strong>'.tr('file_recording_date').'</strong>', $file['recording_date']],
                 ['<strong>'.tr('file_language').'</strong>', $this->user_model->getLanguageByKey($file['language'])],
                 ['<strong>'.tr('file_license').'</strong>', $this->file_model->getLicenseByKey($file['license'])],
-            ]);
+                ['<strong>'.tr('file_upload').'</strong>', $this->data['upload_status']],
+            ];
+            if ($this->data['upload_status'] !== tr('upload_status_notstarted')) {
+                $this->load->helper('filesize');
+                $tableData []= ['<strong>'.tr('file_mime_type').'</strong>', $file['mime_type']];
+                $tableData []= ['<strong>'.tr('file_size').'</strong>', FileSizeConvert($file['size_bytes'])];
+            }
+            $this->data['metadata'] = $this->table->generate($tableData);
             $this->table->clear();
 
             // Only show the edit action if user-level and higher.

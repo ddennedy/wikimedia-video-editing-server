@@ -139,3 +139,10 @@ $lang['file_edit_message'] = '';
 $lang['file_upload_button'] = 'Click to choose a file or drag &amp; drop a file onto the page.';
 $lang['file_upload_success'] = 'File upload completed successfully!';
 $lang['file_upload_resume'] = 'Incomplete: choose "{filename}" to resume.';
+$lang['file_upload'] = 'Upload';
+$lang['file_mime_type'] = 'MIME Type';
+$lang['file_size'] = 'Size';
+
+$lang['upload_status_notstarted'] = 'Not started, please click Edit to start.';
+$lang['upload_status_partial'] = 'Partial, please click Edit to resume.';
+$lang['upload_status_complete'] = 'Completed';
