@@ -59,12 +59,14 @@ class Upload extends CI_Controller
             }
 
             // Put the filename into the database.
-            $this->db->where('id', $file_id);
-            $this->db->update('file', [
+            $this->db->set([
                 'source_path' => $file->name,
                 'size_bytes' => $file->total_size,
                 'mime_type' => $file->type
             ]);
+            $this->db->set('updated_at', 'updated_at', FALSE);
+            $this->db->where('id', $file_id);
+            $this->db->update('file');
         } else {
             set_status_header('405');
         }
