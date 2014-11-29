@@ -42,9 +42,10 @@ class Upload extends CI_Controller
                         // into a filename.
                         $extension = strrchr($file->name, '.');
                         $extension = ($extension !== false)? strtolower($extension) : '';
+                        $this->load->helper('text');
                         $lowerCase = true;
                         $maxLength = 250;
-                        $basename = substr(url_title($record['title'], '-', $lowerCase), 0, $maxLength);
+                        $basename = character_limiter(url_title($record['title'], '-', $lowerCase), $maxLength);
                         // Put file into sub-folder to make directories more manageable.
                         $name = "$basename[0]/$basename[1]/$basename$extension";
                         $fullname = config_item('upload_path') . $name;
