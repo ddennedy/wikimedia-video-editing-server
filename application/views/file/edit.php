@@ -64,7 +64,7 @@
 
     <div class="field">
         <label for="keywords"><?= tr('file_keywords') ?></label>
-        <input name="keywords" class="select2" maxlength="1000" style="width:60%"
+        <input name="keywords" class="select2" maxlength="1000" style="width:60.5%"
          value="<?= set_value('keywords', $keywords) ?>">
     </div>
 
