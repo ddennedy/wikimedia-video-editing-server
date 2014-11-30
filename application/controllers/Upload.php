@@ -23,6 +23,7 @@ class Upload extends CI_Controller
     public function index($file_id = null)
     {
         if ('POST' == $this->input->method(true) && $file_id) {
+            $this->load->model('file_model');
             $this->load->library('MyUploadHandler', [
                 'upload_dir' => config_item('upload_path'),
                 'upload_url' => base_url('uploads') . '/', // This is actually for making a download url.
@@ -30,12 +31,10 @@ class Upload extends CI_Controller
             ]);
             $file = $this->myuploadhandler->result['files'][0];
 
-            // If done, move the file into sub-folder.
             // UploadHandler sets $file->url when the download is complete.
             if (isset($file->url)) {
                 if (strlen($file->name) > 2) {
                     // Change the file name to something more useful.
-                    $this->load->model('file_model');
                     $record = $this->file_model->getById($file_id);
                     if (!empty($record['title'])) {
                         // Use CodeIgniter's url_title() to convert the file's title
@@ -56,17 +55,32 @@ class Upload extends CI_Controller
                         }
                     }
                 }
+
+                // Add a job to the database.
+                $this->load->model('job_model');
+                $job_id = $this->job_model->create($file_id, Job_model::TYPE_VALIDATE);
+                if ($job_id) {
+                    // Put job into the queue.
+                    $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
+                    if ($this->beanstalk->connect()) {
+                        $tube = config_item('beanstalkd_tube_validate');
+                        $this->beanstalk->useTube($tube);
+                        $priority = 10;
+                        $delay = 0;
+                        $ttr = 60; // seconds
+                        $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
+                        $this->beanstalk->disconnect();
+                    }
+                }
             }
 
             // Put the filename into the database.
-            $this->db->set([
+            $this->file_model->staticUpdate($file_id, [
                 'source_path' => $file->name,
                 'size_bytes' => $file->total_size,
-                'mime_type' => $file->type
+                'mime_type' => $file->type,
+                'status' => Job_model::STATUS_UPLOADED
             ]);
-            $this->db->set('updated_at', 'updated_at', FALSE);
-            $this->db->where('id', $file_id);
-            $this->db->update('file');
         } else {
             set_status_header('405');
         }

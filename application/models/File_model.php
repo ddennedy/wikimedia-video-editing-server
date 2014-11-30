@@ -20,6 +20,15 @@
 
 class File_model extends CI_Model
 {
+    const STATUS_UPLOADED   = 1;
+    const STATUS_VALID      = 2;
+    const STATUS_CONVERTING = 4;
+    const STATUS_FINISHED   = 8;
+    const STATUS_APPROVED   = 16;
+    const STATUS_REJECTED   = 32;
+    const STATUS_PUBLISHED  = 64;
+    const STATUS_ERROR      = 2147483648;
+
     public function __construct()
     {
         $this->load->database();
@@ -332,5 +341,13 @@ class File_model extends CI_Model
         $this->db->where(['file_id' => $file_id, 'revision' => $revision]);
         $query = $this->db->get('file_history');
         return $query->row_array();
+    }
+
+    function staticUpdate($id, $data)
+    {
+        $this->db->where('id', $id);
+        $this->db->set($data);
+        $this->db->set('updated_at', 'updated_at', false);
+        return $this->db->update('file');
     }
 }

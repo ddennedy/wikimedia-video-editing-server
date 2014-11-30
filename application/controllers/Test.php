@@ -38,7 +38,7 @@ class Test extends CI_Controller
         $this->unit->run(1 + 1, 2, 'test of unit_test library');
 
         // Test beanstalkd connection and library.
-        $this->load->library('Beanstalk', ['host' => 'mysql']);
+        $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
         $isConnected = $this->beanstalk->connect();
         $this->unit->run($isConnected, true, 'beanstalk connection');
 

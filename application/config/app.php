@@ -35,3 +35,10 @@ $config['cookie_expire_seconds'] = 2592000; // 30 days
 $config['recent_limit'] = 100;
 $config['search_limit'] = 25;
 $config['upload_path'] = '/var/www/uploads/';
+
+$config['beanstalkd_host'] = 'mysql';
+$config['beanstalkd_tube_validate'] = 'videoeditserver-validate';
+// Lump heavy transcode and MLT XML render jobs into the same tube to be
+// processed by the same set of workers.
+$config['beanstalkd_tube_transcode'] = 'videoeditserver-encode';
+$config['beanstalkd_tube_render'] = 'videoeditserver-encode';
