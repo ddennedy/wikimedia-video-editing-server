@@ -21,7 +21,7 @@
 class File_model extends CI_Model
 {
     const STATUS_UPLOADED   = 1;
-    const STATUS_VALID      = 2;
+    const STATUS_VALIDATED  = 2;
     const STATUS_CONVERTING = 4;
     const STATUS_FINISHED   = 8;
     const STATUS_APPROVED   = 16;

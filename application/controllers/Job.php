@@ -70,7 +70,7 @@ class Job extends CI_Controller
                             $majorType = explode('/', $mimeType)[0];
                             echo "majorType: $majorType\n";
                             if ($majorType === 'audio' || $majorType === 'video') {
-                                $isValid = $this->validateAudioVideo($file, $filename, $majorType);
+                                $isValid = $this->validateAudioVideo($job_id, $file, $majorType);
                             } else if ($majorType === 'image' || $extension === '.svg') {
                                 // if image verify melt can read it
 
@@ -89,8 +89,8 @@ class Job extends CI_Controller
                                 // the user manually approve it as a supplemental file
                                 // needed by the project
                             }
-                            // TODO remove testing exit
-                            $this->beanstalk->release($job['id'], 10, 0);
+    // TODO remove testing exit
+    $this->beanstalk->release($job['id'], 10, 0);
     $this->beanstalk->disconnect();
     return;
                         } else {
@@ -98,14 +98,10 @@ class Job extends CI_Controller
                         }
                     }
                     // delete this job
-                    //$this->beanstalk->delete($job['id']);
-                    $this->beanstalk->release($job['id'], 10, 0);
+                    $this->beanstalk->delete($job['id']);
                 } else {
                     echo "Error: beanstalkd reserve failed\n";
                 }
-//                 $priority = 10;
-//                 $delay = 0;
-//                 $this->beanstalk->release($job['id'], $priority, $delay);
                 sleep(1);
             };
 
@@ -154,9 +150,13 @@ class Job extends CI_Controller
         return $hash;
     }
 
-    protected function validateAudioVideo($file, $filename, $majorType)
+    protected function validateAudioVideo($job_id, $file, $majorType)
     {
+        $this->load->model('file_model');
         $isValid = true;
+        $log = "Validate: $file[source_path].\n";
+        $filename = config_item('upload_path') . $file['source_path'];
+
         // if audio or video, verify ffprobe can read it
         $json = shell_exec("/usr/bin/nice ffprobe -print_format json -show_error -show_format -show_streams '$filename' 2>/dev/null");
         if (!empty($json)) {
@@ -165,54 +165,81 @@ class Job extends CI_Controller
             $isValid = false;
             foreach ($ffprobe->streams as $stream) {
                 if (isset($stream->codec_type) && $stream->codec_type === $majorType) {
+                    $log .= "ffprobe found a stream with codec_type \"$stream->codec_type\" that matches the MIME type.\n";
                     $isValid = true;
                     break;
                 }
             }
-            echo "track status: $isValid\n";
+            if (!$isValid)
+                $log .= "ffprobe did not find a valid stream in this file.\n";
 
             // get duration
             $duration = null;
             if (isset($ffprobe->format) && isset($ffprobe->format->duration)) {
                 $duration = intval(round($ffprobe->format->duration * 1000));
-                echo "duration: $duration\n";
+                $log .= "ffprobe found a duration of $duration seconds.\n";
                 if ($duration <= 0) {
-                    echo "Error: invalid duration: $filename\n";
+                    $log .= "Error: invalid duration: $filename.\n";
                     $isValid = false;
                 }
             } else {
-                echo "Error: failed to get the duration of $majorType: $filename\n";
+                $log .= "Error: failed to get the duration of $majorType: $filename.\n";
+                $isValid = false;
             }
 
             // if valid, compute hash
-            $hash = $this->getFileHash($filename);
-            // Get ffprobe JSON again with human-readable units for the database.
-            $json = shell_exec("/usr/bin/nice ffprobe -print_format json -pretty -show_error -show_format -show_streams '$filename' 2>/dev/null");
-            // put new data into database
-            $this->load->model('file_model');
-            $this->file_model->staticUpdate($file['id'], [
-                'duration_ms' => $duration,
-                'source_hash' => $hash,
-                'properties' => $json,
-                'status' => intval($file['status']) | File_model::STATUS_VALID
-            ]);
+            if ($isValid) {
+                $hash = $this->getFileHash($filename);
+                if ($hash === false)
+                    $log .= "Failed to compute MD5 hash.\n";
 
-            //   if valid, create transcode job
-            $job_id = $this->job_model->create($file['id'], Job_model::TYPE_TRANSCODE);
-            if ($job_id) {
-                // Put job into the queue.
-                $tube = config_item('beanstalkd_tube_transcode');
-                $this->beanstalk->useTube($tube);
-                $priority = 10;
-                $delay = 0;
-                $ttr = 60; // seconds
-                $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
-                $tube = config_item('beanstalkd_tube_validate');
-                $this->beanstalk->useTube($tube);
+                // Get ffprobe JSON again with human-readable units for the database.
+                $json = shell_exec("/usr/bin/nice ffprobe -print_format json -pretty -show_error -show_format -show_streams '$filename' 2>/dev/null");
+                $properties = json_encode(['ffprobe' => json_decode($json)]);
+
+                // put new data into database
+                $result = $this->file_model->staticUpdate($file['id'], [
+                    'duration_ms' => $duration,
+                    'source_hash' => $hash,
+                    'properties' => $properties,
+                    'status' => intval($file['status']) | File_model::STATUS_VALIDATED
+                ]);
+                if (!$result)
+                    $log .= "Error updating the file table with duration, hash, and status.\n";
+
+                // if valid, create transcode job
+                $transcodeJobId = $this->job_model->create($file['id'], Job_model::TYPE_TRANSCODE);
+                if ($transcodeJobId) {
+                    // Put job into the queue.
+                    $tube = config_item('beanstalkd_tube_transcode');
+                    $this->beanstalk->useTube($tube);
+                    $priority = 10;
+                    $delay = 0;
+                    $ttr = 60; // seconds
+                    $jobId = $this->beanstalk->put($priority, $delay, $ttr, $transcodeJobId);
+                    $tube = config_item('beanstalkd_tube_validate');
+                    $this->beanstalk->useTube($tube);
+                    $log .= "Created transcode job with ID $transcodeJobId.\n";
+                } else {
+                    $log .= "Error creating transcode job on beanstalkd.\n";
+                }
             }
         } else {
+            $log .= "Error: ffprobe failed to produce any output.\n";
             $isValid = false;
         }
+        if (!$isValid) {
+            $result = $this->file_model->staticUpdate($file['id'], [
+                'status' => intval($file['status']) | File_model::STATUS_VALIDATED | File_model::STATUS_ERROR
+            ]);
+            if (!$result)
+                $log .= "Error updating the file table with error status.\n";
+        }
+        $this->job_model->update($job_id, [
+            'progress' => 100,
+            'result' => ($isValid? 0 : 1),
+            'log' => $log
+        ]);
         return $isValid;
     }
 
@@ -222,14 +249,5 @@ class Job extends CI_Controller
             print_r($this->beanstalk->stats());
             $this->beanstalk->disconnect();
         }
-    }
-
-    public function test($id)
-    {
-        $job = $this->job_model->getWithFileById($id);
-        if ($job)
-            print_r($job);
-        else
-            show_404(uri_string());
     }
 }
