@@ -430,13 +430,8 @@ class Job extends CI_Controller
             $result = -4;
             $log = "Source_path in file table is empty.";
         }
-        if ($result !== 0) {
-            $result = $this->file_model->staticUpdate($file['id'], [
-                'status' => intval($file['status']) | File_model::STATUS_ERROR
-            ]);
-            if (!$result)
-                $log .= "Error updating the file table with error status.\n";
-        }
+
+        // Update the job table with job results.
         $this->job_model->update($job_id, [
             'result' => $result,
             'log' => $log
@@ -448,20 +443,24 @@ class Job extends CI_Controller
     {
         $result = -10;
         $duration_ms = 1;
-        $file = $this->job_model->getWithFileById($job_id);
-        if ($file)
-            $duration_ms = $file['duration_ms'];
         $lastProgress = null;
 
+        // Get the file record.
+        $file = $this->job_model->getWithFileById($job_id);
+        if ($file)
+            $duration_ms = intval($file['duration_ms']);
+
+        // Prepare the output file name.
         $extension = strrchr($filename, '.');
         $out = basename($filename, $extension);
         $out = "$out[0]/$out[1]/$out.webm";
-        $out = config_item('transcode_path') . $out;
-        $out = $this->getUniqueFilename($out);
-        $dir = dirname($out);
+        $fullname = config_item('transcode_path') . $out;
+        $fullname = $this->getUniqueFilename($fullname);
+        $dir = dirname($fullname);
         if (!is_dir($dir))
             mkdir($dir, 0755, true);
 
+        // Setup to run ffmpeg.
         $descriptorspec = [
             0 => array('file', '/dev/null', 'r'), // stdin
             1 => array('file', '/dev/null', 'w'), // stderr
@@ -469,12 +468,14 @@ class Job extends CI_Controller
         ];
         $cwd = '/tmp';
         $env = [];
-        $cmd = "/usr/bin/nice ffmpeg -i $filename -vf yadif=mode=send_frame:deint=interlaced -codec:a libvorbis -qscale:a 5 -codec:v libvpx -g 100 -quality good -speed 0 -vprofile 0 -slices 4 -threads 2 -b: 10M -crf 10 -arnr_max_frames 7 -arnr_strength 5 -arnr_type 3 -y $out";
+        $cmd = "/usr/bin/nice ffmpeg -i '$filename' -vf yadif=mode=send_frame:deint=interlaced -codec:a libvorbis -qscale:a 5 -codec:v libvpx -g 100 -quality good -speed 0 -vprofile 0 -slices 4 -threads 2 -b: 10M -crf 10 -arnr_max_frames 7 -arnr_strength 5 -arnr_type 3 -y '$fullname'";
         $process = proc_open($cmd, $descriptorspec, $pipes, $cwd, $env);
 
         if (is_resource($process)) {
+            // Get ffmpeg output while running.
             while ($line = stream_get_line($pipes[2], 255, "\r")) {
-                echo "$line\n";
+                $log .= "$line\n";
+                // Calculate progress as a percentage.
                 $i = strpos($line, 'time=');
                 $time = substr($line, $i + strlen('time='), 11);
                 if (!empty($time)) {
@@ -484,16 +485,37 @@ class Job extends CI_Controller
                         $progress = intval(round($secs * 1000 / $duration_ms * 100));
                         if ($progress !== $lastProgress) {
                             $lastProgress = $progress;
-                            echo "progress: $progress%\n";
                             $this->job_model->update($job_id, ['progress' => $progress]);
                         }
                     }
                 }
-                $log .= "$line\n";
             }
+            // Cleanup child process and get its return code.
             fclose($pipes[2]);
             $result = proc_close($process);
             echo "ffmpeg returned $result\n";
+        } else {
+            $result = -11;
+            $log .= "Failed to start ffmpeg to transcode video.\n";
+        }
+
+        // Update the file table with results.
+        if ($result === 0) {
+            $status = intval($file['status']) | File_model::STATUS_FINISHED;
+            $status ^= File_model::STATUS_ERROR;
+            $result = $this->file_model->staticUpdate($file['id'], [
+                'status' => $status,
+                'output_path' => $out,
+                'output_hash' => $this->getFileHash($fullname)
+            ]);
+            if (!$result)
+                $log .= "Error updating the file table with error status.\n";
+        } else {
+            $result = $this->file_model->staticUpdate($file['id'], [
+                'status' => intval($file['status']) | File_model::STATUS_ERROR
+            ]);
+            if (!$result)
+                $log .= "Error updating the file table with error status.\n";
         }
         return $result;
     }
