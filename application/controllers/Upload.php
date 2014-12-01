@@ -79,7 +79,7 @@ class Upload extends CI_Controller
                 'source_path' => $file->name,
                 'size_bytes' => $file->total_size,
                 'mime_type' => $file->type,
-                'status' => Job_model::STATUS_UPLOADED
+                'status' => File_model::STATUS_UPLOADED
             ]);
         } else {
             set_status_header('405');
