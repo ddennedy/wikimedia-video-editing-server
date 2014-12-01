@@ -502,7 +502,88 @@ class Job extends CI_Controller
         // Update the file table with results.
         if ($result === 0) {
             $status = intval($file['status']) | File_model::STATUS_FINISHED;
-            $status ^= File_model::STATUS_ERROR;
+            $status &= ~File_model::STATUS_ERROR;
+            $result = $this->file_model->staticUpdate($file['id'], [
+                'status' => $status,
+                'output_path' => $out,
+                'output_hash' => $this->getFileHash($fullname)
+            ]);
+            if (!$result)
+                $log .= "Error updating the file table with error status.\n";
+        } else {
+            $result = $this->file_model->staticUpdate($file['id'], [
+                'status' => intval($file['status']) | File_model::STATUS_ERROR
+            ]);
+            if (!$result)
+                $log .= "Error updating the file table with error status.\n";
+        }
+        return $result;
+    }
+
+    protected function transcodeAudio($job_id, $filename, &$log)
+    {
+        $result = -10;
+        $duration_ms = 1;
+        $lastProgress = null;
+
+        // Get the file record.
+        $file = $this->job_model->getWithFileById($job_id);
+        if ($file)
+            $duration_ms = intval($file['duration_ms']);
+
+        // Prepare the output file name.
+        $extension = strrchr($filename, '.');
+        $out = basename($filename, $extension);
+        $out = "$out[0]/$out[1]/$out.ogg";
+        $fullname = config_item('transcode_path') . $out;
+        $fullname = $this->getUniqueFilename($fullname);
+        $dir = dirname($fullname);
+        if (!is_dir($dir))
+            mkdir($dir, 0755, true);
+
+        // Setup to run ffmpeg.
+        $descriptorspec = [
+            0 => array('file', '/dev/null', 'r'), // stdin
+            1 => array('file', '/dev/null', 'w'), // stderr
+            2 => array('pipe', 'w'), // stdout
+        ];
+        $cwd = '/tmp';
+        $env = [];
+        $cmd = "/usr/bin/nice ffmpeg -i '$filename' -vn -codec:a libvorbis -qscale:a 5 -y '$fullname'";
+        $process = proc_open($cmd, $descriptorspec, $pipes, $cwd, $env);
+
+        if (is_resource($process)) {
+            // Get ffmpeg output while running.
+            while ($line = stream_get_line($pipes[2], 255, "\r")) {
+                $log .= "$line\n";
+                // Calculate progress as a percentage.
+                $i = strpos($line, 'time=');
+                $time = substr($line, $i + strlen('time='), 11);
+                if (!empty($time)) {
+                    $fields = explode(':', $time);
+                    if (count($fields) === 3) {
+                        $secs = $fields[0] * 3600 + $fields[1] * 60 + $fields[2];
+                        $progress = intval(round($secs * 1000 / $duration_ms * 100));
+                        if ($progress !== $lastProgress) {
+                            $lastProgress = $progress;
+                            $this->job_model->update($job_id, ['progress' => $progress]);
+                        }
+                    }
+                }
+            }
+            // Cleanup child process and get its return code.
+            fclose($pipes[2]);
+            $result = proc_close($process);
+            echo "ffmpeg returned $result\n";
+        } else {
+            $result = -11;
+            $log .= "Failed to start ffmpeg to transcode audio.\n";
+        }
+
+        // Update the file table with results.
+        if ($result === 0) {
+            $status = intval($file['status']) | File_model::STATUS_FINISHED;
+            $status &= ~File_model::STATUS_ERROR;
             $result = $this->file_model->staticUpdate($file['id'], [
                 'status' => $status,
                 'output_path' => $out,
