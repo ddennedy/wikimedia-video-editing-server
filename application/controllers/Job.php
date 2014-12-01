@@ -72,8 +72,7 @@ class Job extends CI_Controller
                             if ($majorType === 'audio' || $majorType === 'video') {
                                 $isValid = $this->validateAudioVideo($job_id, $file, $majorType);
                             } else if ($majorType === 'image' || $extension === '.svg') {
-                                // if image verify melt can read it
-
+                                $isValid = $this->validateImage($job_id, $file, $majorType);
                             } else if ($mimeType === 'application/xml' ||
                                        $mimeType === 'text/xml' ||
                                        $mimeType === 'application/x-kdenlive' ||
@@ -90,9 +89,9 @@ class Job extends CI_Controller
                                 // needed by the project
                             }
     // TODO remove testing exit
-    $this->beanstalk->release($job['id'], 10, 0);
-    $this->beanstalk->disconnect();
-    return;
+//     $this->beanstalk->release($job['id'], 10, 0);
+//     $this->beanstalk->disconnect();
+//     return;
                         } else {
                             echo "Error: failed to get MIME type for $filename\n";
                         }
@@ -243,10 +242,93 @@ class Job extends CI_Controller
         return $isValid;
     }
 
+    public function validateImage($job_id, $file, $majorType)
+    {
+        // verify melt can read it
+        $this->load->model('file_model');
+        $isValid = true;
+        $log = "Validate: $file[source_path].\n";
+        $filename = config_item('upload_path') . $file['source_path'];
+
+        // if audio or video, verify ffprobe can read it
+        $xml = shell_exec("/usr/bin/nice melt -consumer xml '$filename' 2>/dev/null");
+        if (!empty($xml)) {
+            // verify mlt_consumer is pixbuf or qimage
+            libxml_use_internal_errors(true);
+            $mlt = simplexml_load_string($xml);
+            if ($mlt) {
+                $isValid = false;
+                foreach ($mlt->producer->property as $property) {
+                    if (isset($property['name']) && $property['name'] == 'mlt_service') {
+                        if ($property == 'pixbuf' || $property == 'qimage') {
+                            $log .= "melt found a producer with mlt_service \"$property\" for the $majorType MIME tupe.\n";
+                            $isValid = true;
+                            break;
+                        }
+                    }
+                }
+                if (!$isValid)
+                    $log .= "melt loaded this image file with an unexpected producer.\n";
+            } else {
+                $isValid = false;
+                $log .= "melt did not produce well-formed XML.\n";
+            }
+
+            // if valid, compute hash
+            if ($isValid) {
+                $hash = $this->getFileHash($filename);
+                if ($hash === false)
+                    $log .= "Failed to compute MD5 hash.\n";
+
+                $properties = json_encode(['MLTXML' => $xml]);
+
+                // put new data into database
+                $result = $this->file_model->staticUpdate($file['id'], [
+                    'source_hash' => $hash,
+                    'properties' => $properties,
+                    'status' => intval($file['status']) | File_model::STATUS_VALIDATED
+                ]);
+                if (!$result)
+                    $log .= "Error updating the file table with hash and status.\n";
+            }
+        } else {
+            $log .= "Error: melt is unable to load this file.\n";
+            $isValid = false;
+        }
+        if (!$isValid) {
+            $result = $this->file_model->staticUpdate($file['id'], [
+                'status' => intval($file['status']) | File_model::STATUS_VALIDATED | File_model::STATUS_ERROR
+            ]);
+            if (!$result)
+                $log .= "Error updating the file table with error status.\n";
+        }
+        $this->job_model->update($job_id, [
+            'progress' => 100,
+            'result' => ($isValid? 0 : 1),
+            'log' => $log
+        ]);
+        return $isValid;
+    }
+
     public function stats()
     {
         if ($this->beanstalk->connect()) {
             print_r($this->beanstalk->stats());
+            $this->beanstalk->disconnect();
+        }
+    }
+
+    public function redo($job_id)
+    {
+        // Put job into the queue.
+        $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
+        if ($this->beanstalk->connect()) {
+            $tube = config_item('beanstalkd_tube_validate');
+            $this->beanstalk->useTube($tube);
+            $priority = 10;
+            $delay = 0;
+            $ttr = 60; // seconds
+            $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
             $this->beanstalk->disconnect();
         }
     }

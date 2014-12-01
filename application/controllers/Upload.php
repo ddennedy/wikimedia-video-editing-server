@@ -66,7 +66,7 @@ class Upload extends CI_Controller
                         $tube = config_item('beanstalkd_tube_validate');
                         $this->beanstalk->useTube($tube);
                         $priority = 10;
-                        $delay = 0;
+                        $delay = 1;
                         $ttr = 60; // seconds
                         $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
                         $this->beanstalk->disconnect();
