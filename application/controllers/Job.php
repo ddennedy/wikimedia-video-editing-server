@@ -310,15 +310,18 @@ class Job extends CI_Controller
         return $isValid;
     }
 
-    public function stats()
+    public function stats($tube = null)
     {
         if ($this->beanstalk->connect()) {
-            print_r($this->beanstalk->stats());
+            if ($tube)
+                print_r($this->beanstalk->statsTube($tube));
+            else
+                print_r($this->beanstalk->stats());
             $this->beanstalk->disconnect();
         }
     }
 
-    public function redo($job_id)
+    public function redo_validate($job_id)
     {
         // Put job into the queue.
         $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
@@ -331,5 +334,193 @@ class Job extends CI_Controller
             $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
             $this->beanstalk->disconnect();
         }
+    }
+
+    public function redo_encode($job_id)
+    {
+        // Put job into the queue.
+        $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
+        if ($this->beanstalk->connect()) {
+            $tube = config_item('beanstalkd_tube_transcode');
+            $this->beanstalk->useTube($tube);
+            $priority = 10;
+            $delay = 0;
+            $ttr = 60; // seconds
+            $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
+            $this->beanstalk->disconnect();
+        }
+    }
+
+    public function encode()
+    {
+        if ($this->beanstalk->connect()) {
+            $tube = config_item('beanstalkd_tube_transcode');
+            $this->beanstalk->useTube($tube);
+            $this->beanstalk->watch($tube);
+            $this->running = true;
+            pcntl_signal(SIGINT, array(&$this, 'signalHandler'));
+            pcntl_signal(SIGTERM, array(&$this, 'signalHandler'));
+
+            while ($this->running) {
+                $job = $this->beanstalk->reserve();
+                $job_id = $job['body'];
+                if ($job) {
+                    echo "received job id $job_id\n";
+                    // lookup job/file in database
+                    $file = $this->job_model->getWithFileById($job_id);
+                    if ($file) {
+                        switch ($file['type']) {
+                            case Job_model::TYPE_TRANSCODE:
+                                $this->transcode($job_id, $file);
+                                break;
+                            case Job_model::TYPE_RENDER:
+                                $this->render($job_id, $file);
+                                break;
+                            default:
+                                $log .= "Unknown job type $file[type].\n";
+                                break;
+                        }
+                    }
+                    // delete this job
+                    $this->beanstalk->delete($job['id']);
+                } else {
+                    echo "Error: beanstalkd reserve failed\n";
+                }
+                sleep(1);
+            }
+            $this->beanstalk->disconnect();
+        }
+    }
+
+    protected function transcode($job_id, $file)
+    {
+        $result = -1;
+        if (!empty($file['source_path'])) {
+            $this->load->model('file_model');
+            $log = "Transcode: $file[source_path].\n";
+            $filename = config_item('upload_path') . $file['source_path'];
+            if (is_file($filename)) {
+                $result = $this->file_model->staticUpdate($file['id'], [
+                    'status' => intval($file['status']) | File_model::STATUS_CONVERTING
+                ]);
+                if (!$result)
+                    $log .= "Error updating the file table with error status.\n";
+
+                    // Get the MIME type.
+                    $mimeType = $this->getMimeType($file);
+                    if (!empty($mimeType)) {
+                        $result = -2;
+                        $majorType = explode('/', $mimeType)[0];
+                        $log .= "majorType: $majorType\n";
+                        if ($majorType === 'audio')
+                            $result = $this->transcodeAudio($job_id, $filename, $log);
+                        elseif ($majorType === 'video')
+                            $result = $this->transcodeVideo($job_id, $filename, $log);
+                        else
+                            $log .= "Error: unable to transcode MIME type $mimeType\n";
+                    } else {
+                        $log .= "Error: failed to get MIME type for $filename\n";
+                    }
+
+                } else {
+                $result = -3;
+                $log .= "Source file does not exist: $filename.";
+            }
+        } else {
+            $result = -4;
+            $log = "Source_path in file table is empty.";
+        }
+        if ($result !== 0) {
+            $result = $this->file_model->staticUpdate($file['id'], [
+                'status' => intval($file['status']) | File_model::STATUS_ERROR
+            ]);
+            if (!$result)
+                $log .= "Error updating the file table with error status.\n";
+        }
+        $this->job_model->update($job_id, [
+            'result' => $result,
+            'log' => $log
+        ]);
+        return $result;
+    }
+
+    protected function transcodeVideo($job_id, $filename, &$log)
+    {
+        $result = -10;
+        $duration_ms = 1;
+        $file = $this->job_model->getWithFileById($job_id);
+        if ($file)
+            $duration_ms = $file['duration_ms'];
+        $lastProgress = null;
+
+        $extension = strrchr($filename, '.');
+        $out = basename($filename, $extension);
+        $out = "$out[0]/$out[1]/$out.webm";
+        $out = config_item('transcode_path') . $out;
+        $out = $this->getUniqueFilename($out);
+        $dir = dirname($out);
+        if (!is_dir($dir))
+            mkdir($dir, 0755, true);
+
+        $descriptorspec = [
+            0 => array('file', '/dev/null', 'r'), // stdin
+            1 => array('file', '/dev/null', 'w'), // stderr
+            2 => array('pipe', 'w'), // stdout
+        ];
+        $cwd = '/tmp';
+        $env = [];
+        $cmd = "/usr/bin/nice ffmpeg -i $filename -vf yadif=mode=send_frame:deint=interlaced -codec:a libvorbis -qscale:a 5 -codec:v libvpx -g 100 -quality good -speed 0 -vprofile 0 -slices 4 -threads 2 -b: 10M -crf 10 -arnr_max_frames 7 -arnr_strength 5 -arnr_type 3 -y $out";
+        $process = proc_open($cmd, $descriptorspec, $pipes, $cwd, $env);
+
+        if (is_resource($process)) {
+            while ($line = stream_get_line($pipes[2], 255, "\r")) {
+                echo "$line\n";
+                $i = strpos($line, 'time=');
+                $time = substr($line, $i + strlen('time='), 11);
+                if (!empty($time)) {
+                    $fields = explode(':', $time);
+                    if (count($fields) === 3) {
+                        $secs = $fields[0] * 3600 + $fields[1] * 60 + $fields[2];
+                        $progress = intval(round($secs * 1000 / $duration_ms * 100));
+                        if ($progress !== $lastProgress) {
+                            $lastProgress = $progress;
+                            echo "progress: $progress%\n";
+                            $this->job_model->update($job_id, ['progress' => $progress]);
+                        }
+                    }
+                }
+                $log .= "$line\n";
+            }
+            fclose($pipes[2]);
+            $result = proc_close($process);
+            echo "ffmpeg returned $result\n";
+        }
+        return $result;
+    }
+
+    public function test($filename)
+    {
+        $log = '';
+        $this->transcodeVideo(33, config_item('upload_path').$filename, $log);
+        echo $log;
+    }
+
+    protected function getUniqueFilename($name)
+    {
+        while (file_exists($name)) {
+            $name = preg_replace_callback(
+                '/(?:(?: \(([\d]+)\))?(\.[^.]+))?$/',
+                array($this, 'getUniqueFilename_callback'),
+                $name,
+                1
+            );
+        }
+        return $name;
+    }
+
+    protected function getUniqueFilename_callback($matches) {
+        $index = isset($matches[1]) ? intval($matches[1]) + 1 : 1;
+        $ext = isset($matches[2]) ? $matches[2] : '';
+        return ' ('.$index.')'.$ext;
     }
 }
