@@ -371,10 +371,10 @@ class Job extends CI_Controller
                     if ($file) {
                         switch ($file['type']) {
                             case Job_model::TYPE_TRANSCODE:
-                                $this->transcode($job_id, $file);
+                                $this->transcode($file);
                                 break;
                             case Job_model::TYPE_RENDER:
-                                $this->render($job_id, $file);
+                                $this->render($file);
                                 break;
                             default:
                                 $log .= "Unknown job type $file[type].\n";
@@ -392,7 +392,7 @@ class Job extends CI_Controller
         }
     }
 
-    protected function transcode($job_id, $file)
+    protected function transcode($file)
     {
         $result = -1;
         if (!empty($file['source_path'])) {
@@ -400,34 +400,47 @@ class Job extends CI_Controller
             $log = "Transcode: $file[source_path].\n";
             $filename = config_item('upload_path') . $file['source_path'];
             if (is_file($filename)) {
-                $result = $this->file_model->staticUpdate($file['id'], [
+                // Set file record status to converting.
+                $result = $this->file_model->staticUpdate($file['file_id'], [
                     'status' => intval($file['status']) | File_model::STATUS_CONVERTING
                 ]);
                 if (!$result)
-                    $log .= "Error updating the file table with error status.\n";
+                    $log .= "Error updating the file table with converting status.\n";
 
-                    // Get the MIME type.
-                    $mimeType = $this->getMimeType($file);
-                    if (!empty($mimeType)) {
+                // Get the MIME type.
+                $mimeType = $this->getMimeType($file);
+                if (!empty($mimeType)) {
+                    // Skip transcoding if already Ogg or WebM.
+                    if (strpos($mimeType, '/ogg') !== false || strpos($mimeType, '/webm')) {
+                        $result = 0;
+                        $log .= "Skipping transcode since MIME type is $mimeType.\n";
+                        // Update file table with status.
+                        $status = intval($file['status']) | File_model::STATUS_FINISHED;
+                        if (!$this->file_model->staticUpdate($file['file_id'], ['status' => $status])) {
+                            $result = -5;
+                            $log .= "Error updating the file table with output_path and hash.\n";
+                        }
+                    } else {
+                        // Transcode it.
                         $result = -2;
                         $majorType = explode('/', $mimeType)[0];
                         $log .= "majorType: $majorType\n";
                         if ($majorType === 'audio') {
-                            $result = $this->runFFmpeg($job_id, $filename, $log,
+                            $result = $this->runFFmpeg($file, $log,
                                 config_item('transcode_audio_extension'),
                                 config_item('transcode_audio_options'));
                         } elseif ($majorType === 'video') {
-                            $result = $this->runFFmpeg($job_id, $filename, $log,
+                            $result = $this->runFFmpeg($file, $log,
                                 config_item('transcode_video_extension'),
                                 config_item('transcode_video_options'));
                         } else {
                             $log .= "Error: unable to transcode MIME type $mimeType\n";
                         }
-                    } else {
-                        $log .= "Error: failed to get MIME type for $filename\n";
                     }
-
                 } else {
+                    $log .= "Error: failed to get MIME type for $filename\n";
+                }
+            } else {
                 $result = -3;
                 $log .= "Source file does not exist: $filename.";
             }
@@ -437,23 +450,19 @@ class Job extends CI_Controller
         }
 
         // Update the job table with job results.
-        $this->job_model->update($job_id, [
+        $this->job_model->update($file['job_id'], [
             'result' => $result,
             'log' => $log
         ]);
         return $result;
     }
 
-    protected function runFFmpeg($job_id, $filename, &$log, $extension, $options)
+    protected function runFFmpeg($file, &$log, $extension, $options)
     {
         $result = -10;
-        $duration_ms = 1;
+        $duration_ms = intval($file['duration_ms']);
         $lastProgress = null;
-
-        // Get the file record.
-        $file = $this->job_model->getWithFileById($job_id);
-        if ($file)
-            $duration_ms = intval($file['duration_ms']);
+        $filename = config_item('upload_path') . $file['source_path'];
 
         // Prepare the output file name.
         $ext = strrchr($filename, '.');
@@ -491,7 +500,7 @@ class Job extends CI_Controller
                         $progress = intval(round($secs * 1000 / $duration_ms * 100));
                         if ($progress !== $lastProgress) {
                             $lastProgress = $progress;
-                            $this->job_model->update($job_id, ['progress' => $progress]);
+                            $this->job_model->update($file['job_id'], ['progress' => $progress]);
                         }
                     }
                 }
@@ -508,18 +517,19 @@ class Job extends CI_Controller
         // Update the file table with results.
         if ($result === 0) {
             $status = intval($file['status']) | File_model::STATUS_FINISHED;
+            // Clear any previous error in case this was re-attempted.
             $status &= ~File_model::STATUS_ERROR;
-            $isUpdated = $this->file_model->staticUpdate($file['id'], [
+            $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
                 'status' => $status,
                 'output_path' => str_replace(config_item('transcode_path'), '', $fullname),
                 'output_hash' => $this->getFileHash($fullname)
             ]);
             if (!$isUpdated) {
                 $result = -12;
-                $log .= "Error updating the file table with error status.\n";
+                $log .= "Error updating the file table with output_path and hash.\n";
             }
         } else {
-            $isUpdated = $this->file_model->staticUpdate($file['id'], [
+            $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
                 'status' => intval($file['status']) | File_model::STATUS_ERROR
             ]);
             if (!$isUpdated) {

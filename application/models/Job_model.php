@@ -47,6 +47,7 @@ class Job_model extends CI_Model
 
     function getWithFileById($job_id)
     {
+        $this->db->select('job.id as job_id, file_id, type, progress, result, job.updated_at as job_updated_at, file.*');
         $this->db->join('file', 'file_id = file.id');
         $this->db->where('job.id', $job_id);
         $query = $this->db->get('job');
