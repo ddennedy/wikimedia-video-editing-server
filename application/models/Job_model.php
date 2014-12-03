@@ -59,4 +59,20 @@ class Job_model extends CI_Model
         $this->db->where('id', $id);
         return $this->db->update('job', $data);
     }
+
+    function getByFileIdAndType($id, $jobType)
+    {
+        return $this->db->select('id, progress, result')
+                        ->get_where('job', ['file_id' => $id, 'type' => $jobType])
+                        ->row_array();
+    }
+
+    function getLog($id)
+    {
+        $row = $this->db->select('log')->get_where('job', ['id' => $id])->row();
+        if ($row)
+            return $row->log;
+        else
+            return null;
+    }
 }

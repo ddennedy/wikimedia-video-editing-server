@@ -35,7 +35,9 @@ $config['cookie_expire_seconds'] = 2592000; // 30 days
 $config['recent_limit'] = 100;
 $config['search_limit'] = 25;
 $config['upload_path'] = '/var/www/uploads/';
+$config['upload_vdir'] = 'uploads/';
 $config['transcode_path'] = '/var/www/transcodes/';
+$config['transcode_vdir'] = 'transcodes/';
 
 $config['beanstalkd_host'] = 'mysql';
 $config['beanstalkd_tube_validate'] = 'videoeditserver-validate';

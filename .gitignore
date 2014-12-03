@@ -8,3 +8,4 @@ other/mediawiki-oauth-key.pem
 **.pem
 uploads/
 transcodes/
+.idea/

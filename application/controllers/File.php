@@ -152,18 +152,58 @@ class File extends CI_Controller
         $file = $this->file_model->getById($id);
         if ($file) {
             $this->data = array_merge($this->data, $file);
+            $this->data['isDownloadable'] = false;
 
             // Determine upload status.
             if (!empty($file['source_path']) &&
                     is_file(config_item('upload_path').$file['source_path'])) {
                 $size = filesize(config_item('upload_path').$file['source_path']);
-                if ($size != $file['size_bytes'])
-                    $this->data['upload_status'] = tr('upload_status_partial');
-                else
-                    $this->data['upload_status'] = tr('upload_status_complete');
+                if ($size != $file['size_bytes']) {
+                    $status = tr('upload_partialupload');
+                } else {
+                    $status = tr('status_uploaded');
+                    if ($file['status'] & File_model::STATUS_VALIDATED) {
+                        $status .= ' =&gt; <a href="' . base_url(config_item('upload_vdir').$file['source_path']) . '">';
+                        $status .= tr('status_validated') . '</a>';
+                        if ($file['status'] & File_model::STATUS_CONVERTING) {
+                            $this->load->model('job_model');
+                            $status .= ' =&gt; ' . tr('status_converting');
+                            $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_TRANSCODE);
+                            if ($job)
+                                $status .= ": $job[progress]%";
+                        } else if ($file['status'] & File_model::STATUS_FINISHED) {
+                            $this->data['isDownloadable'] = true;
+                            // Ogg and WebM files are not transcoded and do not set output_path.
+                            if (is_file(config_item('transcode_path').$file['output_path'])) {
+                                $status .= ' =&gt; <a href="' . base_url(config_item('transcode_vdir') . $file['output_path']) . '">';
+                                $status .= tr('status_converted') . '</a>';
+                            }
+                        } else if ($file['status'] & File_model::STATUS_ERROR) {
+                            $this->load->model('job_model');
+                            $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_TRANSCODE);
+                            if ($job) {
+                                $status .= ' =&gt; <a href="' . site_url('job/log/' . $job['id'])  . '">';
+                                $status .= tr('status_error_transcode') . '</a>';
+                            } else {
+                                $status .= ' =&gt; ' . tr('status_error_transcode');
+                            }
+                        }
+                    } else if ($file['status'] & File_model::STATUS_ERROR) {
+                        $this->load->model('job_model');
+                        $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_VALIDATE);
+                        if ($job) {
+                            $status .= ' =&gt; <a href="' . site_url('job/log/' . $job['id'])  . '">';
+                            $status .= tr('status_error_validate') . '</a>';
+                        } else {
+                            $status .= ' =&gt; ' . tr('status_error_validate');
+                        }
+                    }
+                }
             } else {
-                $this->data['upload_status'] = tr('upload_status_notstarted');
+                $status = tr('status_noupload');
             }
+
+
             $this->data['heading'] = tr('file_view_heading', $file);
             $this->data['footer'] = tr('file_view_footer', $file);
 
@@ -185,13 +225,23 @@ class File extends CI_Controller
                 ['<strong>'.tr('file_recording_date').'</strong>', $file['recording_date']],
                 ['<strong>'.tr('file_language').'</strong>', $this->user_model->getLanguageByKey($file['language'])],
                 ['<strong>'.tr('file_license').'</strong>', $this->file_model->getLicenseByKey($file['license'])],
-                ['<strong>'.tr('file_upload').'</strong>', $this->data['upload_status']],
             ];
-            if ($this->data['upload_status'] !== tr('upload_status_notstarted')) {
-                $this->load->helper('filesize');
+            if ($this->data['mime_type'])
                 $tableData []= ['<strong>'.tr('file_mime_type').'</strong>', $file['mime_type']];
+            if ($this->data['size_bytes']) {
+                $this->load->helper('filesize');
                 $tableData []= ['<strong>'.tr('file_size').'</strong>', FileSizeConvert($file['size_bytes'])];
             }
+            if ($file['duration_ms']) {
+                $seconds = $file['duration_ms'] / 1000;
+                $hours = floor($seconds / 3600);
+                $seconds -= $hours * 3600;
+                $minutes = floor($seconds / 60);
+                $seconds -= $minutes * 60;
+                $time = sprintf('%02d:%02d:%02d', $hours, $minutes, round($seconds));
+                $tableData [] = ['<strong>' . tr('file_duration') . '</strong>', $time];
+            }
+            $tableData []= ['<strong>'.tr('file_status').'</strong>', $status];
             $this->data['metadata'] = $this->table->generate($tableData);
             $this->table->clear();
 
@@ -391,5 +441,28 @@ class File extends CI_Controller
                 $result = [['id' => $this->input->get('q'), 'text' => $this->input->get('q')]];
         }
         $this->output->set_output(json_encode($result));
+    }
+
+    public function download($id)
+    {
+        $file = $this->file_model->getById($id);
+        if ($file && ($file['status'] & File_model::STATUS_FINISHED)) {
+            if ($file['output_path']) {
+                $filename = config_item('transcode_path').$file['output_path'];
+                if (is_file($filename)) {
+                    $this->load->helper('download');
+                    force_download($filename, null);
+                    return;
+                }
+            } else if ($file['source_path']) {
+                $filename = config_item('upload_path').$file['source_path'];
+                if (is_file($filename)) {
+                    $this->load->helper('download');
+                    force_download($filename, null);
+                    return;
+                }
+            }
+        }
+        show_404(uri_string());
     }
 }

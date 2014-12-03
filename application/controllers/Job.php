@@ -566,4 +566,15 @@ class Job extends CI_Controller
         $ext = isset($matches[2]) ? $matches[2] : '';
         return ' ('.$index.')'.$ext;
     }
+
+    public function log($id)
+    {
+        $log = $this->job_model->getLog($id);
+        if ($log) {
+            $this->output->set_content_type('text/plain');
+            $this->output->set_output($log);
+        } else {
+            show_404(uri_string());
+        }
+    }
 }

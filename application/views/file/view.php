@@ -23,10 +23,13 @@
 <p><?= $metadata ?></p>
 <hr>
 <?php if ($isEditable): ?>
-<a href="<?= site_url('file/edit/' . $id) ?>"><?= tr('edit') ?></a>
+    <a href="<?= site_url('file/edit/' . $id) ?>"><?= tr('edit') ?></a>
 <?php endif; ?>
 <?php if ($isDeletable): ?>
-| <a href="<?= site_url('file/delete/' . $id) ?>"><?= tr('delete') ?></a>
+    | <a href="<?= site_url('file/delete/' . $id) ?>"><?= tr('delete') ?></a>
+<?php endif; ?>
+<?php if ($isDownloadable): ?>
+    | <a href="<?= site_url('file/download/' . $id) ?>"><?= tr('download') ?></a>
 <?php endif; ?>
 <p><small><?= $footer ?></small></p>
 <?= $history ?>

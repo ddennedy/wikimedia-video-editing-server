@@ -61,6 +61,7 @@ $lang['cancel'] = 'Cancel';
 $lang['search'] = 'Search';
 $lang['delete'] = 'Delete';
 $lang['restore'] = 'Restore';
+$lang['download'] = 'Download';
 
 // Menu items
 $lang['menu_login'] = 'Login';
@@ -142,7 +143,14 @@ $lang['file_upload_resume'] = 'Incomplete: choose "{filename}" to resume.';
 $lang['file_upload'] = 'Upload';
 $lang['file_mime_type'] = 'MIME Type';
 $lang['file_size'] = 'Size';
+$lang['file_duration'] = 'Duration';
+$lang['file_status'] = 'Status';
 
-$lang['upload_status_notstarted'] = 'Not started, please click Edit to start.';
-$lang['upload_status_partial'] = 'Partial, please click Edit to resume.';
-$lang['upload_status_complete'] = 'Completed';
+$lang['status_noupload'] = 'No upload, please click Edit to start.';
+$lang['upload_partialupload'] = 'Partially uploaded, please click Edit to resume.';
+$lang['status_uploaded'] = 'Uploaded';
+$lang['status_converting'] = 'Converting Now';
+$lang['status_converted'] = 'Transcoded';
+$lang['status_validated'] = 'Validated';
+$lang['status_error_validate'] = 'Invalid';
+$lang['status_error_transcode'] = 'Transcode Error';
