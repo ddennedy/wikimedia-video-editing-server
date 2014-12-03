@@ -286,7 +286,7 @@ class Job extends CI_Controller
                 $result = $this->file_model->staticUpdate($file['id'], [
                     'source_hash' => $hash,
                     'properties' => $properties,
-                    'status' => intval($file['status']) | File_model::STATUS_VALIDATED
+                    'status' => intval($file['status']) | File_model::STATUS_VALIDATED | File_model::STATUS_FINISHED
                 ]);
                 if (!$result)
                     $log .= "Error updating the file table with hash and status.\n";
