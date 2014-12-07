@@ -350,4 +350,45 @@ class File_model extends CI_Model
         $this->db->set('updated_at', 'updated_at', false);
         return $this->db->update('file');
     }
+
+    public function getByHash($hash)
+    {
+        $this->db->where(['source_hash' => $hash]);
+        $this->db->or_where(['output_hash' => $hash]);
+        $query = $this->db->get('file', 1);
+        return $query->row_array();
+    }
+
+    public function getByPath($path)
+    {
+        $this->db->like(['source_path' => $path]);
+        $this->db->or_like(['output_path' => $path]);
+        $query = $this->db->get('file', 1);
+        return $query->row_array();
+    }
+
+    public function addChild($parentId, $childId)
+    {
+        $result = $this->db->insert('file_children', [
+            'file_id' => $parentId,
+            'child_id' => $childId
+        ]);
+        if ($result)
+            return $this->db->insert_id();
+        else
+            return false;
+    }
+
+    public function addMissing($fileId, $name, $hash)
+    {
+        $result = $this->db->insert('missing_files', [
+            'file_id' => $fileId,
+            'name' => $name,
+            'hash' => $hash
+        ]);
+        if ($result)
+            return $this->db->insert_id();
+        else
+            return false;
+    }
 }

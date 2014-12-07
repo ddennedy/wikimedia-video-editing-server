@@ -162,9 +162,13 @@ class File extends CI_Controller
                     $status = tr('upload_partialupload');
                 } else {
                     $status = tr('status_uploaded');
-                    if ($file['status'] & File_model::STATUS_VALIDATED) {
+                    if ($file['status'] & File_model::STATUS_VALIDATED && !($file['status'] & File_model::STATUS_ERROR)) {
                         $status .= ' =&gt; <a href="' . base_url(config_item('upload_vdir').$file['source_path']) . '">';
                         $status .= tr('status_validated') . '</a>';
+                        $this->load->library('MltXmlReader');
+                        if ($this->mltxmlreader->isMimeTypeMltXml($file['mime_type']))
+                            $this->data['isDownloadable'] = true;
+                        // Determine conversion status.
                         if ($file['status'] & File_model::STATUS_CONVERTING) {
                             $this->load->model('job_model');
                             $status .= ' =&gt; ' . tr('status_converting');
@@ -462,7 +466,16 @@ class File extends CI_Controller
                     return;
                 }
             }
+        } else if ($file && $file['source_path'] && ($file['status'] & File_model::STATUS_VALIDATED)) {
+            // This condition is for validated MLT XML files prior to completion of rendering.
+            $filename = config_item('upload_path').$file['source_path'];
+            if (is_file($filename)) {
+                $this->load->helper('download');
+                force_download($filename, null);
+                return;
+            }
         }
+
         show_404(uri_string());
     }
 }

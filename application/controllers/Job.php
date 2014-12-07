@@ -78,11 +78,7 @@ class Job extends CI_Controller
                                        $mimeType === 'application/x-kdenlive' ||
                                        $mimeType === 'application/mlt+xml') {
                                 // if mlt xml, verify melt can read it
-                                //   verify all dependent files are available
-                                //   create records in file_relations table for all dependent files
-                                //   todo: how to show missing dependencies in database
-                                //   if valid with all dependencies, create render job
-
+                                $isValid = $this->validateMLTXML($job_id, $file);
                             } else {
                                 //TODO flag this somehow as possible invalid, let
                                 // the user manually approve it as a supplemental file
@@ -242,7 +238,7 @@ class Job extends CI_Controller
         return $isValid;
     }
 
-    public function validateImage($job_id, $file, $majorType)
+    protected function validateImage($job_id, $file, $majorType)
     {
         // verify melt can read it
         $this->load->model('file_model');
@@ -302,6 +298,122 @@ class Job extends CI_Controller
             if (!$result)
                 $log .= "Error updating the file table with error status.\n";
         }
+        $this->job_model->update($job_id, [
+            'progress' => 100,
+            'result' => ($isValid? 0 : 1),
+            'log' => $log
+        ]);
+        return $isValid;
+    }
+
+    protected function validateMLTXML($job_id, $file)
+    {
+        // verify melt can load it
+        $this->load->model('file_model');
+        $isValid = true;
+        $log = "Validate: $file[source_path].\n";
+        $filename = config_item('upload_path') . $file['source_path'];
+
+        // if audio or video, verify ffprobe can read it
+        $xml = shell_exec("/usr/bin/nice melt -consumer xml '$filename' 2>/dev/null");
+        if (!empty($xml)) {
+            libxml_use_internal_errors(true);
+            $mlt = simplexml_load_string($xml);
+            if ($mlt) {
+                // verify all dependent files are available
+                $this->load->library('MltXmlReader');
+                $this->mltxmlreader->open($filename);
+                try {
+                    $this->mltxmlreader->parse();
+                } catch (Exception $e) {
+                    $isValid = false;
+                    $log .= "$e\n";
+                }
+                $this->mltxmlreader->close();
+                if ($isValid) {
+                    $childFiles = $this->mltxmlreader->getFiles();
+
+                    foreach($childFiles as $fileName => $fileData) {
+                        $name = basename($fileName);
+                        if (isset($fileData['mlt_service'])) {
+                            $child = null;
+                            $log .= "Found file in XML with name: $name.\n";
+                            if (!empty($fileData['file_hash'])) {
+                                // Search for file by hash.
+                                $child = $this->file_model->getByHash($fileData['file_hash']);
+                                if ($child)
+                                    $log .= "Found file record by its hash: $fileData[file_hash].\n";
+                            }
+                            if (!$child) {
+                                // Search for file by basename.
+                                $child = $this->file_model->getByPath($name);
+                                if ($child)
+                                    $log .= "Found file record by name: $name.\n";
+                            }
+                            //TODO Search for the file on Commons based on its basename;
+                            if ($child) {
+                                // Add child and parent relations to database.
+                                if ($this->file_model->addChild($file['id'], $child['id']))
+                                    $log .= "Added file relationship: $file[id] -> $child[id].\n";
+                                else
+                                    $log .= "Error adding record to file_children table: $file[id] -> $child[id].\n";
+                            } else {
+                                $isValid = false;
+                                // Add child to missing_files table.
+                                if ($this->file_model->addMissing($file['id'], $name, $fileData['file_hash']))
+                                    $log .= "Added to missing_files table: $file[id] -> $name.\n";
+                                else
+                                    $log .= "Error adding record to missing_files table: $file[id] -> $name.\n";
+                            }
+                        } else {
+                            // This file is not necessary and the corresponding
+                            // kdenlive_producer can be removed from the XML to
+                            // remove unneeded dependencies.
+                            $log .= "Found unnecessary file: $name.\n";
+                        }
+                    }
+
+                }
+
+                // If still valid, create the render job.
+                if ($isValid) {
+                    $renderJobId = $this->job_model->create($file['id'], Job_model::TYPE_RENDER);
+                    if ($renderJobId) {
+                        // Put job into the queue.
+                        $tube = config_item('beanstalkd_tube_render');
+                        $this->beanstalk->useTube($tube);
+                        $priority = 10;
+                        $delay = 0;
+                        $ttr = 60; // seconds
+                        $jobId = $this->beanstalk->put($priority, $delay, $ttr, $renderJobId);
+                        $tube = config_item('beanstalkd_tube_validate');
+                        $this->beanstalk->useTube($tube);
+                        $log .= "Created render job with ID $renderJobId.\n";
+                    } else {
+                        $log .= "Error creating render job on beanstalkd.\n";
+                    }
+                }
+            } else {
+                $isValid = false;
+                $log .= "melt is unable to load this file.\n";
+            }
+        } else {
+            $log .= "Error: melt failed to run.\n";
+            $isValid = false;
+        }
+        $status = intval($file['status']) | File_model::STATUS_VALIDATED;
+        if ($isValid)
+            // Clear any previous error in case this was re-attempted.
+            $status &= ~File_model::STATUS_ERROR;
+        else
+            $status |= File_model::STATUS_ERROR;
+        $result = $this->file_model->staticUpdate($file['id'], [
+            'status' => $status
+        ]);
+        if (!$result)
+            $log .= "Error updating the file table with status.\n";
+
+        // Update the job record.
         $this->job_model->update($job_id, [
             'progress' => 100,
             'result' => ($isValid? 0 : 1),
@@ -374,7 +486,7 @@ class Job extends CI_Controller
                                 $this->transcode($file);
                                 break;
                             case Job_model::TYPE_RENDER:
-                                $this->render($file);
+                                //$this->render($file);
                                 break;
                             default:
                                 $log .= "Unknown job type $file[type].\n";

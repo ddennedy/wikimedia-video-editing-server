@@ -71,6 +71,8 @@ CREATE INDEX file_user_id ON file (user_id);
 CREATE INDEX file_recording_date ON file (recording_date);
 CREATE INDEX file_language ON file (language);
 CREATE INDEX file_license ON file (license);
+CREATE INDEX file_source_hash ON file (source_hash);
+CREATE INDEX file_output_hash ON file (output_hash);
 
 DROP TABLE IF EXISTS keyword;
 CREATE TABLE keyword (
@@ -118,6 +120,19 @@ CREATE TABLE file_children (
   PRIMARY KEY (file_id, child_id)
 );
 CREATE INDEX file_child_id ON file_children (child_id);
+
+-- This table keeps track of missing dependent files of a project file.
+DROP TABLE IF EXISTS missing_files;
+CREATE TABLE missing_files (
+  id int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  file_id int unsigned NOT NULL,
+  name varchar(255) NOT NULL, -- basename
+  hash char(32), -- md5 hash from the project file
+  updated_at timestamp NOT NULL
+);
+CREATE INDEX missing_files_file_id ON missing_files (file_id);
+CREATE INDEX missing_files_name ON missing_files (name);
+CREATE INDEX missing_files_hash ON missing_files (hash);
 
 DROP TABLE IF EXISTS recent;
 CREATE TABLE recent (
