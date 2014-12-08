@@ -495,7 +495,7 @@ class File extends CI_Controller
     public function download($id)
     {
         $file = $this->file_model->getById($id);
-        if ($file && ($file['status'] & File_model::STATUS_FINISHED)) {
+        if ($file && ($file['status'] & File_model::STATUS_VALIDATED)) {
             if ($file['output_path']) {
                 $filename = config_item('transcode_path').$file['output_path'];
                 if (is_file($filename)) {
@@ -511,16 +511,7 @@ class File extends CI_Controller
                     return;
                 }
             }
-        } else if ($file && $file['source_path'] && ($file['status'] & File_model::STATUS_VALIDATED)) {
-            // This condition is for validated MLT XML files prior to completion of rendering.
-            $filename = config_item('upload_path').$file['source_path'];
-            if (is_file($filename)) {
-                $this->load->helper('download');
-                force_download($filename, null);
-                return;
-            }
         }
-
         show_404(uri_string());
     }
 }

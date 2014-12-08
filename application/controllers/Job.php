@@ -334,7 +334,7 @@ class Job extends CI_Controller
                 if ($isValid) {
                     $childFiles = $this->mltxmlreader->getFiles();
 
-                    foreach($childFiles as $fileName => $fileData) {
+                    foreach($childFiles as $fileName => &$fileData) {
                         $name = basename($fileName);
                         if (isset($fileData['mlt_service'])) {
                             $child = null;
@@ -353,6 +353,17 @@ class Job extends CI_Controller
                             }
                             //TODO Search for the file on Commons based on its basename;
                             if ($child) {
+                                // Save path for new XML.
+                                if (empty($child['output_path']))
+                                    $fileData['output_path'] = basename($child['source_path']);
+                                else
+                                    $fileData['output_path'] = basename($child['output_path']);
+                                // Save hash for new XML.
+                                if (empty($child['output_hash']))
+                                    $fileData['output_hash'] = basename($child['source_hash']);
+                                else
+                                    $fileData['output_hash'] = basename($child['output_hash']);
+
                                 // Add child and parent relations to database.
                                 if ($this->file_model->addChild($file['id'], $child['id']))
                                     $log .= "Added file relationship: $file[id] -> $child[id].\n";
@@ -374,6 +385,35 @@ class Job extends CI_Controller
                         }
                     }
 
+                }
+
+                // If still valid, create a new version of the XML with proxy clips.
+                if ($isValid) {
+                    $this->load->library('MltXmlWriter', $childFiles);
+
+                    // Prepare the output file name.
+                    $out = basename($filename);
+                    $out = "$out[0]/$out[1]/$out";
+                    $fullname = config_item('transcode_path') . $out;
+                    $fullname = $this->getUniqueFilename($fullname);
+                    $dir = dirname($fullname);
+                    if (!is_dir($dir))
+                        mkdir($dir, 0755, true);
+                    $this->mltxmlwriter->run($filename, $fullname);
+
+                    // Update database with new XML filename.
+                    $status = intval($file['status']) | File_model::STATUS_FINISHED;
+                    // Clear any previous error in case this was re-attempted.
+                    $status &= ~File_model::STATUS_ERROR;
+                    $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
+                        'status' => $status,
+                        'output_path' => str_replace(config_item('transcode_path'), '', $out),
+                        'output_hash' => $this->getFileHash($fullname)
+                    ]);
+                    if (!$isUpdated) {
+                        $isValid = false;
+                        $log .= "Error updating the file table with output_path and hash.\n";
+                    }
                 }
 
                 // If still valid, create the render job.
