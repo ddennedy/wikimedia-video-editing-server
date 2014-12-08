@@ -300,10 +300,11 @@ class File extends CI_Controller
                 if (count($result)) {
                     foreach ($result as &$row) {
                         $row['title'] = anchor("file/$row[child_id]", htmlspecialchars($row['title']));
+                        $row['download'] = anchor("file/download/$row[child_id]", tr('download'));
                         unset($row['child_id']);
                     }
                     $this->load->library('table');
-                    $this->table->set_heading(tr('file_title'), tr('file_author'), tr('file_mime_type'));
+                    $this->table->set_heading(tr('file_title'), tr('file_author'), tr('file_mime_type'), '');
                     $this->table->set_caption(tr('file_children_caption'));
                     $this->table->set_template([
                         'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
