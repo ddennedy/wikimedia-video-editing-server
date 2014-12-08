@@ -369,6 +369,10 @@ class File_model extends CI_Model
 
     public function addChild($parentId, $childId)
     {
+        $this->db->where('file_id', $parentId);
+        $this->db->where('child_id', $childId);
+        if ($this->db->get('file_children')->num_rows() > 0)
+            return true;
         $result = $this->db->insert('file_children', [
             'file_id' => $parentId,
             'child_id' => $childId
@@ -381,6 +385,10 @@ class File_model extends CI_Model
 
     public function addMissing($fileId, $name, $hash)
     {
+        $this->db->where('file_id', $fileId);
+        $this->db->where('hash', $hash);
+        if ($this->db->get('missing_files')->num_rows() > 0)
+            return true;
         $result = $this->db->insert('missing_files', [
             'file_id' => $fileId,
             'name' => $name,
@@ -390,5 +398,39 @@ class File_model extends CI_Model
             return $this->db->insert_id();
         else
             return false;
+    }
+
+    public function getMissingFiles($id)
+    {
+        $this->db->select('name');
+        $this->db->where('file_id', $id);
+        return $this->db->get('missing_files')->result_array();
+    }
+
+    public function getChildren($id)
+    {
+        $this->db->select('child_id, file.title, file.author, file.mime_type');
+        $this->db->where('file_id', $id);
+        $this->db->join('file', 'child_id = file.id');
+        return $this->db->get('file_children')->result_array();
+    }
+
+    public function getProjects($id)
+    {
+        $this->db->select('file.id, file.title, file.author, file.updated_at');
+        $this->db->where('child_id', $id);
+        $this->db->join('file', 'file_id = file.id');
+        $this->db->order_by('file.title');
+        return $this->db->get('file_children')->result_array();
+    }
+
+    public function getMissingByHash($hash)
+    {
+        return $this->db->get_where('missing_files', ['hash' => $hash])->result_array();
+    }
+
+    public function deleteMissing($id)
+    {
+        $this->db->where('id', $id)->delete('missing_files');
     }
 }

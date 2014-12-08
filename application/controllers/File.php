@@ -153,6 +153,8 @@ class File extends CI_Controller
         if ($file) {
             $this->data = array_merge($this->data, $file);
             $this->data['isDownloadable'] = false;
+            $this->load->library('MltXmlReader');
+            $isProject = $this->mltxmlreader->isMimeTypeMltXml($file['mime_type']);
 
             // Determine upload status.
             if (!empty($file['source_path']) &&
@@ -165,8 +167,7 @@ class File extends CI_Controller
                     if ($file['status'] & File_model::STATUS_VALIDATED && !($file['status'] & File_model::STATUS_ERROR)) {
                         $status .= ' =&gt; <a href="' . base_url(config_item('upload_vdir').$file['source_path']) . '">';
                         $status .= tr('status_validated') . '</a>';
-                        $this->load->library('MltXmlReader');
-                        if ($this->mltxmlreader->isMimeTypeMltXml($file['mime_type']))
+                        if ($isProject)
                             $this->data['isDownloadable'] = true;
                         // Determine conversion status.
                         if ($file['status'] & File_model::STATUS_CONVERTING) {
@@ -282,6 +283,49 @@ class File extends CI_Controller
                 $this->data['history'] = $this->table->generate($subset);
             } else {
                 $this->data['history'] = '<em>' . tr('file_history_none') . '</em>';
+            }
+
+            // Create table of dependent files for projects.
+            if ($isProject) {
+                $result = $this->file_model->getMissingFiles($id);
+                if (count($result)) {
+                    $this->load->library('table');
+                    $this->table->set_heading(tr('file_missing_caption'));
+                    $this->table->set_template([
+                        'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
+                    ]);
+                    $this->data['missing'] = $this->table->generate($result);
+                }
+                $result = $this->file_model->getChildren($id);
+                if (count($result)) {
+                    foreach ($result as &$row) {
+                        $row['title'] = anchor("file/$row[child_id]", htmlspecialchars($row['title']));
+                        unset($row['child_id']);
+                    }
+                    $this->load->library('table');
+                    $this->table->set_heading(tr('file_title'), tr('file_author'), tr('file_mime_type'));
+                    $this->table->set_caption(tr('file_children_caption'));
+                    $this->table->set_template([
+                        'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
+                    ]);
+                    $this->data['relations'] = $this->table->generate($result);
+                }
+            } else {
+                // Create a table of projects that use this file.
+                $result = $this->file_model->getProjects($id);
+                if (count($result)) {
+                    foreach ($result as &$row) {
+                        $row['title'] = anchor("file/$row[id]", htmlspecialchars($row['title']));
+                        unset($row['id']);
+                    }
+                    $this->load->library('table');
+                    $this->table->set_heading(tr('file_title'), tr('file_author'), tr('file_updated_at'));
+                    $this->table->set_caption(tr('file_projects_caption'));
+                    $this->table->set_template([
+                        'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
+                    ]);
+                    $this->data['relations'] = $this->table->generate($result);
+                }
             }
 
             // Build the page.

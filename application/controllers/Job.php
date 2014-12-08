@@ -78,16 +78,14 @@ class Job extends CI_Controller
                                        $mimeType === 'application/x-kdenlive' ||
                                        $mimeType === 'application/mlt+xml') {
                                 // if mlt xml, verify melt can read it
-                                $isValid = $this->validateMLTXML($job_id, $file);
+                                $isValid = $this->validateMLTXML($job_id, $file, $majorType);
                             } else {
                                 //TODO flag this somehow as possible invalid, let
                                 // the user manually approve it as a supplemental file
                                 // needed by the project
                             }
-    // TODO remove testing exit
-//     $this->beanstalk->release($job['id'], 10, 0);
-//     $this->beanstalk->disconnect();
-//     return;
+                            if (!empty($file['source_hash']))
+                                $this->checkIfWasMissing($file);
                         } else {
                             echo "Error: failed to get MIME type for $filename\n";
                         }
@@ -145,7 +143,7 @@ class Job extends CI_Controller
         return $hash;
     }
 
-    protected function validateAudioVideo($job_id, $file, $majorType)
+    protected function validateAudioVideo($job_id, &$file, $majorType)
     {
         $this->load->model('file_model');
         $isValid = true;
@@ -169,11 +167,11 @@ class Job extends CI_Controller
                 $log .= "ffprobe did not find a valid stream in this file.\n";
 
             // get duration
-            $duration = null;
+            $file['duration_ms'] = null;
             if (isset($ffprobe->format) && isset($ffprobe->format->duration)) {
-                $duration = intval(round($ffprobe->format->duration * 1000));
-                $log .= "ffprobe found a duration of $duration seconds.\n";
-                if ($duration <= 0) {
+                $file['duration_ms'] = intval(round($ffprobe->format->duration * 1000));
+                $log .= "ffprobe found a duration of $file[duration_ms] ms.\n";
+                if ($file['duration_ms'] <= 0) {
                     $log .= "Error: invalid duration: $filename.\n";
                     $isValid = false;
                 }
@@ -184,20 +182,22 @@ class Job extends CI_Controller
 
             // if valid, compute hash
             if ($isValid) {
-                $hash = $this->getFileHash($filename);
-                if ($hash === false)
+                $file['source_hash'] = $this->getFileHash($filename);
+                if ($file['source_hash'] === false)
                     $log .= "Failed to compute MD5 hash.\n";
 
                 // Get ffprobe JSON again with human-readable units for the database.
                 $json = shell_exec("/usr/bin/nice ffprobe -print_format json -pretty -show_error -show_format -show_streams '$filename' 2>/dev/null");
-                $properties = json_encode(['ffprobe' => json_decode($json)]);
+                $file['properties'] = json_encode(['ffprobe' => json_decode($json)]);
+
+                $file['status'] = intval($file['status']) | File_model::STATUS_VALIDATED;
 
                 // put new data into database
                 $result = $this->file_model->staticUpdate($file['id'], [
-                    'duration_ms' => $duration,
-                    'source_hash' => $hash,
-                    'properties' => $properties,
-                    'status' => intval($file['status']) | File_model::STATUS_VALIDATED
+                    'duration_ms' => $file['duration_ms'],
+                    'source_hash' => $file['source_hash'],
+                    'properties' => $file['properties'],
+                    'status' => $file['status']
                 ]);
                 if (!$result)
                     $log .= "Error updating the file table with duration, hash, and status.\n";
@@ -238,7 +238,7 @@ class Job extends CI_Controller
         return $isValid;
     }
 
-    protected function validateImage($job_id, $file, $majorType)
+    protected function validateImage($job_id, &$file, $majorType)
     {
         // verify melt can read it
         $this->load->model('file_model');
@@ -272,17 +272,18 @@ class Job extends CI_Controller
 
             // if valid, compute hash
             if ($isValid) {
-                $hash = $this->getFileHash($filename);
-                if ($hash === false)
+                $file['source_hash'] = $this->getFileHash($filename);
+                if ($file['source_hash'] === false)
                     $log .= "Failed to compute MD5 hash.\n";
 
-                $properties = json_encode(['MLTXML' => $xml]);
+                $file['properties'] = json_encode(['MLTXML' => $xml]);
+                $file['status'] = intval($file['status']) | File_model::STATUS_VALIDATED | File_model::STATUS_FINISHED;
 
                 // put new data into database
                 $result = $this->file_model->staticUpdate($file['id'], [
-                    'source_hash' => $hash,
-                    'properties' => $properties,
-                    'status' => intval($file['status']) | File_model::STATUS_VALIDATED | File_model::STATUS_FINISHED
+                    'source_hash' => $file['source_hash'],
+                    'properties' => $file['properties'],
+                    'status' => $file['status']
                 ]);
                 if (!$result)
                     $log .= "Error updating the file table with hash and status.\n";
@@ -306,7 +307,7 @@ class Job extends CI_Controller
         return $isValid;
     }
 
-    protected function validateMLTXML($job_id, $file)
+    protected function validateMLTXML($job_id, &$file, $majorType)
     {
         // verify melt can load it
         $this->load->model('file_model');
@@ -401,14 +402,14 @@ class Job extends CI_Controller
             $log .= "Error: melt failed to run.\n";
             $isValid = false;
         }
-        $status = intval($file['status']) | File_model::STATUS_VALIDATED;
+        $file['status'] = intval($file['status']) | File_model::STATUS_VALIDATED;
         if ($isValid)
             // Clear any previous error in case this was re-attempted.
-            $status &= ~File_model::STATUS_ERROR;
+            $file['status'] &= ~File_model::STATUS_ERROR;
         else
-            $status |= File_model::STATUS_ERROR;
+            $file['status'] |= File_model::STATUS_ERROR;
         $result = $this->file_model->staticUpdate($file['id'], [
-            'status' => $status
+            'status' => $file['status']
         ]);
         if (!$result)
             $log .= "Error updating the file table with status.\n";
@@ -572,7 +573,7 @@ class Job extends CI_Controller
     protected function runFFmpeg($file, &$log, $extension, $options)
     {
         $result = -10;
-        $duration_ms = intval($file['duration_ms']);
+        $file['duration_ms'] = intval($file['duration_ms']);
         $lastProgress = null;
         $filename = config_item('upload_path') . $file['source_path'];
 
@@ -609,7 +610,7 @@ class Job extends CI_Controller
                     $fields = explode(':', $time);
                     if (count($fields) === 3) {
                         $secs = $fields[0] * 3600 + $fields[1] * 60 + $fields[2];
-                        $progress = intval(round($secs * 1000 / $duration_ms * 100));
+                        $progress = intval(round($secs * 1000 / $file['duration_ms'] * 100));
                         if ($progress !== $lastProgress) {
                             $lastProgress = $progress;
                             $this->job_model->update($file['job_id'], ['progress' => $progress]);
@@ -652,13 +653,6 @@ class Job extends CI_Controller
         return $result;
     }
 
-    public function test($filename)
-    {
-        $log = '';
-        $this->transcodeVideo(33, config_item('upload_path').$filename, $log);
-        echo $log;
-    }
-
     protected function getUniqueFilename($name)
     {
         while (file_exists($name)) {
@@ -688,5 +682,50 @@ class Job extends CI_Controller
         } else {
             show_404(uri_string());
         }
+    }
+
+    protected function checkIfWasMissing($file)
+    {
+        $this->load->model('file_model');
+        $results = $this->file_model->getMissingByHash($file['source_hash']);
+        // For each project file waw missing this file.
+        foreach ($results as $missing) {
+            // Remove this file from missing_files and add to file_children.
+            $this->file_model->deleteMissing($missing['id']);
+            $this->file_model->addChild($missing['file_id'], $file['id']);
+
+            // If this project has no more missing files, resubmit it.
+            $results = $this->file_model->getMissingFiles($missing['file_id']);
+            if (!count($results)) {
+                $job_id = $this->job_model->create($missing['file_id'], Job_model::TYPE_VALIDATE);
+                if ($job_id) {
+                    // Put job into the queue.
+                    $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
+                    if ($this->beanstalk->connect()) {
+                        $tube = config_item('beanstalkd_tube_validate');
+                        $this->beanstalk->useTube($tube);
+                        $priority = 10;
+                        $delay = 1;
+                        $ttr = 60; // seconds
+                        $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
+                        $this->beanstalk->disconnect();
+                    }
+                }
+            }
+        }
+    }
+
+    public function test_transcode($filename)
+    {
+        $log = '';
+        $this->transcodeVideo(33, config_item('upload_path').$filename, $log);
+        echo $log;
+    }
+
+    public function test_missing($job_id)
+    {
+        $file = $this->job_model->getWithFileById($job_id);
+        if (!empty($file['source_hash']))
+            $this->checkIfWasMissing($file);
     }
 }

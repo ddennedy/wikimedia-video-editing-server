@@ -21,6 +21,8 @@
 <h2><?= $heading ?></h2>
 <p><?= $description ?></p>
 <p><?= $metadata ?></p>
+<p><?php if (isset($missing)) echo $missing; ?></p>
+<p><?php if (isset($relations)) echo $relations; ?></p>
 <hr>
 <?php if ($isEditable): ?>
     <a href="<?= site_url('file/edit/' . $id) ?>"><?= tr('edit') ?></a>
