@@ -318,74 +318,10 @@ class Job extends CI_Controller
         // if audio or video, verify ffprobe can read it
         $xml = shell_exec("/usr/bin/nice melt -consumer xml '$filename' 2>/dev/null");
         if (!empty($xml)) {
-            libxml_use_internal_errors(true);
-            $mlt = simplexml_load_string($xml);
-            if ($mlt) {
+            if ($this->isXmlWellFormed($xml)) {
                 // verify all dependent files are available
-                $this->load->library('MltXmlReader');
-                $this->mltxmlreader->open($filename);
-                try {
-                    $this->mltxmlreader->parse();
-                } catch (Exception $e) {
-                    $isValid = false;
-                    $log .= "$e\n";
-                }
-                $this->mltxmlreader->close();
-                if ($isValid) {
-                    $childFiles = $this->mltxmlreader->getFiles();
-
-                    foreach($childFiles as $fileName => &$fileData) {
-                        $name = basename($fileName);
-                        if (isset($fileData['mlt_service'])) {
-                            $child = null;
-                            $log .= "Found file in XML with name: $name.\n";
-                            if (!empty($fileData['file_hash'])) {
-                                // Search for file by hash.
-                                $child = $this->file_model->getByHash($fileData['file_hash']);
-                                if ($child)
-                                    $log .= "Found file record by its hash: $fileData[file_hash].\n";
-                            }
-                            if (!$child) {
-                                // Search for file by basename.
-                                $child = $this->file_model->getByPath($name);
-                                if ($child)
-                                    $log .= "Found file record by name: $name.\n";
-                            }
-                            //TODO Search for the file on Commons based on its basename;
-                            if ($child) {
-                                // Save path for new XML.
-                                if (empty($child['output_path']))
-                                    $fileData['output_path'] = basename($child['source_path']);
-                                else
-                                    $fileData['output_path'] = basename($child['output_path']);
-                                // Save hash for new XML.
-                                if (empty($child['output_hash']))
-                                    $fileData['output_hash'] = basename($child['source_hash']);
-                                else
-                                    $fileData['output_hash'] = basename($child['output_hash']);
-
-                                // Add child and parent relations to database.
-                                if ($this->file_model->addChild($file['id'], $child['id']))
-                                    $log .= "Added file relationship: $file[id] -> $child[id].\n";
-                                else
-                                    $log .= "Error adding record to file_children table: $file[id] -> $child[id].\n";
-                            } else {
-                                $isValid = false;
-                                // Add child to missing_files table.
-                                if ($this->file_model->addMissing($file['id'], $name, $fileData['file_hash']))
-                                    $log .= "Added to missing_files table: $file[id] -> $name.\n";
-                                else
-                                    $log .= "Error adding record to missing_files table: $file[id] -> $name.\n";
-                            }
-                        } else {
-                            // This file is not necessary and the corresponding
-                            // kdenlive_producer can be removed from the XML to
-                            // remove unneeded dependencies.
-                            $log .= "Found unnecessary file: $name.\n";
-                        }
-                    }
-
-                }
+                $childFiles = $this->getFilesData($filename, $log);
+                $isValid = $this->substituteProxyFiles($file, $childFiles, $log);
 
                 // If still valid, create a new version of the XML with proxy clips.
                 if ($isValid) {
@@ -429,7 +365,7 @@ class Job extends CI_Controller
                 }
             } else {
                 $isValid = false;
-                $log .= "melt is unable to load this file.\n";
+                $log .= "Error: the XML is not well formed.\n";
             }
         } else {
             $log .= "Error: melt failed to run.\n";
@@ -453,6 +389,82 @@ class Job extends CI_Controller
             'result' => ($isValid? 0 : 1),
             'log' => $log
         ]);
+        return $isValid;
+    }
+
+    protected function isXmlWellFormed($xml)
+    {
+        libxml_use_internal_errors(true);
+        return simplexml_load_string($xml) !== false;
+    }
+
+    protected function getFilesData($filename, &$log)
+    {
+        $this->load->library('MltXmlReader');
+        $this->mltxmlreader->open($filename);
+        try {
+            $this->mltxmlreader->parse();
+        } catch (Exception $e) {
+            $log .= "$e\n";
+            return array();
+        }
+        $this->mltxmlreader->close();
+        return $this->mltxmlreader->getFiles();
+    }
+
+    protected function substituteProxyFiles($file, &$childFiles, &$log)
+    {
+        $isValid = true;
+        foreach($childFiles as $fileName => &$fileData) {
+            $name = basename($fileName);
+            if (isset($fileData['mlt_service'])) {
+                $child = null;
+                $log .= "Found file in XML with name: $name.\n";
+                if (!empty($fileData['file_hash'])) {
+                    // Search for file by hash.
+                    $child = $this->file_model->getByHash($fileData['file_hash']);
+                    if ($child)
+                        $log .= "Found file record by its hash: $fileData[file_hash].\n";
+                }
+                if (!$child) {
+                    // Search for file by basename.
+                    $child = $this->file_model->getByPath($name);
+                    if ($child)
+                        $log .= "Found file record by name: $name.\n";
+                }
+                //TODO Search for the file on Commons based on its basename;
+                if ($child) {
+                    // Save path for new XML.
+                    if (empty($child['output_path']))
+                        $fileData['output_path'] = basename($child['source_path']);
+                    else
+                        $fileData['output_path'] = basename($child['output_path']);
+                    // Save hash for new XML.
+                    if (empty($child['output_hash']))
+                        $fileData['output_hash'] = basename($child['source_hash']);
+                    else
+                        $fileData['output_hash'] = basename($child['output_hash']);
+
+                    // Add child and parent relations to database.
+                    if ($this->file_model->addChild($file['id'], $child['id']))
+                        $log .= "Added file relationship: $file[id] -> $child[id].\n";
+                    else
+                        $log .= "Error adding record to file_children table: $file[id] -> $child[id].\n";
+                } else {
+                    $isValid = false;
+                    // Add child to missing_files table.
+                    if ($this->file_model->addMissing($file['id'], $name, $fileData['file_hash']))
+                        $log .= "Added to missing_files table: $file[id] -> $name.\n";
+                    else
+                        $log .= "Error adding record to missing_files table: $file[id] -> $name.\n";
+                }
+            } else {
+                // This file is not necessary and the corresponding
+                // kdenlive_producer can be removed from the XML to
+                // remove unneeded dependencies.
+                $log .= "Found unnecessary file: $name.\n";
+            }
+        }
         return $isValid;
     }
 
