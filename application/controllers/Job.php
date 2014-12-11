@@ -389,17 +389,10 @@ class Job extends CI_Controller
 
                 // If still valid, create a new version of the XML with proxy clips.
                 if ($isValid) {
+                    // Prepare the output file.
+                    $outputName = $this->makeOutputFilename($filename);
                     $this->load->library('MltXmlWriter', $childFiles);
-
-                    // Prepare the output file name.
-                    $out = basename($filename);
-                    $out = "$out[0]/$out[1]/$out";
-                    $fullname = config_item('transcode_path') . $out;
-                    $fullname = $this->getUniqueFilename($fullname);
-                    $dir = dirname($fullname);
-                    if (!is_dir($dir))
-                        mkdir($dir, 0755, true);
-                    $this->mltxmlwriter->run($filename, $fullname);
+                    $this->mltxmlwriter->run($filename, $outputName);
 
                     // Update database with new XML filename.
                     $status = intval($file['status']) | File_model::STATUS_FINISHED;
@@ -407,8 +400,8 @@ class Job extends CI_Controller
                     $status &= ~File_model::STATUS_ERROR;
                     $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
                         'status' => $status,
-                        'output_path' => str_replace(config_item('transcode_path'), '', $out),
-                        'output_hash' => $this->getFileHash($fullname)
+                        'output_path' => str_replace(config_item('transcode_path'), '', $outputName),
+                        'output_hash' => $this->getFileHash($outputName)
                     ]);
                     if (!$isUpdated) {
                         $isValid = false;
@@ -618,14 +611,7 @@ class Job extends CI_Controller
         $filename = config_item('upload_path') . $file['source_path'];
 
         // Prepare the output file name.
-        $ext = strrchr($filename, '.');
-        $out = basename($filename, $ext);
-        $out = "$out[0]/$out[1]/$out.$extension";
-        $fullname = config_item('transcode_path') . $out;
-        $fullname = $this->getUniqueFilename($fullname);
-        $dir = dirname($fullname);
-        if (!is_dir($dir))
-            mkdir($dir, 0755, true);
+        $outputName = $this->makeOutputFilename($filename);
 
         // Setup to run ffmpeg.
         $descriptorspec = [
@@ -635,7 +621,7 @@ class Job extends CI_Controller
         ];
         $cwd = '/tmp';
         $env = [];
-        $cmd = "/usr/bin/nice ffmpeg -i '$filename' $options '$fullname'";
+        $cmd = "/usr/bin/nice ffmpeg -i '$filename' $options '$outputName'";
         $log .= $cmd . "\n";
         $process = proc_open($cmd, $descriptorspec, $pipes, $cwd, $env);
 
@@ -674,8 +660,8 @@ class Job extends CI_Controller
             $status &= ~File_model::STATUS_ERROR;
             $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
                 'status' => $status,
-                'output_path' => str_replace(config_item('transcode_path'), '', $fullname),
-                'output_hash' => $this->getFileHash($fullname)
+                'output_path' => str_replace(config_item('transcode_path'), '', $outputName),
+                'output_hash' => $this->getFileHash($outputName)
             ]);
             if (!$isUpdated) {
                 $result = -12;
@@ -691,6 +677,18 @@ class Job extends CI_Controller
             }
         }
         return $result;
+    }
+
+    protected function makeOutputFilename($filename)
+    {
+        $out = basename($filename);
+        $out = "$out[0]/$out[1]/$out";
+        $fullname = config_item('transcode_path') . $out;
+        $fullname = $this->getUniqueFilename($fullname);
+        $dir = dirname($fullname);
+        if (!is_dir($dir))
+            mkdir($dir, 0755, true);
+        return $fullname;
     }
 
     protected function getUniqueFilename($name)
