@@ -117,9 +117,12 @@ class MltXmlReader extends SimpleXMLReader
         return true;
     }
 
-    public function getFiles()
+    public function getFiles($filename)
     {
-        // Remove
+        $this->files = array();
+        $this->open($filename);
+        $this->parse();
+        $this->close();
         return $this->files;
     }
 

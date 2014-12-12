@@ -400,16 +400,13 @@ class Job extends CI_Controller
 
     protected function getFilesData($filename, &$log)
     {
-        $this->load->library('MltXmlReader');
-        $this->mltxmlreader->open($filename);
         try {
-            $this->mltxmlreader->parse();
+            $this->load->library('MltXmlReader');
+            return $this->mltxmlreader->getFiles($filename);
         } catch (Exception $e) {
             $log .= "$e\n";
             return array();
         }
-        $this->mltxmlreader->close();
-        return $this->mltxmlreader->getFiles();
     }
 
     protected function substituteProxyFiles($file, &$childFiles, &$log)
