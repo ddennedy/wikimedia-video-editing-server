@@ -191,6 +191,8 @@ class Job extends CI_Controller
                 $file['properties'] = json_encode(['ffprobe' => json_decode($json)]);
 
                 $file['status'] = intval($file['status']) | File_model::STATUS_VALIDATED;
+                // Clear any previous error in case this was re-attempted.
+                $file['status'] &= ~File_model::STATUS_ERROR;
 
                 // put new data into database
                 $result = $this->file_model->staticUpdate($file['id'], [
@@ -278,6 +280,8 @@ class Job extends CI_Controller
 
                 $file['properties'] = json_encode(['MLTXML' => $xml]);
                 $file['status'] = intval($file['status']) | File_model::STATUS_VALIDATED | File_model::STATUS_FINISHED;
+                // Clear any previous error in case this was re-attempted.
+                $file['status'] &= ~File_model::STATUS_ERROR;
 
                 // put new data into database
                 $result = $this->file_model->staticUpdate($file['id'], [
