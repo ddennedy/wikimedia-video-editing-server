@@ -125,7 +125,7 @@ class Job extends CI_Controller
     {
         // This is the algorithm Kdenlive uses in DocClipBase::getHash().
         $MB = 1000 * 1000;
-        if (filesize($filename) < $MB) {
+        if (filesize($filename) <= 2 * $MB) {
             $hash = md5_file($filename);
         } else {
             // Use first and last MB
