@@ -59,50 +59,41 @@ class MltXmlWriter
                     $writer->endElement();
                 }
             } else if ($isElement && $node->name === 'property') {
-                $writer->startElement($node->name);
-                $isResource = false;
-                if ($reader->moveToFirstAttribute()) {
-                    do {
-                        if ($reader->name === 'name' && $reader->value === 'resource')
-                            $isResource = true;
-                        $writer->writeAttribute($reader->name, $reader->value);
-                    } while ($reader->moveToNextAttribute());
-                    $reader->moveToElement();
-                    if ($isResource) {
+                $name = $reader->getAttribute('name');
+                if ($name && strpos($name, 'meta.') !== 0) {
+                    if ($name === 'resource') {
+                        $writer->startElement($node->name);
+                        $writer->writeAttribute('name', $name);
                         $current = $reader->readString();
                         if (isset($this->fileData[$current])) {
-                            $writer->text('$CURRENTPATH/' . $this->fileData[$current]['output_path']);
-                            while ($reader->read() && $reader->nodeType !== XMLReader::END_ELEMENT);
-                            $writer->endElement();
+                            $writer->text($this->fileData[$current]['resource']);
+                        } else {
+                            $writer->text($current);
                         }
+                        $writer->endElement();
+                        $reader->next();
+                    } else {
+                        $iterator->write();
                     }
-                }
-                if ($node->isEmptyElement) {
-                    $writer->endElement();
+                } else {
+                    $reader->next();
                 }
             } else if ($isElement && $node->name === 'kdenlive_producer') {
-                $hash = null;
+                $data = array();
                 $writer->startElement($node->name);
+                $data = $this->fileData[$reader->getAttribute('resource')];
                 if ($reader->moveToFirstAttribute()) {
                     do {
-                        if ($reader->name === 'resource' && isset($this->fileData[$reader->value])) {
-                            $writer->writeAttribute($reader->name, '$CURRENTPATH/'
-                                . $this->fileData[$reader->value]['output_path']);
-                            $hash = $this->fileData[$reader->value]['output_hash'];
-                        } else if ($hash && $reader->name === 'file_hash') {
-                            //TODO this only works if file_hash comes after resource,
-                            // which it does when kdenlive writes it, but potentially
-                            // not if another tool or kdenlive changes.
-                            $writer->writeAttribute($reader->name, $hash);
-                        } else {
+                        if (isset($data[$reader->name]))
+                            $writer->writeAttribute($reader->name, $data[$reader->name]);
+                        else
                             $writer->writeAttribute($reader->name, $reader->value);
-                        }
                     } while ($reader->moveToNextAttribute());
                     $reader->moveToElement();
                 }
-                if ($node->isEmptyElement) {
-                    $writer->endElement();
-                }
+            } else if ($isElement && $node->name === 'metaproperty' &&
+                       element('mlt_service', $data) == 'avformat') {
+                $reader->next();
             } else {
                 // handle everything else
                 $iterator->write();

@@ -327,6 +327,10 @@ class Job extends CI_Controller
                 $childFiles = $this->getFilesData($filename, $log);
                 $isValid = $this->substituteProxyFiles($file, $childFiles, $log);
 
+                // If still valid, get new metadata for each proxy file.
+                if ($isValid)
+                    $this->getFileMetadata($childFiles, $log);
+
                 // If still valid, create a new version of the XML with proxy clips.
                 if ($isValid) {
                     // Prepare the output file.
@@ -436,15 +440,20 @@ class Job extends CI_Controller
                 //TODO Search for the file on Commons based on its basename;
                 if ($child) {
                     // Save path for new XML.
-                    if (empty($child['output_path']))
-                        $fileData['output_path'] = basename($child['source_path']);
-                    else
-                        $fileData['output_path'] = basename($child['output_path']);
+                    if (empty($child['output_path'])) {
+                        $fileData['output_path'] = $child['source_path'];
+                        $fileData['proxy_path'] = config_item('upload_path') . $child['source_path'];
+                        $fileData['resource'] = '$CURRENTPATH/' . basename($child['source_path']);
+                    } else {
+                        $fileData['output_path'] = $child['output_path'];
+                        $fileData['proxy_path'] = config_item('transcode_path') . $child['output_path'];
+                        $fileData['resource'] = '$CURRENTPATH/' . basename($child['output_path']);
+                    }
                     // Save hash for new XML.
                     if (empty($child['output_hash']))
-                        $fileData['output_hash'] = basename($child['source_hash']);
+                        $fileData['file_hash'] = basename($child['source_hash']);
                     else
-                        $fileData['output_hash'] = basename($child['output_hash']);
+                        $fileData['file_hash'] = basename($child['output_hash']);
 
                     // Add child and parent relations to database.
                     if ($this->file_model->addChild($file['id'], $child['id']))
@@ -467,6 +476,33 @@ class Job extends CI_Controller
             }
         }
         return $isValid;
+    }
+
+    protected function getFileMetadata(&$childFiles, &$log)
+    {
+        foreach($childFiles as $fileName => &$fileData) {
+            $xml = shell_exec("/usr/bin/nice melt -consumer xml '$fileData[proxy_path]' 2>/dev/null");
+            $mlt = simplexml_load_string($xml);
+            if ($mlt && isset($mlt->producer)) {
+                $streamType = null;
+                foreach ($mlt->producer->property as $property) {
+                    if (strpos($property['name'], '.codec.pix_fmt') !== false)
+                        $fileData['pix_fmt'] = (string) $property;
+                    else if (strpos($property['name'], '.codec.colorspace') !== false)
+                        $fileData['colorspace'] = (string) $property;
+                    else if ($property['name'] === 'length')
+                        $fileData['duration'] = (string) $property;
+                    else if (strpos($property['name'], '.stream.type') !== false)
+                        $streamType = (string) $property;
+                    else if (strpos($property['name'], '.codec.name') !== false && $streamType === 'video')
+                        $fileData['videocodecid'] = (string) $property;
+                    else if (strpos($property['name'], '.codec.long_name') !== false && $streamType)
+                        $fileData[$streamType.'codec'] = (string) $property;
+                }
+            }
+            $fileData['file_size'] = filesize($fileData['proxy_path']);
+            $fileData['progressive'] = 1;
+        }
     }
 
     public function stats($tube = null)
