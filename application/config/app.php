@@ -47,6 +47,6 @@ $config['beanstalkd_tube_transcode'] = 'videoeditserver-encode';
 $config['beanstalkd_tube_render'] = 'videoeditserver-encode';
 
 $config['transcode_audio_extension'] = 'ogg';
-$config['transcode_audio_options'] = '-vn -codec:a libvorbis -qscale:a 5 -y';
+$config['transcode_audio_options'] = '-map 0:a -codec libvorbis -qscale 5 -y';
 $config['transcode_video_extension'] = 'webm';
-$config['transcode_video_options'] = '-vf yadif=mode=send_frame:deint=interlaced -codec:a libvorbis -qscale:a 5 -codec:v libvpx -g 100 -quality good -speed 0 -vprofile 0 -slices 4 -threads 2 -b: 10M -crf 10 -arnr_max_frames 7 -arnr_strength 5 -arnr_type 3 -y';
+$config['transcode_video_options'] = '-map 0 -map -0:d -map -0:s -map -0:t -vf yadif=mode=send_frame:deint=interlaced -codec:a libvorbis -qscale:a 5 -codec:v libvpx -g 100 -quality good -speed 0 -vprofile 0 -slices 4 -threads 2 -b: 10M -crf 10 -arnr_max_frames 7 -arnr_strength 5 -arnr_type 3 -y';
