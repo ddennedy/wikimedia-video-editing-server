@@ -302,6 +302,7 @@ class File_model extends CI_Model
         // Delete records from main file and related tables.
         $this->db->delete('file', ['id' => $id]);
         $this->db->delete('recent', ['file_id' => $id]);
+        $this->db->delete('missing_files', ['file_id' => $id]);
         $this->db->where('file_id', $id);
         $this->db->or_where('child_id', $id);
         $this->db->delete('file_children');
