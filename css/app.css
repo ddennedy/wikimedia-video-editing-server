@@ -84,3 +84,11 @@ em {
     padding-top: 0.25em;
     font-weight: bold;
 }
+
+.ui-widget {
+    font-family: inherit;
+}
+
+.fileinput-button {
+    padding: 2px 4px 2px 4px;
+}
