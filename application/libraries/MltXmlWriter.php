@@ -91,8 +91,8 @@ class MltXmlWriter
                     } while ($reader->moveToNextAttribute());
                     $reader->moveToElement();
                 }
-            } else if ($isElement && $node->name === 'metaproperty' &&
-                       element('mlt_service', $data) == 'avformat') {
+            } else if ($isElement && $node->name === 'metaproperty' && is_array($data)
+                       && element('mlt_service', $data) == 'avformat') {
                 $reader->next();
             } else {
                 // handle everything else
