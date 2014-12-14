@@ -73,8 +73,7 @@ class MltXmlWriter
                         } else {
                             $writer->text($current);
                         }
-                        $writer->endElement();
-                        $reader->next();
+                        $reader->read();
                     } else {
                         $iterator->write();
                     }

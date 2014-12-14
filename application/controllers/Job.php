@@ -439,7 +439,7 @@ class Job extends CI_Controller
                                 $this->transcode($file);
                                 break;
                             case Job_model::TYPE_RENDER:
-                                //$this->render($file);
+                                $this->render($file);
                                 break;
                             default:
                                 $log .= "Unknown job type $file[type].\n";
@@ -507,11 +507,11 @@ class Job extends CI_Controller
                 }
             } else {
                 $result = -3;
-                $log .= "Source file does not exist: $filename.";
+                $log .= "Source file does not exist: $filename.\n";
             }
         } else {
             $result = -4;
-            $log = "Source_path in file table is empty.";
+            $log = "Source_path in file table is empty.\n";
         }
 
         // Update the job table with job results.
@@ -530,15 +530,15 @@ class Job extends CI_Controller
         $filename = config_item('upload_path') . $file['source_path'];
 
         // Prepare the output file name.
-        $outputName = $this->makeOutputFilename($filename);
+        $outputName = $this->makeOutputFilename($filename, $extension);
 
         // Setup to run ffmpeg.
         $descriptorspec = [
             0 => array('file', '/dev/null', 'r'), // stdin
-            1 => array('file', '/dev/null', 'w'), // stderr
-            2 => array('pipe', 'w'), // stdout
+            1 => array('file', '/dev/null', 'w'), // stdout
+            2 => array('pipe', 'w'), // stderr
         ];
-        $cwd = '/tmp';
+        $cwd = sys_get_temp_dir();
         $env = [];
         $cmd = "/usr/bin/nice ffmpeg -i '$filename' $options '$outputName'";
         $log .= $cmd . "\n";
@@ -598,10 +598,149 @@ class Job extends CI_Controller
         return $result;
     }
 
-    protected function makeOutputFilename($filename)
+    protected function render($file)
     {
-        $out = basename($filename);
-        $out = "$out[0]/$out[1]/$out";
+        $result = -1;
+        if (!empty($file['source_path'])) {
+            $this->load->model('file_model');
+            $log = "Render: $file[source_path].\n";
+            $filename = config_item('upload_path') . $file['source_path'];
+            if (is_file($filename)) {
+                // Set file record status to converting.
+                $result = $this->file_model->staticUpdate($file['file_id'], [
+                    'status' => intval($file['status']) | File_model::STATUS_CONVERTING
+                ]);
+                if (!$result)
+                    $log .= "Error updating the file table with converting status.\n";
+
+                // Generate XML using original file references.
+                $this->load->library('MltXmlHelper');
+                $childFiles = $this->mltxmlhelper->getFilesData($filename, $log);
+                $isValid = $this->mltxmlhelper->substituteoriginalFiles($this->file_model, $file, $childFiles, $log);
+
+                // If still valid, create a new version of the XML with proxy clips.
+                if ($isValid) {
+                    // If still valid, get new metadata for each proxy file.
+                    $this->mltxmlhelper->getFileMetadata($childFiles, $log);
+                    // Prepare the output file.
+                    $this->load->library('MltXmlWriter', $childFiles);
+                    $tmpFileName = $this->tempfile('ves', '.xml');
+                    if ($tmpFileName) {
+                        // Create XML input file.
+                        $this->mltxmlwriter->run($filename, $tmpFileName);
+                        $this->load->helper('file');
+                        $log .= read_file($tmpFileName);
+
+                        // Render and encode it.
+                        $result = $this->runMelt($tmpFileName, $file, $log,
+                            config_item('render_extension'), config_item('render_options'));
+                        unlink($tmpFileName);
+                    } else {
+                        $result = -2;
+                        $log .= "Failed to create a temporary file for the XML.\n";
+                    }
+                } else {
+                    $result = -3;
+                    $log .= "This file has problems with dependencies\n";
+                }
+            } else {
+                $result = -3;
+                $log .= "Source file does not exist: $filename.\n";
+            }
+        } else {
+            $result = -4;
+            $log = "Source_path in file table is empty.\n";
+        }
+
+        // Update the job table with job results.
+        $this->job_model->update($file['job_id'], [
+            'result' => $result,
+            'log' => $log
+        ]);
+        return $result;
+    }
+
+    protected function runMelt($filename, $file, &$log, $extension, $options)
+    {
+        $result = -10;
+        $lastProgress = null;
+
+        // Prepare the output file name.
+        $outputName = $this->makeOutputFilename($file['source_path'], $extension);
+
+        // Setup to run ffmpeg.
+        $descriptorspec = [
+            0 => array('file', '/dev/null', 'r'), // stdin
+            1 => array('file', '/dev/null', 'w'), // stdout
+            2 => array('pipe', 'w'), // stderr
+        ];
+        $cwd = sys_get_temp_dir();
+        $env = [];
+        $cmd = "/usr/bin/nice melt '$filename' -progress2 -consumer avformat:'$outputName' $options";
+        $log .= $cmd . "\n";
+        $process = proc_open($cmd, $descriptorspec, $pipes, $cwd, $env);
+
+        if (is_resource($process)) {
+            // Get melt output while running.
+            while ($line = stream_get_line($pipes[2], 255, "\n")) {
+                // Get progress as a percentage.
+                $i = strpos($line, 'percentage: ');
+                if ($i !== false) {
+                    $progress = substr($line, $i + strlen('percentage: '), 10);
+                    if (!empty($progress) && $progress !== $lastProgress) {
+                        $lastProgress = $progress;
+                        $this->job_model->update($file['job_id'], ['progress' => $progress]);
+                    }
+                } else {
+                    $log .= "$line\n";
+                }
+            }
+            // Cleanup child process and get its return code.
+            fclose($pipes[2]);
+            $result = proc_close($process);
+            $this->job_model->update($file['job_id'], ['progress' => 100]);
+            echo "melt returned $result\n";
+        } else {
+            $result = -11;
+            $log .= "Failed to start melt.\n";
+        }
+
+        // Update the file table with results.
+        if ($result === 0) {
+            $status = intval($file['status']) | File_model::STATUS_FINISHED;
+            // Clear any previous error in case this was re-attempted.
+            $status &= ~File_model::STATUS_ERROR;
+            $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
+                'status' => $status,
+                'output_path' => str_replace(config_item('transcode_path'), '', $outputName),
+                'output_hash' => $this->getFileHash($outputName)
+            ]);
+            if (!$isUpdated) {
+                $result = -12;
+                $log .= "Error updating the file table with output_path and hash.\n";
+            }
+        } else {
+            $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
+                'status' => intval($file['status']) | File_model::STATUS_ERROR
+            ]);
+            if (!$isUpdated) {
+                $result = -13;
+                $log .= "Error updating the file table with error status.\n";
+            }
+        }
+        return $result;
+    }
+
+    protected function makeOutputFilename($filename, $extension = null)
+    {
+        if (empty($extension)) {
+            $out = basename($filename);
+            $out = "$out[0]/$out[1]/$out";
+        } else {
+            $ext = strrchr($filename, '.');
+            $out = basename($filename, $ext);
+            $out = "$out[0]/$out[1]/$out.$extension";
+        }
         $fullname = config_item('transcode_path') . $out;
         $fullname = $this->getUniqueFilename($fullname);
         $dir = dirname($fullname);
@@ -671,6 +810,24 @@ class Job extends CI_Controller
             }
         }
     }
+
+    protected function tempfile($prefix = 'tmp', $extension = '', $dir = null)
+    {
+        // Get a unique temporary file name with an extension.
+        $fileName = tempnam($dir? $dir : sys_get_temp_dir(), $prefix);
+        if ($fileName) {
+            $newFileName = $fileName . $extension;
+            if ($fileName === $newFileName)
+                return $fileName;
+            // Move or point the created temporary file to the new filename.
+            // NOTE: these fail if the new file name exist.
+            if (@link($fileName, $newFileName))
+                return $newFileName;
+        }
+        unlink($fileName);
+        return false;
+    }
+
 
     public function test_transcode($filename)
     {

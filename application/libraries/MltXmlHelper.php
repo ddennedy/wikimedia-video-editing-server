@@ -158,4 +158,54 @@ class MltXmlHelper {
             $fileData['progressive'] = 1;
         }
     }
+
+    public static function substituteOriginalFiles(&$file_model, $file, &$childFiles, &$log)
+    {
+        $isValid = true;
+        foreach($childFiles as $fileName => &$fileData) {
+            $name = basename($fileName);
+            if (isset($fileData['mlt_service'])) {
+                $child = null;
+                $log .= "Found file in XML with name: $name.\n";
+                if (!empty($fileData['file_hash'])) {
+                    // Search for file by hash.
+                    $child = $file_model->getByHash($fileData['file_hash']);
+                    if ($child)
+                        $log .= "Found file record by its hash: $fileData[file_hash].\n";
+                }
+                if (!$child) {
+                    // Search for file by basename.
+                    $child = $file_model->getByPath($name);
+                    if ($child)
+                        $log .= "Found file record by name: $name.\n";
+                }
+                //TODO Search for the file on Commons based on its basename;
+                if ($child) {
+                    // Save path for new XML.
+                    if (!empty($child['source_path'])) {
+                        $fileData['output_path'] = $child['source_path'];
+                        $fileData['proxy_path'] = config_item('upload_path') . $child['source_path'];
+                        $fileData['resource'] = config_item('upload_path') . $child['source_path'];
+                        $fileData['file_hash'] = $child['source_hash'];
+                    } else if (!empty($child['output_path'])) {
+                        $fileData['output_path'] = $child['output_path'];
+                        $fileData['proxy_path'] = config_item('transcode_path') . $child['output_path'];
+                        $fileData['resource'] = config_item('transcode_path') . $child['output_path'];
+                        $fileData['file_hash'] = $child['output_hash'];
+                    } else {
+                        $log .= "Missing file: $name.\n";
+                        $isValid = false;
+                    }
+                } else {
+                    $isValid = false;
+                }
+            } else {
+                // This file is not necessary and the corresponding
+                // kdenlive_producer can be removed from the XML to
+                // remove unneeded dependencies.
+                $log .= "Found unnecessary file: $name.\n";
+            }
+        }
+        return $isValid;
+    }
 }

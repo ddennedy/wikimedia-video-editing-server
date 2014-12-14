@@ -539,7 +539,6 @@ class File extends CI_Controller
             if ($file['source_path']) {
                 $filename = config_item('upload_path').$file['source_path'];
                 if (is_file($filename)) {
-                    // verify all dependent files are available
                     $this->load->library('MltXmlHelper');
                     $log = '';
                     $childFiles = $this->mltxmlhelper->getFilesData($filename, $log);
