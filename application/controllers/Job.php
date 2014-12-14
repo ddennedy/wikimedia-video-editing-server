@@ -444,16 +444,13 @@ class Job extends CI_Controller
                         $fileData['output_path'] = $child['source_path'];
                         $fileData['proxy_path'] = config_item('upload_path') . $child['source_path'];
                         $fileData['resource'] = '$CURRENTPATH/' . basename($child['source_path']);
+                        $fileData['file_hash'] = $child['source_hash'];
                     } else {
                         $fileData['output_path'] = $child['output_path'];
                         $fileData['proxy_path'] = config_item('transcode_path') . $child['output_path'];
                         $fileData['resource'] = '$CURRENTPATH/' . basename($child['output_path']);
+                        $fileData['file_hash'] = $child['output_hash'];
                     }
-                    // Save hash for new XML.
-                    if (empty($child['output_hash']))
-                        $fileData['file_hash'] = basename($child['source_hash']);
-                    else
-                        $fileData['file_hash'] = basename($child['output_hash']);
 
                     // Add child and parent relations to database.
                     if ($this->file_model->addChild($file['id'], $child['id']))
