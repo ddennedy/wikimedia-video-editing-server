@@ -83,7 +83,7 @@ class Upload extends CI_Controller
             ];
 
             // If revised project file, update file table with revision.
-            if (isset($file->url) && !empty($record['output_path']) && $this->isMimeTypeMltXml($file->type)) {
+            if (isset($file->url) && !empty($record['source_path']) && $this->isMimeTypeMltXml($file->type)) {
                 $data = array_merge($data, [
                     'user_id' => $this->session->userdata('userid'),
                     'title' => $record['title'],

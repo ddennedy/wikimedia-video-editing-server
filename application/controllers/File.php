@@ -152,6 +152,7 @@ class File extends CI_Controller
         $file = $this->file_model->getById($id);
         if ($file) {
             $this->data = array_merge($this->data, $file);
+            $this->data['isProjectDownloadable'] = false;
             $this->data['isDownloadable'] = false;
             $this->load->library('MltXmlReader');
             $this->data['isProject'] = $this->mltxmlreader->isMimeTypeMltXml($file['mime_type']);
@@ -168,7 +169,7 @@ class File extends CI_Controller
                         $status .= ' =&gt; <a href="' . base_url(config_item('upload_vdir').$file['source_path']) . '">';
                         $status .= tr('status_validated') . '</a>';
                         if ($this->data['isProject'])
-                            $this->data['isDownloadable'] = true;
+                            $this->data['isProjectDownloadable'] = true;
                         // Determine conversion status.
                         if ($file['status'] & File_model::STATUS_CONVERTING) {
                             $this->load->model('job_model');
@@ -525,6 +526,38 @@ class File extends CI_Controller
                     $this->load->helper('download');
                     force_download($filename, null);
                     return;
+                }
+            }
+        }
+        show_404(uri_string());
+    }
+
+    public function download_project($id)
+    {
+        $file = $this->file_model->getById($id);
+        if ($file && ($file['status'] & File_model::STATUS_VALIDATED)) {
+            if ($file['source_path']) {
+                $filename = config_item('upload_path').$file['source_path'];
+                if (is_file($filename)) {
+                    // verify all dependent files are available
+                    $this->load->library('MltXmlHelper');
+                    $log = '';
+                    $childFiles = $this->mltxmlhelper->getFilesData($filename, $log);
+                    $isValid = $this->mltxmlhelper->substituteProxyFiles($this->file_model, $file, $childFiles, $log);
+
+                    // If still valid, create a new version of the XML with proxy clips.
+                    if ($isValid) {
+                        // If still valid, get new metadata for each proxy file.
+                        $this->mltxmlhelper->getFileMetadata($childFiles, $log);
+                        // Prepare the output file.
+                        $this->load->library('MltXmlWriter', $childFiles);
+                        $xml = $this->mltxmlwriter->run($filename);
+                        $this->load->helper('download');
+                        force_download(basename($file['source_path']), $xml);
+                        return;
+                    } else {
+                        show_error($log, 500, tr('file_error_heading'));
+                    }
                 }
             }
         }

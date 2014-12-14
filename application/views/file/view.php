@@ -24,22 +24,28 @@
 <p><?php if (isset($missing)) echo $missing; ?></p>
 <p><?php if (isset($relations)) echo $relations; ?></p>
 <hr>
+    <div id="action-bar">
 <?php if ($isEditable): ?>
-    <a id="edit-link" href="<?= site_url('file/edit/' . $id) ?>"><?= tr('edit') ?></a>
+        <a href="<?= site_url('file/edit/' . $id) ?>"><?= tr('edit') ?></a>
 <?php endif; ?>
 <?php if ($isDeletable): ?>
-    <span id="delete-link">| <a href="<?= site_url('file/delete/' . $id) ?>"><?= tr('delete') ?></a></span>
+        | <a href="<?= site_url('file/delete/' . $id) ?>"><?= tr('delete') ?></a>
 <?php endif; ?>
 <?php if ($isDownloadable): ?>
-    <span id="download-link">| <a href="<?= site_url('file/download/' . $id) ?>"><?= tr('download') ?></a></span>
+        | <a href="<?= site_url('file/download/' . $id) ?>"><?= tr('download') ?></a>
 <?php endif; ?>
-<?php if ($isEditable && $isDownloadable && $isProject): ?>
+<?php if ($isProjectDownloadable): ?>
+        | <a href="<?= site_url('file/download_project/' . $id) ?>"><?= tr('file_download_project') ?></a>
+<?php endif; ?>
+    </div>
+
+<?php if ($isEditable && $isProject): ?>
     <link rel="stylesheet" href="<?= base_url('css/jquery.fileupload-ui.css') ?>">
     <!-- CSS adjustments for browsers with JavaScript disabled -->
     <noscript><link rel="stylesheet" href="<?= base_url('css/jquery.fileupload-ui-noscript.css') ?>"></noscript>
     <p><?= form_open_multipart('file/view/' . $id) ?>
         <div style="margin-top:5em;margin-bottom:2em">
-            <span id="upload-button" class="fileinput-button" style="float:inherit;padding:2px">
+            <span id="upload-button" class="fileinput-button" style="float:inherit">
                 <span><?= $upload_button_text ?></span>
                 <input id="fileupload" type="file" name="files">
             </span>
@@ -68,15 +74,7 @@
                 $('#upload-button').hide();
                 $('#cancel-button').show();
                 $('#status').text('');
-<?php if ($isEditable): ?>
-                $('#edit-link').hide();
-<?php endif; ?>
-<?php if ($isDeletable): ?>
-                $('#delete-link').hide();
-<?php endif; ?>
-<?php if ($isDownloadable): ?>
-                $('#download-link').hide();
-<?php endif; ?>
+                $('#action-bar').hide();
                 jqXHR = data.submit();
             },
             done: function (e, data) {
@@ -110,19 +108,12 @@
             $('#progress-bar').hide();
             $('#upload-button').show();
             $('#cancel-button').hide();
-<?php if ($isEditable): ?>
-            $('#edit-link').show();
-<?php endif; ?>
-<?php if ($isDeletable): ?>
-            $('#delete-link').show();
-<?php endif; ?>
-<?php if ($isDownloadable): ?>
-            $('#download-link').show();
-<?php endif; ?>
+            $('#action-bar').show();
         });
     })
     </script>
 <?php endif; ?>
+
 <p><small><?= $footer ?></small></p>
 <?= $history ?>
 <?php if (isset($pagination)) echo $pagination; ?>

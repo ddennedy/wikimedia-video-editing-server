@@ -29,13 +29,16 @@ class MltXmlWriter
         $this->fileData = $fileData;
     }
 
-    public function run($inFilename, $outFilename)
+    public function run($inFilename, $outFilename = null)
     {
         $reader = new XMLReader();
         $reader->open($inFilename);
 
         $writer = new XMLWriter();
-        $writer->openUri($outFilename);
+        if ($outFilename)
+            $writer->openUri($outFilename);
+        else
+            $writer->openMemory();
 
         $iterator = new XMLWritingIteration($writer, $reader);
 
@@ -99,7 +102,8 @@ class MltXmlWriter
                 $iterator->write();
             }
         }
-
         $writer->endDocument();
+        if (!$outFilename)
+            return $writer->outputMemory(true);
     }
 }

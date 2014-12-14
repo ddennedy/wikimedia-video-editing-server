@@ -211,7 +211,7 @@ class Job extends CI_Controller
                     $tube = config_item('beanstalkd_tube_transcode');
                     $this->beanstalk->useTube($tube);
                     $priority = 10;
-                    $delay = 0;
+                    $delay = 3;
                     $ttr = 60; // seconds
                     $jobId = $this->beanstalk->put($priority, $delay, $ttr, $transcodeJobId);
                     $tube = config_item('beanstalkd_tube_validate');
@@ -322,36 +322,11 @@ class Job extends CI_Controller
         // if audio or video, verify ffprobe can read it
         $xml = shell_exec("/usr/bin/nice melt -consumer xml '$filename' 2>/dev/null");
         if (!empty($xml)) {
-            if ($this->isXmlWellFormed($xml)) {
+            $this->load->library('MltXmlHelper');
+            if ($this->mltxmlhelper->isXmlWellFormed($xml)) {
                 // verify all dependent files are available
-                $childFiles = $this->getFilesData($filename, $log);
-                $isValid = $this->substituteProxyFiles($file, $childFiles, $log);
-
-                // If still valid, get new metadata for each proxy file.
-                if ($isValid)
-                    $this->getFileMetadata($childFiles, $log);
-
-                // If still valid, create a new version of the XML with proxy clips.
-                if ($isValid) {
-                    // Prepare the output file.
-                    $outputName = $this->makeOutputFilename($filename);
-                    $this->load->library('MltXmlWriter', $childFiles);
-                    $this->mltxmlwriter->run($filename, $outputName);
-
-                    // Update database with new XML filename.
-                    $status = intval($file['status']) | File_model::STATUS_FINISHED;
-                    // Clear any previous error in case this was re-attempted.
-                    $status &= ~File_model::STATUS_ERROR;
-                    $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
-                        'status' => $status,
-                        'output_path' => str_replace(config_item('transcode_path'), '', $outputName),
-                        'output_hash' => $this->getFileHash($outputName)
-                    ]);
-                    if (!$isUpdated) {
-                        $isValid = false;
-                        $log .= "Error updating the file table with output_path and hash.\n";
-                    }
-                }
+                $childFiles = $this->mltxmlhelper->getFilesData($filename, $log);
+                $isValid = $this->mltxmlhelper->checkFileReferences($this->file_model, $file, $childFiles, $log);
 
                 // If still valid, create the render job.
                 if ($isValid) {
@@ -361,7 +336,7 @@ class Job extends CI_Controller
                         $tube = config_item('beanstalkd_tube_render');
                         $this->beanstalk->useTube($tube);
                         $priority = 10;
-                        $delay = 0;
+                        $delay = 3;
                         $ttr = 60; // seconds
                         $jobId = $this->beanstalk->put($priority, $delay, $ttr, $renderJobId);
                         $tube = config_item('beanstalkd_tube_validate');
@@ -398,108 +373,6 @@ class Job extends CI_Controller
             'log' => $log
         ]);
         return $isValid;
-    }
-
-    protected function isXmlWellFormed($xml)
-    {
-        libxml_use_internal_errors(true);
-        return simplexml_load_string($xml) !== false;
-    }
-
-    protected function getFilesData($filename, &$log)
-    {
-        try {
-            $this->load->library('MltXmlReader');
-            return $this->mltxmlreader->getFiles($filename);
-        } catch (Exception $e) {
-            $log .= "$e\n";
-            return array();
-        }
-    }
-
-    protected function substituteProxyFiles($file, &$childFiles, &$log)
-    {
-        $isValid = true;
-        foreach($childFiles as $fileName => &$fileData) {
-            $name = basename($fileName);
-            if (isset($fileData['mlt_service'])) {
-                $child = null;
-                $log .= "Found file in XML with name: $name.\n";
-                if (!empty($fileData['file_hash'])) {
-                    // Search for file by hash.
-                    $child = $this->file_model->getByHash($fileData['file_hash']);
-                    if ($child)
-                        $log .= "Found file record by its hash: $fileData[file_hash].\n";
-                }
-                if (!$child) {
-                    // Search for file by basename.
-                    $child = $this->file_model->getByPath($name);
-                    if ($child)
-                        $log .= "Found file record by name: $name.\n";
-                }
-                //TODO Search for the file on Commons based on its basename;
-                if ($child) {
-                    // Save path for new XML.
-                    if (empty($child['output_path'])) {
-                        $fileData['output_path'] = $child['source_path'];
-                        $fileData['proxy_path'] = config_item('upload_path') . $child['source_path'];
-                        $fileData['resource'] = '$CURRENTPATH/' . basename($child['source_path']);
-                        $fileData['file_hash'] = $child['source_hash'];
-                    } else {
-                        $fileData['output_path'] = $child['output_path'];
-                        $fileData['proxy_path'] = config_item('transcode_path') . $child['output_path'];
-                        $fileData['resource'] = '$CURRENTPATH/' . basename($child['output_path']);
-                        $fileData['file_hash'] = $child['output_hash'];
-                    }
-
-                    // Add child and parent relations to database.
-                    if ($this->file_model->addChild($file['id'], $child['id']))
-                        $log .= "Added file relationship: $file[id] -> $child[id].\n";
-                    else
-                        $log .= "Error adding record to file_children table: $file[id] -> $child[id].\n";
-                } else {
-                    $isValid = false;
-                    // Add child to missing_files table.
-                    if ($this->file_model->addMissing($file['id'], $name, $fileData['file_hash']))
-                        $log .= "Added to missing_files table: $file[id] -> $name.\n";
-                    else
-                        $log .= "Error adding record to missing_files table: $file[id] -> $name.\n";
-                }
-            } else {
-                // This file is not necessary and the corresponding
-                // kdenlive_producer can be removed from the XML to
-                // remove unneeded dependencies.
-                $log .= "Found unnecessary file: $name.\n";
-            }
-        }
-        return $isValid;
-    }
-
-    protected function getFileMetadata(&$childFiles, &$log)
-    {
-        foreach($childFiles as $fileName => &$fileData) {
-            $xml = shell_exec("/usr/bin/nice melt -consumer xml '$fileData[proxy_path]' 2>/dev/null");
-            $mlt = simplexml_load_string($xml);
-            if ($mlt && isset($mlt->producer)) {
-                $streamType = null;
-                foreach ($mlt->producer->property as $property) {
-                    if (strpos($property['name'], '.codec.pix_fmt') !== false)
-                        $fileData['pix_fmt'] = (string) $property;
-                    else if (strpos($property['name'], '.codec.colorspace') !== false)
-                        $fileData['colorspace'] = (string) $property;
-                    else if ($property['name'] === 'length')
-                        $fileData['duration'] = (string) $property;
-                    else if (strpos($property['name'], '.stream.type') !== false)
-                        $streamType = (string) $property;
-                    else if (strpos($property['name'], '.codec.name') !== false && $streamType === 'video')
-                        $fileData['videocodecid'] = (string) $property;
-                    else if (strpos($property['name'], '.codec.long_name') !== false && $streamType)
-                        $fileData[$streamType.'codec'] = (string) $property;
-                }
-            }
-            $fileData['file_size'] = filesize($fileData['proxy_path']);
-            $fileData['progressive'] = 1;
-        }
     }
 
     public function stats($tube = null)
@@ -789,7 +662,7 @@ class Job extends CI_Controller
                         $tube = config_item('beanstalkd_tube_validate');
                         $this->beanstalk->useTube($tube);
                         $priority = 10;
-                        $delay = 1;
+                        $delay = 0;
                         $ttr = 60; // seconds
                         $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
                         $this->beanstalk->disconnect();

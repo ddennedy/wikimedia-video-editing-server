@@ -160,3 +160,4 @@ $lang['file_children_caption'] = 'Other files used by this project';
 $lang['file_projects_caption'] = 'Projects that use this file';
 $lang['file_upload_revision'] = 'Upload New Version';
 $lang['change_comment'] = 'Comment';
+$lang['file_download_project'] = 'Download Project XML';
