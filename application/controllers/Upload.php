@@ -51,7 +51,7 @@ class Upload extends CI_Controller
                         $fullname = $this->myuploadhandler->getUniqueFilename($fullname);
                         if ($this->myuploadhandler->moveFile(
                                 config_item('upload_path') . $file->name, $fullname)) {
-                            $file->name = $name;
+                            $file->name = str_replace(config_item('upload_path'), '', $fullname);
                         }
                     }
                 }
@@ -66,7 +66,7 @@ class Upload extends CI_Controller
                         $tube = config_item('beanstalkd_tube_validate');
                         $this->beanstalk->useTube($tube);
                         $priority = 10;
-                        $delay = 1;
+                        $delay = 3;
                         $ttr = 60; // seconds
                         $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
                         $this->beanstalk->disconnect();
@@ -74,15 +74,41 @@ class Upload extends CI_Controller
                 }
             }
 
-            // Put the filename into the database.
-            $this->file_model->staticUpdate($file_id, [
+            // Collect data updates for database.
+            $data = [
                 'source_path' => $file->name,
                 'size_bytes' => $file->total_size,
                 'mime_type' => $file->type,
                 'status' => File_model::STATUS_UPLOADED
-            ]);
+            ];
+
+            // If revised project file, update file table with revision.
+            if (isset($file->url) && !empty($record['output_path']) && $this->isMimeTypeMltXml($file->type)) {
+                $data = array_merge($data, [
+                    'user_id' => $this->session->userdata('userid'),
+                    'title' => $record['title'],
+                    'author' => $record['author'],
+                    'description' => $record['description'],
+                    'language' => $record['language'],
+                    'license' => $record['license'],
+                    'recording_date' => $record['recording_date'],
+                    'keywords' => $record['keywords']
+                ]);
+                $this->file_model->update($file_id, $data, tr('file_upload_revision'));
+            } else {
+                // Put the filename into the database without making a revision.
+                $this->file_model->staticUpdate($file_id, $data);
+            }
         } else {
             set_status_header('405');
         }
+    }
+
+    protected function isMimeTypeMltXml($mimeType)
+    {
+        return $mimeType === 'application/xml' ||
+               $mimeType === 'text/xml' ||
+               $mimeType === 'application/x-kdenlive' ||
+               $mimeType === 'application/mlt+xml';
     }
 }

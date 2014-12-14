@@ -195,6 +195,7 @@ class File_model extends CI_Model
         $data['file_id'] = $id;
         $data['revision'] = $revision + 1;
         $data['updated_at'] = null;
+        $data['comment'] = $comment;
         $this->db->insert('file_history', $data);
 
         $this->db->trans_complete();

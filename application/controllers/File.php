@@ -154,7 +154,7 @@ class File extends CI_Controller
             $this->data = array_merge($this->data, $file);
             $this->data['isDownloadable'] = false;
             $this->load->library('MltXmlReader');
-            $isProject = $this->mltxmlreader->isMimeTypeMltXml($file['mime_type']);
+            $this->data['isProject'] = $this->mltxmlreader->isMimeTypeMltXml($file['mime_type']);
 
             // Determine upload status.
             if (!empty($file['source_path']) &&
@@ -167,7 +167,7 @@ class File extends CI_Controller
                     if ($file['status'] & File_model::STATUS_VALIDATED && !($file['status'] & File_model::STATUS_ERROR)) {
                         $status .= ' =&gt; <a href="' . base_url(config_item('upload_vdir').$file['source_path']) . '">';
                         $status .= tr('status_validated') . '</a>';
-                        if ($isProject)
+                        if ($this->data['isProject'])
                             $this->data['isDownloadable'] = true;
                         // Determine conversion status.
                         if ($file['status'] & File_model::STATUS_CONVERTING) {
@@ -207,7 +207,6 @@ class File extends CI_Controller
             } else {
                 $status = tr('status_noupload');
             }
-
 
             $this->data['heading'] = tr('file_view_heading', $file);
             $this->data['footer'] = tr('file_view_footer', $file);
@@ -255,6 +254,21 @@ class File extends CI_Controller
             // Only show the delete action if admin-level and higher.
             $this->data['isDeletable'] = ($this->session->userdata('role') >= User_model::ROLE_ADMIN);
 
+            // Set data for the upload button for project revisions.
+            if ($this->data['isProject']) {
+                $this->data['upload_button_text'] = tr('file_upload_revision');
+                if (!empty($file['source_path']) &&
+                        is_file(config_item('upload_path').$file['source_path'])) {
+                    $size = filesize(config_item('upload_path').$file['source_path']);
+                    if ($size != $file['size_bytes']) {
+                        // Need to resume file upload.
+                        $this->data['size_bytes'] = $size;
+                        $this->data['upload_button_text'] = tr('file_upload_resume',
+                            ['filename' => basename($file['source_path'])]);
+                    }
+                }
+            }
+
             // Create history table.
             $this->load->helper('url');
             $result = $this->file_model->getHistory($id);
@@ -286,7 +300,7 @@ class File extends CI_Controller
             }
 
             // Create table of dependent files for projects.
-            if ($isProject) {
+            if ($this->data['isProject']) {
                 $result = $this->file_model->getMissingFiles($id);
                 if (count($result)) {
                     $this->load->library('table');
@@ -330,6 +344,7 @@ class File extends CI_Controller
             }
 
             // Build the page.
+            $this->load->helper('form');
             $this->load->view('templates/header', $this->data);
             $this->load->view('file/view', $this->data);
             $this->load->view('templates/footer', $this->data);
