@@ -158,3 +158,5 @@ $lang['status_error_transcode'] = 'Transcode Error';
 $lang['file_missing_caption'] = 'The following files are missing and must be uploaded to render this project.';
 $lang['file_children_caption'] = 'Other files used by this project';
 $lang['file_projects_caption'] = 'Projects that use this file';
+$lang['file_upload_revision'] = 'Upload New Version';
+$lang['change_comment'] = 'Comment';

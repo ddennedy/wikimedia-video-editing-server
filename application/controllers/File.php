@@ -457,6 +457,7 @@ class File extends CI_Controller
                 $this->data['revision'] = ($revision > 0)? $revision : '';
                 $this->data['current'] = $current;
                 $this->data['changes'] = $changes;
+                $this->data['comment'] = $current['comment'];
                 $this->data['heading'] = tr('file_view_heading', $this->data);
                 $this->data['subheading'] = tr('file_differences_heading', $this->data);
                 $this->data['footer'] = tr('file_view_footer', $this->data);

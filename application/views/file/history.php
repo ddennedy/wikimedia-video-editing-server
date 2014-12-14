@@ -20,6 +20,7 @@
 ?>
 <h2><?= $heading ?></h2>
 <h3><?= $subheading ?></h3>
+<?php if (!empty($comment)) echo '<p>' . tr('change_comment') . ": $comment</p>"; ?>
 <dl>
 <?php foreach($changes as $key => $value): ?>
 <dt><?= tr('file_' . $key) ?></dt>

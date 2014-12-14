@@ -338,7 +338,7 @@ class File_model extends CI_Model
 
     public function getHistoryByRevision($file_id, $revision)
     {
-        $this->db->select('title, author, description, keywords, language, license, recording_date, updated_at');
+        $this->db->select('title, author, description, keywords, language, license, recording_date, updated_at, comment');
         $this->db->where(['file_id' => $file_id, 'revision' => $revision]);
         $query = $this->db->get('file_history');
         return $query->row_array();
