@@ -577,6 +577,8 @@ class Job extends CI_Controller
             $status = intval($file['status']) | File_model::STATUS_FINISHED;
             // Clear any previous error in case this was re-attempted.
             $status &= ~File_model::STATUS_ERROR;
+            // Clear the converting flag.
+            $status &= ~File_model::STATUS_CONVERTING;
             $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
                 'status' => $status,
                 'output_path' => str_replace(config_item('transcode_path'), '', $outputName),
@@ -710,6 +712,8 @@ class Job extends CI_Controller
             $status = intval($file['status']) | File_model::STATUS_FINISHED;
             // Clear any previous error in case this was re-attempted.
             $status &= ~File_model::STATUS_ERROR;
+            // Clear the converting flag.
+            $status &= ~File_model::STATUS_CONVERTING;
             $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
                 'status' => $status,
                 'output_path' => str_replace(config_item('transcode_path'), '', $outputName),
