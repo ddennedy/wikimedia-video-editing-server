@@ -44,7 +44,7 @@
     <!-- CSS adjustments for browsers with JavaScript disabled -->
     <noscript><link rel="stylesheet" href="<?= base_url('css/jquery.fileupload-ui-noscript.css') ?>"></noscript>
     <p><?= form_open_multipart('file/view/' . $id) ?>
-        <div style="margin-top:5em;margin-bottom:2em">
+        <div style="margin-top:1em">
             <span id="upload-button" class="fileinput-button" style="float:inherit">
                 <span><?= $upload_button_text ?></span>
                 <input id="fileupload" type="file" name="files">
