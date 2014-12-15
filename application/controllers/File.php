@@ -175,8 +175,8 @@ class File extends CI_Controller
                             $this->load->model('job_model');
                             $status .= ' =&gt; ' . tr('status_converting');
                             $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_TRANSCODE);
-                            if ($job)
-                                $status .= ": $job[progress]%";
+                            if (!$job) $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_RENDER);
+                            if ($job) $status .= ": $job[progress]%";
                         } else if ($file['status'] & File_model::STATUS_FINISHED) {
                             $this->data['isDownloadable'] = true;
                             // Ogg and WebM files are not transcoded and do not set output_path.
@@ -187,6 +187,7 @@ class File extends CI_Controller
                         } else if ($file['status'] & File_model::STATUS_ERROR) {
                             $this->load->model('job_model');
                             $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_TRANSCODE);
+                            if (!$job) $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_RENDER);
                             if ($job) {
                                 $status .= ' =&gt; <a href="' . site_url('job/log/' . $job['id'])  . '">';
                                 $status .= tr('status_error_transcode') . '</a>';
@@ -197,6 +198,7 @@ class File extends CI_Controller
                     } else if ($file['status'] & File_model::STATUS_ERROR) {
                         $this->load->model('job_model');
                         $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_VALIDATE);
+                            if (!$job) $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_RENDER);
                         if ($job) {
                             $status .= ' =&gt; <a href="' . site_url('job/log/' . $job['id'])  . '">';
                             $status .= tr('status_error_validate') . '</a>';
