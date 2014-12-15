@@ -83,15 +83,17 @@ class MltXmlWriter
             } else if ($isElement && $node->name === 'kdenlive_producer') {
                 $data = array();
                 $writer->startElement($node->name);
-                $data = $this->fileData[$reader->getAttribute('resource')];
-                if ($reader->moveToFirstAttribute()) {
-                    do {
-                        if (isset($data[$reader->name]))
-                            $writer->writeAttribute($reader->name, $data[$reader->name]);
-                        else
-                            $writer->writeAttribute($reader->name, $reader->value);
-                    } while ($reader->moveToNextAttribute());
-                    $reader->moveToElement();
+                if (isset($this->fileData[$reader->getAttribute('resource')])) {
+                    $data = $this->fileData[$reader->getAttribute('resource')];
+                    if ($reader->moveToFirstAttribute()) {
+                        do {
+                            if (isset($data[$reader->name]))
+                                $writer->writeAttribute($reader->name, $data[$reader->name]);
+                            else
+                                $writer->writeAttribute($reader->name, $reader->value);
+                        } while ($reader->moveToNextAttribute());
+                        $reader->moveToElement();
+                    }
                 }
             } else if ($isElement && $node->name === 'metaproperty' && is_array($data)
                        && element('mlt_service', $data) == 'avformat') {
