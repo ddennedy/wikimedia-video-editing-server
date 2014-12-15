@@ -447,11 +447,14 @@ class File extends CI_Controller
                 // Make an array of the changes.
                 $current = $this->file_model->getHistoryByRevision($id, $revision);
                 $file['updated_at'] = $current['updated_at'];
+                $file['comment'] = $current['comment'];
                 unset($current['updated_at']);
+                unset($current['comment']);
                 if ($revision > 0) {
                     $previous = $this->file_model->getHistoryByRevision($id, $revision - 1);
                     unset($previous['updated_at']);
-                    $changes = array_diff($previous, $current);
+                    unset($previous['comment']);
+                    $changes = array_diff_assoc($previous, $current);
                 } else {
                     $changes = $current;
                     foreach ($changes as &$value)
@@ -475,7 +478,6 @@ class File extends CI_Controller
                 $this->data['revision'] = ($revision > 0)? $revision : '';
                 $this->data['current'] = $current;
                 $this->data['changes'] = $changes;
-                $this->data['comment'] = $current['comment'];
                 $this->data['heading'] = tr('file_view_heading', $this->data);
                 $this->data['subheading'] = tr('file_differences_heading', $this->data);
                 $this->data['footer'] = tr('file_view_footer', $this->data);
