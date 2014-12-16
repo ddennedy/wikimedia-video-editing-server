@@ -22,6 +22,7 @@ $config['debug'] = false;
 $config['videos_dir'] = '/media/videos/';
 
 $config['oauth_base_url']= 'https://commons.wikimedia.org/wiki/Special:OAuth';
+$config['publish_endpoint']= 'https://commons.wikimedia.org/w/api.php';
 
 // http://php.local/index.php?oath-callback
 $config['oauth_consumer_token'] = '70dcdf4058772ddc6e89a90170e4febe';
@@ -51,4 +52,5 @@ $config['transcode_audio_options'] = '-map 0:a -codec libvorbis -qscale 5 -y';
 $config['transcode_video_extension'] = 'webm';
 $config['transcode_video_options'] = '-map 0 -map -0:d -map -0:s -map -0:t -vf yadif=mode=send_frame:deint=interlaced -codec:a libvorbis -qscale:a 5 -codec:v libvpx -g 100 -quality good -speed 0 -vprofile 0 -slices 4 -threads 2 -b:v 10M -crf 10 -arnr_max_frames 7 -arnr_strength 5 -arnr_type 3 -y';
 $config['render_extension'] = 'webm';
-$config['render_options'] = 'progressive=1 acodec=libvorbis aqscale=5 vcodec=libvpx g=100 quality=good speed=0 vprofile=0 slices=4 threads=2 vb=10M crf=10 arnr_max_frames=7 arnr_strength=5 arnr_type=3';
+$config['render_options'] = 'progressive=1 acodec=libvorbis aqscale=5 vcodec=libvpx g=100 quality=good speed=0 vprofile=0 slices=4 threads=1 vb=10M crf=10 arnr_max_frames=7 arnr_strength=5 arnr_type=3';
+$config['http_client_user_agent'] = 'VideoEditingServer/1.0 (https://github.com/ddennedy/wikimedia-video-editing-server; dan@dennedy.org)';

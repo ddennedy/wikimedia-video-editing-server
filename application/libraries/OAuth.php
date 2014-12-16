@@ -33,6 +33,9 @@ class OAuth
     private $privateKey;
     private $consumer;
     private $rsaMethod;
+    private $issuer;
+    private $userAgent;
+    private $publishEndpoint;
 
     function __construct($config)
     {
@@ -41,6 +44,9 @@ class OAuth
         $this->privateKey = file_get_contents($config['oauth_private_key']);
         $this->consumer = new OAuthConsumer($this->consumerToken, $this->privateKey);
         $this->rsaMethod = new MWOAuthSignatureMethod_RSA_SHA1(new OAuthDataStore(), $this->privateKey);
+        $this->issuer = $config['oauth_jwt_issuer'];
+        $this->userAgent = $config['http_client_user_agent'];
+        $this->publishEndpoint = $config['publish_endpoint'];
     }
 
     function initiate()
@@ -71,7 +77,7 @@ class OAuth
         return json_decode($result);
     }
 
-    function identify($accessToken, $secret, $issuer = null)
+    public function identify($accessToken, $secret, $issuer = null)
     {
         $token = new OAuthToken($accessToken, $secret);
         $endpoint = $this->baseurl . '/identify';
@@ -89,6 +95,71 @@ class OAuth
         } else {
             return $identity;
         }
+    }
+
+    public function get($accessToken, $params)
+    {
+        $url = $this->publishEndpoint . '?' . http_build_query($params);
+        $secret = '__unused__';
+        $token = new OAuthToken($accessToken, $secret);
+        $request = OAuthRequest::from_consumer_and_token(
+            $this->consumer, // OAuthConsumer for your app
+            $token,          // User token, NULL for calls to initiate
+            'GET',           // http method
+            $url,            // endpoint url (this is signed)
+            $params          // extra parameters we want to sign (must include title)
+        );
+        $request->sign_request($this->rsaMethod, $this->consumer, $token);
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, $url);
+        curl_setopt($curl, CURLOPT_HTTPGET, true);
+        curl_setopt($curl, CURLOPT_HEADER, false);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, array($request->to_header()));
+        curl_setopt($curl, CURLOPT_ENCODING, 'UTF-8');
+        curl_setopt($curl, CURLOPT_USERAGENT, $this->userAgent);
+        $cookieFile = sys_get_temp_dir() . '/cookies.txt';
+        touch($cookieFile);
+        curl_setopt($curl, CURLOPT_COOKIEJAR, $cookieFile);
+        curl_setopt($curl, CURLOPT_COOKIEFILE, $cookieFile);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+        $response = curl_exec($curl);
+        if (!$response)
+            throw new Exception('cURL Error: ' . curl_error($curl));
+        return $response;
+    }
+
+    public function post($accessToken, $params, $data)
+    {
+        $url = $this->publishEndpoint . '?' . http_build_query($params);
+        $secret = '__unused__';
+        $token = new OAuthToken($accessToken, $secret);
+        $request = OAuthRequest::from_consumer_and_token(
+            $this->consumer, // OAuthConsumer for your app
+            $token,          // User token, NULL for calls to initiate
+            'POST',           // http method
+            $url,            // endpoint url (this is signed)
+            $params          // extra parameters we want to sign (must include title)
+        );
+        $request->sign_request($this->rsaMethod, $this->consumer, $token);
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, $url);
+        curl_setopt($curl, CURLOPT_POST, true);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($curl, CURLOPT_HEADER, false);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, array($request->to_header()));
+        curl_setopt($curl, CURLOPT_ENCODING, 'UTF-8');
+        curl_setopt($curl, CURLOPT_USERAGENT, $this->userAgent);
+        $cookieFile = sys_get_temp_dir() . '/cookies.txt';
+        touch($cookieFile);
+        curl_setopt($curl, CURLOPT_COOKIEJAR, $cookieFile);
+        curl_setopt($curl, CURLOPT_COOKIEFILE, $cookieFile);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+        $response = curl_exec($curl);
+        if (!$response)
+            throw new Exception('cURL Error: ' . curl_error($curl));
+        return $response;
     }
 
     private function oauthRequest($url, $params, $token = null)
