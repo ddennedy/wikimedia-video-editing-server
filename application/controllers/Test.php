@@ -162,7 +162,8 @@ class Test extends CI_Controller
                             'token' => $token
                         ];
                         $mimetype = mime_content_type($filepath);
-                        $data['file'] = "@$filepath;filename=$filename;type=$mimetype";
+                        $this->load->helper('curl_helper');
+                        $data['file'] = curl_file_create($filepath, $mimetype, $filename);
                         $response = $this->oauth->post($accessToken, $params, $data);
 
                         if (strpos($response, '<html') === false) {
