@@ -222,9 +222,6 @@ class User extends CI_Controller
             $this->load->library('table');
             $this->table->set_heading(tr('file_title'), tr('file_author'), tr('file_updated_at'));
             $this->table->set_caption(tr('user_files_caption'));
-            $this->table->set_template([
-                'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
-            ]);
 
             // Build the page.
             $this->load->view('templates/header', $data);
@@ -318,9 +315,6 @@ class User extends CI_Controller
         $this->data['heading'] = tr('user_list_heading');
         $this->load->library('table');
         $this->table->set_heading('Name', 'Role', 'Updated');
-        $this->table->set_template([
-            'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
-        ]);
         $this->load->view('templates/header', $this->data);
         $this->load->view('user/grid', $this->data);
         $this->load->view('templates/footer', $this->data);

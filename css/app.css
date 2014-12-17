@@ -23,7 +23,7 @@ html, body {
     margin: 10px;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1, h2, h3, h4, h5, h6, caption {
     font-family: "Linux Libertine",Georgia,Times,serif;
     font-weight: normal;
     color: black;
@@ -87,4 +87,32 @@ em {
 
 .ui-widget {
     font-family: inherit;
+}
+
+table {
+    border: 1px solid #aaa;
+    border-collapse: collapse;
+    margin: 1em 0;
+    background-color: #f9f9f9;
+}
+
+caption {
+    text-align: left;
+    font-size: 1.2em;
+    margin-top: 1em;
+    margin-bottom: 0.25em;
+    line-height: 1.3;
+    padding: 0;
+    border-bottom: none;
+}
+
+th, .table-head {
+    background-color: #f2f2f2;
+    text-align: center;
+    border: 1px solid #aaa;
+}
+
+tr > td {
+    border: 1px solid #aaa;
+    padding: 0.4em;
 }

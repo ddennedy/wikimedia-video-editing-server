@@ -217,7 +217,6 @@ class File extends CI_Controller
             // Create table of metadata.
             $this->load->library('table');
             $this->table->set_template([
-                'table_open'            => '<table border="1" cellpadding="4" cellspacing="0">',
                 'thead_open'            => '',
                 'thead_close'           => '',
                 'heading_row_start'     => '',
@@ -294,9 +293,7 @@ class File extends CI_Controller
                 $this->load->library('table');
                 $this->table->set_heading(tr('file_revision'), tr('file_updated_at'), tr('user_name'));
                 $this->table->set_caption(tr('file_history_caption'));
-                $this->table->set_template([
-                    'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
-                ]);
+                $this->table->set_template([]);
                 $this->data['history'] = $this->table->generate($subset);
             } else {
                 $this->data['history'] = '<em>' . tr('file_history_none') . '</em>';
@@ -308,9 +305,7 @@ class File extends CI_Controller
                 if (count($result)) {
                     $this->load->library('table');
                     $this->table->set_heading(tr('file_missing_caption'));
-                    $this->table->set_template([
-                        'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
-                    ]);
+                    $this->table->set_template([]);
                     $this->data['missing'] = $this->table->generate($result);
                 }
                 $result = $this->file_model->getChildren($id);
@@ -323,9 +318,7 @@ class File extends CI_Controller
                     $this->load->library('table');
                     $this->table->set_heading(tr('file_title'), tr('file_author'), tr('file_mime_type'), '');
                     $this->table->set_caption(tr('file_children_caption'));
-                    $this->table->set_template([
-                        'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
-                    ]);
+                    $this->table->set_template([]);
                     $this->data['relations'] = $this->table->generate($result);
                 }
             } else {
@@ -339,9 +332,7 @@ class File extends CI_Controller
                     $this->load->library('table');
                     $this->table->set_heading(tr('file_title'), tr('file_author'), tr('file_updated_at'));
                     $this->table->set_caption(tr('file_projects_caption'));
-                    $this->table->set_template([
-                        'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
-                    ]);
+                    $this->table->set_template([]);
                     $this->data['relations'] = $this->table->generate($result);
                 }
             }
@@ -383,9 +374,6 @@ class File extends CI_Controller
         $this->data['heading'] = tr('file_recent_heading');
         $this->load->library('table');
         $this->table->set_heading(tr('file_title'), tr('user_name'), tr('file_updated_at'));
-        $this->table->set_template([
-            'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
-        ]);
         $this->load->view('templates/header', $this->data);
         $this->load->view('file/recent', $this->data);
         $this->load->view('templates/footer', $this->data);
@@ -409,9 +397,6 @@ class File extends CI_Controller
 
             $this->load->library('table');
             $this->table->set_heading(tr('file_title'), tr('file_author'), tr('user_name'), tr('file_updated_at'));
-            $this->table->set_template([
-                'table_open' => '<table border="1" cellpadding="4" cellspacing="0">'
-            ]);
         }
         $this->data['heading'] = tr('file_search_results_heading', ['query' => $query]);
         $this->load->view('templates/header', $this->data);
