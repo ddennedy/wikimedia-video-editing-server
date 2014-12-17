@@ -84,16 +84,7 @@ class Upload extends CI_Controller
 
             // If revised project file, update file table with revision.
             if (isset($file->url) && !empty($record['source_path']) && $this->isMimeTypeMltXml($file->type)) {
-                $data = array_merge($data, [
-                    'user_id' => $this->session->userdata('userid'),
-                    'title' => $record['title'],
-                    'author' => $record['author'],
-                    'description' => $record['description'],
-                    'language' => $record['language'],
-                    'license' => $record['license'],
-                    'recording_date' => $record['recording_date'],
-                    'keywords' => $record['keywords']
-                ]);
+                $data['user_id'] = $this->session->userdata('userid');
                 $this->file_model->update($file_id, $data, tr('file_upload_revision'));
             } else {
                 // Put the filename into the database without making a revision.

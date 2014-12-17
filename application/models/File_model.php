@@ -140,6 +140,7 @@ class File_model extends CI_Model
             $current['file_id'] = $id;
             $this->db->insert('file_history', $current);
         }
+        $current = array_replace($current, $diff);
 
         // Update main table with new values.
         $this->db->where('id', $id);
@@ -192,11 +193,11 @@ class File_model extends CI_Model
         }
 
         // Insert new values into history.
-        $data['file_id'] = $id;
-        $data['revision'] = $revision + 1;
-        $data['updated_at'] = null;
-        $data['comment'] = $comment;
-        $this->db->insert('file_history', $data);
+        $current['file_id'] = $id;
+        $current['revision'] = $revision + 1;
+        $current['updated_at'] = null;
+        $current['comment'] = $comment;
+        $this->db->insert('file_history', $current);
 
         $this->db->trans_complete();
         return $this->db->trans_status();
