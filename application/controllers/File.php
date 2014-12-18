@@ -92,6 +92,15 @@ class File extends CI_Controller
                     'recording_date' => $this->input->post('recording_date'),
                     'keywords' => $this->input->post('keywords')
                 ];
+
+                $data['properties'] = $this->file_model->getProperties($id);
+                if (!empty($this->input->post('properties')[0]['name'])) {
+                    $data['properties']['user'] = $this->input->post('properties');
+                } else {
+                    unset($data['properties']['user']);
+                }
+                $data['properties'] = json_encode($data['properties']);
+
                 if ($id === null) {
                     $id = $this->file_model->create($data);
                     if ($id) {
@@ -123,11 +132,13 @@ class File extends CI_Controller
             } else {
                 $this->data['id'] = $id;
                 $this->data = array_merge($this->data, $_POST);
+                if (!empty($this->input->post('properties')[0]['name'])) {
+                    $data['properties'] = array();
+                    $data['properties']['user'] = json_encode($this->input->post('properties'));
+                }
             }
         }
-        // Display form.
-        $this->load->helper('form');
-        $this->load->config('form_validation');
+
         // Build arrays for dropdowns.
         $this->data['languages'] = $this->user_model->getLanguages();
         $this->data['licenses'] = $this->file_model->getLicenses();
@@ -140,6 +151,11 @@ class File extends CI_Controller
         }
         if (!isset($this->data['upload_button_text']))
             $this->data['upload_button_text'] = tr('file_upload_button');
+        $this->data['properties'] = json_decode($this->data['properties'], true);
+
+        // Display form.
+        $this->load->helper('form');
+        $this->load->config('form_validation');
         $this->load->view('templates/header', $this->data);
         $this->load->view('file/edit', $this->data);
         $this->load->view('templates/footer', $this->data);
@@ -250,6 +266,17 @@ class File extends CI_Controller
             $tableData []= ['<strong>'.tr('file_status').'</strong>', $status];
             $this->data['metadata'] = $this->table->generate($tableData);
             $this->table->clear();
+
+            // Create table of properties.
+            $properties = $file['properties']? json_decode($file['properties'], true) : array();
+            if (array_key_exists('user', $properties)) {
+                $this->table->set_heading(tr('file_properties_name'), tr('file_properties_value'));
+                $this->table->set_caption(tr('file_properties'));
+                $this->table->set_template([]);
+                $this->data['properties'] = $this->table->generate($properties['user']);
+            } else {
+                unset($this->data['properties']);
+            }
 
             // Only show the edit action if user-level and higher.
             $this->data['isEditable'] = ($this->session->userdata('role') >= User_model::ROLE_USER);

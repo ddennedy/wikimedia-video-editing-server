@@ -20,7 +20,9 @@
 ?>
 <h2><?= $heading ?></h2>
 <p><?= $description ?></p>
-<p><?= $metadata ?></p>
+<p><?= $metadata ?>
+<?php if (isset($properties)) echo $properties; ?>
+</p>
 <p><?php if (isset($missing)) echo $missing; ?></p>
 <p><?php if (isset($relations)) echo $relations; ?></p>
 <hr>

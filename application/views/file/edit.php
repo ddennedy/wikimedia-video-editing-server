@@ -18,6 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 ?>
+<style>
+    div.ui-corner-all {
+        width: 16px;
+        height: 16px;
+        padding: 4px;
+    }
+</style>
 <link rel="stylesheet" href="<?= base_url('js/select2/select2.css') ?>" type="text/css" />
 
 <h2><?= $heading ?></h2>
@@ -84,6 +91,50 @@
         <?= form_dropdown('license', $licenses, set_value('license', $license)) ?>
     </div>
 
+    <div class="field">
+        <label><?= tr('file_properties') ?></label>
+        <div class="repeat">
+            <table class="wrapper" width="60%">
+                <thead>
+                    <tr>
+                        <th style="width:20%"><?= tr('file_properties_name')?></th>
+                        <th style="width:38%"><?= tr('file_properties_value')?></th>
+                        <th  style="width:2%" colspan="2"><div class="add ui-state-default ui-corner-all" title="<?= tr('add') ?>"><span class="ui-icon ui-icon-plus"></span></div></th>
+                    </tr>
+                </thead>
+                <tbody class="container">
+                    <tr class="template row">
+                        <td style="width:20%"><input type="text" name="properties[{{row-count-placeholder}}][name]"  style="width:98%"></td>
+                        <td style="width:38%"><input type="text" name="properties[{{row-count-placeholder}}][value]" style="width:99%"></td>
+                        <td style="width:1%"><div class="remove ui-state-default ui-corner-all" title="<?= tr('remove') ?>"><span class="ui-icon ui-icon-minus"></span></div></td>
+                        <td style="width:1%"><div class="move ui-state-default ui-corner-all" title="<?= tr('move') ?>"><span class="ui-icon ui-icon-arrow-2-n-s"></span></div></td>
+                    </tr>
+<?php   $i = 0;
+        if (array_key_exists('user', $properties)):
+            foreach ($properties['user'] as $p):
+?>
+                    <tr class="row">
+                        <td style="width:20%"><input type="text" name="properties[<?= $i ?>][name]" size="20"  style="width:98%" value="<?= htmlspecialchars($p['name']) ?>"></td>
+                        <td style="width:38%"><input type="text" name="properties[<?= $i ?>][value]" size="40" style="width:99%" value="<?= htmlspecialchars($p['value']) ?>"></td>
+                        <td style="width:1%"><div class="remove ui-state-default ui-corner-all" title="'.tr('remove').'"><span class="ui-icon ui-icon-minus"></span></div></td>
+                        <td style="width:1%"><div class="move ui-state-default ui-corner-all" title="'.tr('move').'"><span class="ui-icon ui-icon-arrow-2-n-s"></span></div></td>
+                    </tr>
+<?php           $i++;
+            endforeach;
+        else:
+?>
+                    <tr class="row">
+                        <td style="width:20%"><input type="text" name="properties[<?= $i ?>][name]" size="20"  style="width:98%" value=""></td>
+                        <td style="width:38%"><input type="text" name="properties[<?= $i ?>][value]" size="40" style="width:99%" value=""></td>
+                        <td style="width:1%"><div class="remove ui-state-default ui-corner-all" title="'.tr('remove').'"><span class="ui-icon ui-icon-minus"></span></div></td>
+                        <td style="width:1%"><div class="move ui-state-default ui-corner-all" title="'.tr('move').'"><span class="ui-icon ui-icon-arrow-2-n-s"></span></div></td>
+                    </tr>
+<?php   endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <div class="action-bar">
         <input id="save-button" class="button" type="submit" name="submit" value="<?= tr('save') ?>">
         <?php if ($id): ?>
@@ -96,6 +147,7 @@
 <script src="<?= base_url('js/jquery.min.js') ?>"></script>
 <script src="<?= base_url('js/jquery-ui.min.js') ?>"></script>
 <script src="<?= base_url('js/select2/select2.min.js') ?>"></script>
+<script src="<?= base_url('js/repeatable-fields.js') ?>"></script>
 <?php if (empty($source_path)): ?>
 <script src="<?= base_url('js/jquery.iframe-transport.js') ?>"></script>
 <script src="<?= base_url('js/jquery.fileupload.js') ?>"></script>
@@ -190,6 +242,9 @@
                 },
                 cache: true
             }
+        });
+        $('.repeat').each(function() {
+            $(this).repeatable_fields();
         });
     })
 </script>

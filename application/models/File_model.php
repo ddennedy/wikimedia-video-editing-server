@@ -340,7 +340,7 @@ class File_model extends CI_Model
 
     public function getHistoryByRevision($file_id, $revision)
     {
-        $this->db->select('title, author, description, keywords, language, license, recording_date, updated_at, comment');
+        $this->db->select('title, author, description, keywords, language, license, recording_date, updated_at, comment, properties');
         $this->db->where(['file_id' => $file_id, 'revision' => $revision]);
         $query = $this->db->get('file_history');
         return $query->row_array();
@@ -435,5 +435,16 @@ class File_model extends CI_Model
     public function deleteMissing($id)
     {
         $this->db->where('id', $id)->delete('missing_files');
+    }
+
+    public function getProperties($id)
+    {
+        $this->db->select('properties');
+        $query = $this->db->get_where('file', ['id' => $id]);
+        if ($query->num_rows()) {
+            return json_decode($query->row()->properties, true);
+        } else {
+            return array();
+        }
     }
 }
