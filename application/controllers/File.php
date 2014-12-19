@@ -578,4 +578,96 @@ class File extends CI_Controller
         }
         show_404(uri_string());
     }
+
+    public function publish($id)
+    {
+        $this->load->model('file_model');
+        $file = $this->file_model->getById($id);
+        if (!empty($file['output_path'])) {
+            $filename = basename($file['output_path']);
+            $url = base_url(config_item('transcode_vdir') . $file['output_path']);
+        } else if (!empty($file['output_path'])) {
+            $filename = basename($file['source_path']);
+            $url = base_url(config_item('upload_vdir') . $file['source_path']);
+        } else {
+            show_404(uri_string());
+            return;
+        }
+        $text = $this->load->view('file/wikitext', $file, true);
+
+        // Lookup user in database.
+        $username = $this->session->userdata('username');
+        $user = $this->user_model->getByName($username);
+        if ($user && $user['access_token']) {
+            // User exists and has access token.
+            $this->load->library('OAuth', $this->config->config);
+
+            // Query the page by file.title for the edit token.
+            $accessToken = $user['access_token'];
+            $params = [
+                'action' => 'query',
+                'format' => 'php',
+                'continue' => '',
+                'titles' => $filename,
+                'meta' => 'tokens'
+            ];
+            $response = $this->oauth->get($accessToken, $params);
+            if (strpos($response, '<html') === false) {
+                log_message('debug', $response);
+                $response = unserialize($response);
+                if (array_key_exists('error', $response)) {
+                    # error set - return and start over
+                    log_message('error', 'MediaWiki query API error: '.$response['error']['info']);
+
+                } else if (isset($response['query']['pages'])) {
+                    # Extract edit token.
+                    if (isset($response['query']['tokens']['csrftoken']))
+                        $token = $response['query']['tokens']['csrftoken'];
+                    else if (isset($response['query']['pages'][-1]['edittoken']))
+                        $token = $response['query']['pages'][-1]['edittoken'];
+
+                    // Call the MediaWiki Upload API.
+                    if (isset($token)) {
+                        $params = [
+                            'action' => 'upload',
+                            'format' => 'php'
+                        ];
+                        $data = [
+                            'url' => $url,
+                            'filename' => $filename,
+                            'text' => $text,
+                            'asyncdownload' => 1,
+                            'ignorewarnings' => 1,
+                            'token' => $token
+                        ];
+                        $response = $this->oauth->post($accessToken, $params, $data);
+
+                        // Process the upload response.
+                        if (strpos($response, '<html') === false) {
+                            log_message('debug', $response);
+                            $response = unserialize($response);
+                            if (!array_key_exists('error', $response)) {
+                                // Success
+                                //TODO: Update database with publish flag and publish URL.
+                                // Show the file view page.
+                                $this->view($id);
+                                return;
+                            } else {
+                                log_message('error', 'MediaWiki upload API error: '.$response['error']['info']);
+                            }
+                        } else {
+                            log_message('error', 'MediaWiki upload API response: '.$response);
+                        }
+                    } else {
+                        log_message('error', 'No edit token found in MediaWiki API response.');
+                    }
+                } else {
+                    log_message('error', 'No pages found in MediaWiki API response.');
+                }
+            } else {
+                log_message('error', 'MediaWiki query API response: '.$response);
+            }
+        }
+        show_error(tr('file_error_publish'), 500, tr('file_error_heading'));
+    }
 }

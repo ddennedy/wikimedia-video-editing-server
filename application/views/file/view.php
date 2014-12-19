@@ -39,6 +39,9 @@
 <?php if ($isProjectDownloadable): ?>
         | <a href="<?= site_url('file/download_project/' . $id) ?>"><?= tr('file_download_project') ?></a>
 <?php endif; ?>
+<?php if ($isEditable && $isProject && $isDownloadable): ?>
+        | <a href="<?= site_url('file/publish/' . $id) ?>"><?= tr('publish') ?></a>
+<?php endif; ?>
     </div>
 
 <?php if ($isEditable && $isProject): ?>

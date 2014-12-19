@@ -167,3 +167,5 @@ $lang['file_properties_value'] = 'Value';
 $lang['add'] = 'Add';
 $lang['remove'] = 'Remove';
 $lang['move'] = 'Move';
+$lang['publish'] = 'Publish';
+$lang['file_error_publish'] = 'Failed to publish file to Wikimedia Commons.';

@@ -108,9 +108,9 @@ class Test extends CI_Controller
         }
     }
 
-    public function commons()
+    public function commons($name)
     {
-        $filepath = '/var/www/uploads/i/m/img_0175.jpg';
+        $filepath = config_item('upload_path')."$name[0]/$name[1]/$name";
         $text = 'Testing upload from video-editing-server 2';
         $filename = $text . strrchr($filepath, '.');
 
@@ -122,7 +122,7 @@ class Test extends CI_Controller
             // User exists and has access token - verify it.
             $this->load->library('OAuth', $this->config->config);
 
-            // Request the user's identity through OAuth.
+            // Query the page by file.title for the edit token.
             $accessToken = $user['access_token'];
             $params = [
                 'action' => 'query',

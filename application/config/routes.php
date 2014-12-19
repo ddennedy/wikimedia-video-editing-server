@@ -109,6 +109,7 @@ $route['file/delete/(:any)'] = 'file/delete/$1';
 $route['file/download/(:any)'] = 'file/download/$1';
 $route['file/download_project/(:any)'] = 'file/download_project/$1';
 $route['file/history'] = 'file/history';
+$route['file/publish/(:any)'] = 'file/publish/$1';
 $route['file/(:any)/(:any)'] = 'file/view/$1/$2';
 $route['file/(:any)'] = 'file/view/$1';
 
