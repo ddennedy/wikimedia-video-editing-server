@@ -54,7 +54,7 @@
 
     <div class="field">
         <label for="title"><?= tr('file_title') ?></label>
-        <input class="select2-input" name="title" maxlength="255" style="width:60%"
+        <input name="title" maxlength="255" style="width:60%"
          value="<?= set_value('title', $title) ?>">
     </div>
 
@@ -110,7 +110,7 @@
                         <td style="width:1%"><div class="move ui-state-default ui-corner-all" title="<?= tr('move') ?>"><span class="ui-icon ui-icon-arrow-2-n-s"></span></div></td>
                     </tr>
 <?php   $i = 0;
-        if (array_key_exists('user', $properties)):
+        if (isset($properties) && array_key_exists('user', $properties)):
             foreach ($properties['user'] as $p):
 ?>
                     <tr class="row">
