@@ -116,8 +116,8 @@
                     <tr class="row">
                         <td style="width:20%"><input type="text" name="properties[<?= $i ?>][name]" size="20"  style="width:98%" value="<?= htmlspecialchars($p['name']) ?>"></td>
                         <td style="width:38%"><input type="text" name="properties[<?= $i ?>][value]" size="40" style="width:99%" value="<?= htmlspecialchars($p['value']) ?>"></td>
-                        <td style="width:1%"><div class="remove ui-state-default ui-corner-all" title="'.tr('remove').'"><span class="ui-icon ui-icon-minus"></span></div></td>
-                        <td style="width:1%"><div class="move ui-state-default ui-corner-all" title="'.tr('move').'"><span class="ui-icon ui-icon-arrow-2-n-s"></span></div></td>
+                        <td style="width:1%"><div class="remove ui-state-default ui-corner-all" title="<?= tr('remove') ?>"><span class="ui-icon ui-icon-minus"></span></div></td>
+                        <td style="width:1%"><div class="move ui-state-default ui-corner-all" title="<?= tr('move') ?>"><span class="ui-icon ui-icon-arrow-2-n-s"></span></div></td>
                     </tr>
 <?php           $i++;
             endforeach;
@@ -126,8 +126,8 @@
                     <tr class="row">
                         <td style="width:20%"><input type="text" name="properties[<?= $i ?>][name]" size="20"  style="width:98%" value=""></td>
                         <td style="width:38%"><input type="text" name="properties[<?= $i ?>][value]" size="40" style="width:99%" value=""></td>
-                        <td style="width:1%"><div class="remove ui-state-default ui-corner-all" title="'.tr('remove').'"><span class="ui-icon ui-icon-minus"></span></div></td>
-                        <td style="width:1%"><div class="move ui-state-default ui-corner-all" title="'.tr('move').'"><span class="ui-icon ui-icon-arrow-2-n-s"></span></div></td>
+                        <td style="width:1%"><div class="remove ui-state-default ui-corner-all" title="<?= tr('remove') ?>"><span class="ui-icon ui-icon-minus"></span></div></td>
+                        <td style="width:1%"><div class="move ui-state-default ui-corner-all" title="<?= tr('move') ?>"><span class="ui-icon ui-icon-arrow-2-n-s"></span></div></td>
                     </tr>
 <?php   endif; ?>
                 </tbody>
