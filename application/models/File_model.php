@@ -276,13 +276,45 @@ class File_model extends CI_Model
 
     public function search($query)
     {
-        $query = stripslashes(str_replace('&quot;', '"', $query));
-        $match = "MATCH (searchindex.title, searchindex.description, searchindex.author, searchindex.keywords) AGAINST ('$query' IN BOOLEAN MODE)";
-        $this->db->select("file_id, file.title, file.author, name, file.updated_at, $match as relevance");
+        if (is_array($query)) {
+            $conditions = array();
+            //TODO add sort order to advanced search
+            $relevance = 'file.updated_at';
+            if (!empty($query['title'])) {
+                $conditions []= "(MATCH (searchindex.title) AGAINST ('$query[title]' IN BOOLEAN MODE))";
+            }
+            if (!empty($query['description'])) {
+                $conditions []= "(MATCH (searchindex.description) AGAINST ('$query[description]' IN BOOLEAN MODE))";
+            }
+            if (!empty($query['author'])) {
+                $conditions []= "(MATCH (searchindex.author) AGAINST ('$query[author]' IN BOOLEAN MODE))";
+            }
+            if (!empty($query['keywords'])) {
+                $conditions []= "(MATCH (searchindex.keywords) AGAINST ('$query[keywords]' IN BOOLEAN MODE))";
+            }
+            if (!empty($query['language'])) {
+                $conditions []= "(file.language = '$query[language]')";
+            }
+            if (!empty($query['license'])) {
+                $conditions []= "(file.license = '$query[license]')";
+            }
+            if (!empty($query['date_from'])) {
+                $conditions []= "(file.recording_date >= '$query[date_from]')";
+            }
+            if (!empty($query['date_to'])) {
+                $conditions []= "(file.recording_date <= '$query[date_to]')";
+            }
+            $this->db->where(implode(' AND ', $conditions));
+        } else {
+            $query = stripslashes(str_replace('&quot;', '"', $query));
+            $match = "MATCH (searchindex.title, searchindex.description, searchindex.author, searchindex.keywords) AGAINST ('$query' IN BOOLEAN MODE)";
+            $relevance = $match;
+            $this->db->where($match);
+        }
+        $this->db->select("file_id, file.title, file.author, name, file.updated_at, $relevance as relevance");
         $this->db->from('searchindex');
         $this->db->join('file', 'file.id = file_id');
         $this->db->join('user', 'user_id = user.id');
-        $this->db->where($match);
         $this->db->order_by('relevance', 'desc');
         $this->db->limit($this->config->item('search_limit'));
         $query = $this->db->get();

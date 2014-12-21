@@ -408,10 +408,42 @@ class File extends CI_Controller
 
     public function search()
     {
-        $query = $this->input->get_post('q');
-        if (strlen($query) > 0) {
-            $results = $this->file_model->search($query);
+        $this->load->helper('form');
+        if ('GET' == $this->input->method(true)) {
+            // Simple query from header/menu/navbar.
+            $query = $this->input->get('q');
+            $this->data['title'] = $query;
+            $this->data['description'] = '';
+            $this->data['keywords'] = '';
+            $this->data['author'] = '';
+            $this->data['date_from'] = '';
+            $this->data['date_to'] = '';
+            $this->data['language'] = '';
+            $this->data['license'] = '';
 
+            // Do simple fulltext search.
+            if (strlen($query) > 0) {
+                $results = $this->file_model->search($query);
+            }
+        } else if ('POST' == $this->input->method(true)) {
+            // Advanced query from form.
+            $query = tr('advanced');
+
+            // Load existing values into form.
+            $this->data['title'] = $this->input->post('title');
+            $this->data['description'] = $this->input->post('description');
+            $this->data['keywords'] = $this->input->post('keywords');
+            $this->data['author'] = $this->input->post('author');
+            $this->data['date_from'] = $this->input->post('date_from');
+            $this->data['date_to'] = $this->input->post('date_to');
+            $this->data['language'] = $this->input->post('language');
+            $this->data['license'] = $this->input->post('license');
+
+            // Do advanced search.
+            $results = $this->file_model->search($this->data);
+        }
+
+        if (is_array($results)) {
             // Post-process the data.
             $this->load->helper('url');
             foreach ($results as &$row) {
@@ -425,6 +457,13 @@ class File extends CI_Controller
             $this->load->library('table');
             $this->table->set_heading(tr('file_title'), tr('file_author'), tr('user_name'), tr('file_updated_at'));
         }
+
+        // Prepare drop-downs for advanced search form.
+        $this->data['languages'] = $this->user_model->getLanguages();
+        array_unshift($this->data['languages'], '');
+        $this->data['licenses'] = $this->file_model->getLicenses();
+        array_unshift($this->data['licenses'], '');
+
         $this->data['heading'] = tr('file_search_results_heading', ['query' => $query]);
         $this->load->view('templates/header', $this->data);
         $this->load->view('file/search_results', $this->data);

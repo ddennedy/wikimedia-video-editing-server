@@ -3,3 +3,16 @@ The commands to generate the OAuth RSA key:
 openssl genrsa -out mediawiki-oauth-key.pem 4096
 openssl rsa -in mediawiki-oauth-key.pem -pubout
 
+jQuery UI comes from the jqueryui.com Download Builder with the options:
+Version: stable
+UI Core: all
+Interactions: Draggable, Resizable, Sortable
+Widgets: Accordian, Button, Datepicker, Dialog, Progressbar, Tooltip
+Effects: none
+Theme: Smoothness
+
+From the jQuery download install:
+images/ to css/
+jquery-ui.min.js to js/
+jquery-ui.structure.min.css to css/
+jquery-ui.theme.css to css/
