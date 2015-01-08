@@ -304,7 +304,8 @@ class File_model extends CI_Model
             if (!empty($query['date_to'])) {
                 $conditions []= "(file.recording_date <= '$query[date_to]')";
             }
-            $this->db->where(implode(' AND ', $conditions));
+            if (count($conditions) > 0)
+                $this->db->where(implode(' AND ', $conditions));
         } else {
             $query = stripslashes(str_replace('&quot;', '"', $query));
             $match = "MATCH (searchindex.title, searchindex.description, searchindex.author, searchindex.keywords) AGAINST ('$query' IN BOOLEAN MODE)";

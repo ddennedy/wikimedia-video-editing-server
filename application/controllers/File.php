@@ -443,7 +443,7 @@ class File extends CI_Controller
             $results = $this->file_model->search($this->data);
         }
 
-        if (is_array($results)) {
+        if (isset($results) && is_array($results)) {
             // Post-process the data.
             $this->load->helper('url');
             foreach ($results as &$row) {
