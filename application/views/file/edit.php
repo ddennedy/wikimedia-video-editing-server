@@ -19,7 +19,7 @@
  */
 ?>
 <style>
-    div.ui-corner-all {
+    div.repeat div.ui-corner-all {
         width: 16px;
         height: 16px;
         padding: 4px;
