@@ -48,15 +48,19 @@ class File extends CI_Controller
         if ('GET' == $this->input->method(true)) {
             $file = $this->file_model->getById($id);
             if ($file) {
-                if (!empty($file['source_path']) &&
-                        is_file(config_item('upload_path').$file['source_path'])) {
-                    $size = filesize(config_item('upload_path').$file['source_path']);
-                    if ($size != $file['size_bytes']) {
-                        // Need to resume file upload.
-                        $file['size_bytes'] = $size;
-                        $file['upload_button_text'] = tr('file_upload_resume',
-                            ['filename' => basename($file['source_path'])]);
+                if (!empty($file['source_path'])) {
+                    if (is_file(config_item('upload_path').$file['source_path'])) {
+                        $size = filesize(config_item('upload_path').$file['source_path']);
+                        if ($size != $file['size_bytes']) {
+                            // Need to resume file upload.
+                            $file['size_bytes'] = $size;
+                            $file['upload_button_text'] = tr('file_upload_resume',
+                                ['filename' => basename($file['source_path'])]);
+                            unset($file['source_path']);
+                        }
+                    } else {
                         unset($file['source_path']);
+                        $file['size_bytes'] = 0;
                     }
                 }
                 $this->data = array_merge($this->data, $file);
