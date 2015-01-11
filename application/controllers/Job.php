@@ -539,7 +539,7 @@ class Job extends CI_Controller
             2 => array('pipe', 'w'), // stderr
         ];
         $cwd = sys_get_temp_dir();
-        $env = [];
+        $env = NULL;
         $cmd = "/usr/bin/nice ffmpeg -i '$filename' $options '$outputName'";
         $log .= $cmd . "\n";
         $process = proc_open($cmd, $descriptorspec, $pipes, $cwd, $env);
@@ -677,7 +677,7 @@ class Job extends CI_Controller
             2 => array('pipe', 'w'), // stderr
         ];
         $cwd = sys_get_temp_dir();
-        $env = [];
+        $env = NULL;
         $cmd = "/usr/bin/nice melt '$filename' -progress2 -consumer avformat:'$outputName' $options";
         $log .= $cmd . "\n";
         $process = proc_open($cmd, $descriptorspec, $pipes, $cwd, $env);
