@@ -18,6 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 ?>
-    <p><em>&copy; 2014 Dan R. Dennedy / CDC Leuphana University Lüneburg</em></p>
+    <p><em>&copy; 2014-2015 Dan R. Dennedy / CDC Leuphana University Lüneburg</em></p>
   </body>
 </html>
