@@ -264,7 +264,7 @@ class File_model extends CI_Model
 
     public function getRecent()
     {
-        $this->db->select('file_id, title, name, file.updated_at');
+        $this->db->select('file_id, mime_type, title, name, file.updated_at');
         $this->db->from('recent');
         $this->db->join('file', 'file.id = file_id');
         $this->db->join('user', 'user_id = user.id');
@@ -312,7 +312,7 @@ class File_model extends CI_Model
             $relevance = $match;
             $this->db->where($match);
         }
-        $this->db->select("file_id, file.title, file.author, name, file.updated_at, $relevance as relevance");
+        $this->db->select("file_id, file.mime_type, file.title, file.author, name, file.updated_at, $relevance as relevance");
         $this->db->from('searchindex');
         $this->db->join('file', 'file.id = file_id');
         $this->db->join('user', 'user_id = user.id');
@@ -349,7 +349,7 @@ class File_model extends CI_Model
 
     public function getByUserId($id)
     {
-        $this->db->select('id, title, author, updated_at');
+        $this->db->select('id, mime_type, title, author, updated_at');
         $this->db->order_by('updated_at', 'desc');
         $query = $this->db->get_where('file', ['user_id' => $id]);
         return $query->result_array();
@@ -445,7 +445,7 @@ class File_model extends CI_Model
 
     public function getChildren($id)
     {
-        $this->db->select('child_id, file.title, file.author, file.mime_type');
+        $this->db->select('child_id, file.mime_type, file.title, file.author');
         $this->db->where('file_id', $id);
         $this->db->join('file', 'child_id = file.id');
         return $this->db->get('file_children')->result_array();

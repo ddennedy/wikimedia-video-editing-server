@@ -214,13 +214,16 @@ class User extends CI_Controller
             }
 
             // Files table.
+            $this->load->helper('icon');
             foreach ($result as &$row) {
+                $src = base_url(iconForMimeType($row['mime_type']));
+                $row['mime_type'] = '<img src="'.$src.'" width="20" height="20" title="'.$row['mime_type'].'">';
                 $row['title'] = anchor('file/' . $row['id'], htmlspecialchars($row['title']));
                 unset($row['id']);
             }
             $data['files'] = $result;
             $this->load->library('table');
-            $this->table->set_heading(tr('file_title'), tr('file_author'), tr('file_updated_at'));
+            $this->table->set_heading('', tr('file_title'), tr('file_author'), tr('file_updated_at'));
             $this->table->set_caption(tr('user_files_caption'));
 
             // Build the page.

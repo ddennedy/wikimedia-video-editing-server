@@ -341,13 +341,16 @@ class File extends CI_Controller
                 }
                 $result = $this->file_model->getChildren($id);
                 if (count($result)) {
+                    $this->load->helper('icon');
                     foreach ($result as &$row) {
+                        $src = base_url(iconForMimeType($row['mime_type']));
+                        $row['mime_type'] = '<img src="'.$src.'" width="20" height="20" title="'.$row['mime_type'].'">';
                         $row['title'] = anchor("file/$row[child_id]", htmlspecialchars($row['title']));
                         $row['download'] = anchor("file/download/$row[child_id]", tr('download'));
                         unset($row['child_id']);
                     }
                     $this->load->library('table');
-                    $this->table->set_heading(tr('file_title'), tr('file_author'), tr('file_mime_type'), '');
+                    $this->table->set_heading('', tr('file_title'), tr('file_author'), '');
                     $this->table->set_caption(tr('file_children_caption'));
                     $this->table->set_template([]);
                     $this->data['relations'] = $this->table->generate($result);
@@ -395,7 +398,10 @@ class File extends CI_Controller
 
         // Post-process the data.
         $this->load->helper('url');
+        $this->load->helper('icon');
         foreach ($result as &$row) {
+            $src = base_url(iconForMimeType($row['mime_type']));
+            $row['mime_type'] = '<img src="'.$src.'" width="20" height="20" title="'.$row['mime_type'].'">';
             $row['name'] = anchor('user/' . $row['name'], htmlspecialchars($row['name']));
             $row['title'] = anchor('file/' . $row['file_id'], htmlspecialchars($row['title']));
             unset($row['file_id']);
@@ -404,7 +410,7 @@ class File extends CI_Controller
 
         $this->data['heading'] = tr('file_recent_heading');
         $this->load->library('table');
-        $this->table->set_heading(tr('file_title'), tr('user_name'), tr('file_updated_at'));
+        $this->table->set_heading('', tr('file_title'), tr('user_name'), tr('file_updated_at'));
         $this->load->view('templates/header', $this->data);
         $this->load->view('file/recent', $this->data);
         $this->load->view('templates/footer', $this->data);
@@ -449,8 +455,11 @@ class File extends CI_Controller
 
         if (isset($results) && is_array($results)) {
             // Post-process the data.
+            $this->load->helper('icon');
             $this->load->helper('url');
             foreach ($results as &$row) {
+                $src = base_url(iconForMimeType($row['mime_type']));
+                $row['mime_type'] = '<img src="'.$src.'" width="20" height="20" title="'.$row['mime_type'].'">';
                 $row['name'] = anchor('user/' . $row['name'], htmlspecialchars($row['name']));
                 $row['title'] = anchor('file/' . $row['file_id'], htmlspecialchars($row['title']));
                 unset($row['file_id']);
@@ -459,7 +468,7 @@ class File extends CI_Controller
             $this->data['results'] = $results;
 
             $this->load->library('table');
-            $this->table->set_heading(tr('file_title'), tr('file_author'), tr('user_name'), tr('file_updated_at'));
+            $this->table->set_heading('', tr('file_title'), tr('file_author'), tr('user_name'), tr('file_updated_at'));
         }
 
         // Prepare drop-downs for advanced search form.
