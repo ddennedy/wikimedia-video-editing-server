@@ -33,6 +33,11 @@ class File extends CI_Controller
         echo 'TODO: browse all files';
     }
 
+    /**
+     * Show the form to edit a file record and save changes.
+     *
+     * @param int The ID of the record to change, omit to make a new record.
+     */
     public function edit($id = null)
     {
         if ($id === null)
@@ -165,6 +170,12 @@ class File extends CI_Controller
         $this->load->view('templates/footer', $this->data);
     }
 
+    /**
+     * Show the page to view a file record.
+     *
+     * @param int $id Optional record ID, get from POST if omitted.
+     * @param int $offset Optional pagination offset for the table of changes/history.
+     */
     public function view($id = null, $offset = null)
     {
         if (!$id) $id = $this->input->post('id');
@@ -381,6 +392,11 @@ class File extends CI_Controller
         }
     }
 
+    /**
+     * Show a list of recently changed files.
+     *
+     * @param int $offset Optional pagination offset into the table.
+     */
     public function recent($offset = 0)
     {
         $result = $this->file_model->getRecent();
@@ -416,6 +432,14 @@ class File extends CI_Controller
         $this->load->view('templates/footer', $this->data);
     }
 
+    /**
+     * Search for files.
+     *
+     * All input comes from GET/POST data.
+     * HTTP GET performs a simple full-text search using the GET data 'q'.
+     * HTTP POST performs an advanced search using multiple criteria supplied
+     * in the POST data.
+     */
     public function search()
     {
         $this->load->helper('form');
@@ -483,6 +507,11 @@ class File extends CI_Controller
         $this->load->view('templates/footer', $this->data);
     }
 
+    /**
+     * Delete a file record
+     *
+     * @param int $id Optional file record ID - uses GET data if omitted.
+     */
     public function delete($id = null)
     {
         // Check permission.
@@ -503,6 +532,12 @@ class File extends CI_Controller
         }
     }
 
+    /**
+     * View the changes in a revision of a file record.
+     *
+     * @param int $id The file record ID.
+     * @param int $revision The revision number to view.
+     */
     public function history($id = null, $revision = null)
     {
         if ($id && $revision !== null) {
@@ -559,6 +594,11 @@ class File extends CI_Controller
         show_404(uri_string());
     }
 
+    /**
+     * Query for keywords, returning result as JSON for the select2 jQuery UI plugin.
+     *
+     * Takes not parameter, but uses 'q' from GET data as the substring query.
+     */
     public function keywords()
     {
         $this->output->set_content_type('application/json');
@@ -577,6 +617,13 @@ class File extends CI_Controller
         $this->output->set_output(json_encode($result));
     }
 
+    /**
+     * Force downwload of a media file.
+     *
+     * A forced download prevents the browser from trying to play the file.
+     *
+     * @param int $id The file record ID.
+     */
     public function download($id)
     {
         $file = $this->file_model->getById($id);
@@ -600,6 +647,12 @@ class File extends CI_Controller
         show_404(uri_string());
     }
 
+    /** Force download of a project file.
+     *
+     * A forced download prevents the browser from trying to open the file.
+     *
+     * @param int $id The file record ID.
+     */
     public function download_project($id)
     {
         $file = $this->file_model->getById($id);
@@ -631,6 +684,11 @@ class File extends CI_Controller
         show_404(uri_string());
     }
 
+    /**
+     * Publish the rendered project file to Wikimedia Commons.
+     *
+     * @param int $id The file record ID.
+     */
     public function publish($id)
     {
         $this->load->model('file_model');
