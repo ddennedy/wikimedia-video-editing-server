@@ -20,8 +20,15 @@
 
 class Job extends CI_Controller
 {
+    /**
+     * Control a worker's main loop.
+     *
+     * @access protected
+     * @var bool
+     */
     protected $running = false;
 
+    /** Construct a Job CodeIgniter Controller. */
     public function __construct()
     {
         parent::__construct();
@@ -29,17 +36,28 @@ class Job extends CI_Controller
         $this->load->model('job_model');
     }
 
+    /**
+     * Show a helpful message when no method is supplied.
+     */
     public function index()
     {
         echo "Use the validate or encode methods.\n";
     }
 
+    /**
+     * The process signal callback for terminating a worker's main loop.
+     *
+     * @param int $signal The signal number received.
+     */
     protected function signalHandler($signal)
     {
         $this->running = false;
         echo "interrupt received\n";
     }
 
+    /**
+     * The validate worker that validates media file uploads.
+     */
     public function validate()
     {
         if ($this->beanstalk->connect()) {
@@ -102,6 +120,12 @@ class Job extends CI_Controller
         }
     }
 
+    /**
+     * Return the MIME type for a file record.
+     *
+     * @param array $file A file record.
+     * @return string
+     */
     protected function getMimeType($file)
     {
         $mimeType = '';
@@ -121,9 +145,17 @@ class Job extends CI_Controller
         return strtolower($mimeType);
     }
 
+    /**
+     * Return the MD5 hash a file on the filesystem.
+     *
+     * This is the algorithm Kdenlive uses in DocClipBase::getHash(). It only
+     * uses the first and last 1MB of a file larger than 2 MB.
+     *
+     * @param string $filename The full path to the file.
+     * @return string
+     */
     protected function getFileHash($filename)
     {
-        // This is the algorithm Kdenlive uses in DocClipBase::getHash().
         $MB = 1000 * 1000;
         if (filesize($filename) <= 2 * $MB) {
             $hash = md5_file($filename);
@@ -143,6 +175,14 @@ class Job extends CI_Controller
         return $hash;
     }
 
+    /**
+     * Validate the audio/video file associated with a file record using ffprobe.
+     *
+     * @param int $job_id The current job's ID
+     * @param array $file The file record, passed by reference
+     * @param string $majorType The first portion of the file's MIME type
+     * @return bool Indicates validity
+     */
     protected function validateAudioVideo($job_id, &$file, $majorType)
     {
         $this->load->model('file_model');
@@ -240,6 +280,14 @@ class Job extends CI_Controller
         return $isValid;
     }
 
+    /**
+     * Validate the image file associated with a file record using melt.
+     *
+     * @param int $job_id The current job's ID
+     * @param array $file The file record, passed by reference
+     * @param string $majorType The first portion of the file's MIME type
+     * @return bool Indicates validity
+     */
     protected function validateImage($job_id, &$file, $majorType)
     {
         // verify melt can read it
@@ -248,7 +296,7 @@ class Job extends CI_Controller
         $log = "Validate: $file[source_path].\n";
         $filename = config_item('upload_path') . $file['source_path'];
 
-        // if audio or video, verify ffprobe can read it
+        // if image, verify melt can read it
         $xml = shell_exec("/usr/bin/nice melt -consumer xml '$filename' 2>/dev/null");
         if (!empty($xml)) {
             // verify mlt_consumer is pixbuf or qimage
@@ -311,7 +359,15 @@ class Job extends CI_Controller
         return $isValid;
     }
 
-    protected function validateMLTXML($job_id, &$file, $majorType)
+     /**
+     * Validate an XML project file associated with a file record using melt.
+     *
+     * @param int $job_id The current job's ID
+     * @param array $file The file record, passed by reference
+     * @param string $majorType The first portion of the file's MIME type
+     * @return bool Indicates validity
+     */
+   protected function validateMLTXML($job_id, &$file, $majorType)
     {
         // verify melt can load it
         $this->load->model('file_model');
@@ -319,7 +375,7 @@ class Job extends CI_Controller
         $log = "Validate: $file[source_path].\n";
         $filename = config_item('upload_path') . $file['source_path'];
 
-        // if audio or video, verify ffprobe can read it
+        // if MLT XML, verify melt can read it
         $xml = shell_exec("/usr/bin/nice melt -consumer xml '$filename' 2>/dev/null");
         if (!empty($xml)) {
             $this->load->library('MltXmlHelper');
@@ -375,6 +431,11 @@ class Job extends CI_Controller
         return $isValid;
     }
 
+    /**
+     * View the beanstalkd statistics.
+     *
+     * @param string $tube The optional name of a queue.
+     */
     public function stats($tube = null)
     {
         if ($this->beanstalk->connect()) {
@@ -386,6 +447,11 @@ class Job extends CI_Controller
         }
     }
 
+    /**
+     * Resubmit a validation job.
+     *
+     * @param int $job_id The ID of the job to resubmit
+     */
     public function redo_validate($job_id)
     {
         // Put job into the queue.
@@ -401,6 +467,10 @@ class Job extends CI_Controller
         }
     }
 
+    /** Resubmit a transcoding or render job.
+     *
+     * @param int $job_id The ID of the job to resubmit.
+     */
     public function redo_encode($job_id)
     {
         // Put job into the queue.
@@ -416,6 +486,9 @@ class Job extends CI_Controller
         }
     }
 
+    /**
+     * The encode worker that transcodes a media file or renders a project.
+     */
     public function encode()
     {
         if ($this->beanstalk->connect()) {
@@ -457,6 +530,13 @@ class Job extends CI_Controller
         }
     }
 
+    /**
+     * Transcode a media file using ffmpeg.
+     *
+     * @param array $file A file record.
+     * @return int The result code is negative for internal error or the return
+     * code of the ffmpeg child process.
+     */
     protected function transcode($file)
     {
         $result = -1;
@@ -522,6 +602,16 @@ class Job extends CI_Controller
         return $result;
     }
 
+    /**
+     * Run ffmpeg as a child process.
+     *
+     * @param array $file A file record.
+     * @param string $log A reference to a string used for logging.
+     * @param string $extension The filename extension for the output file.
+     * @param string $options The command line options to pass to ffmpeg.
+     * @return int The result code is negative for internal error or the return
+     * code of the ffmpeg child process.
+     */
     protected function runFFmpeg($file, &$log, $extension, $options)
     {
         $result = -10;
@@ -600,6 +690,13 @@ class Job extends CI_Controller
         return $result;
     }
 
+    /**
+     * Render and encode a project file using melt.
+     *
+     * @param array $file A file record.
+     * @return int The result code is negative for internal error or the return
+     * code of the melt child process.
+     */
     protected function render($file)
     {
         $result = -1;
@@ -662,6 +759,16 @@ class Job extends CI_Controller
         return $result;
     }
 
+    /**
+     * Run melt as a child process.
+     *
+     * @param array $file A file record.
+     * @param string $log A reference to a string used for logging.
+     * @param string $extension The filename extension for the output file.
+     * @param string $options The command line options to pass to melt.
+     * @return int The result code is negative for internal error or the return
+     * code of the melt child process.
+     */
     protected function runMelt($filename, $file, &$log, $extension, $options)
     {
         $result = -10;
@@ -670,7 +777,7 @@ class Job extends CI_Controller
         // Prepare the output file name.
         $outputName = $this->makeOutputFilename($file['source_path'], $extension);
 
-        // Setup to run ffmpeg.
+        // Setup to run melt.
         $descriptorspec = [
             0 => array('file', '/dev/null', 'r'), // stdin
             1 => array('file', '/dev/null', 'w'), // stdout
@@ -735,6 +842,17 @@ class Job extends CI_Controller
         return $result;
     }
 
+    /**
+     * Return a unique, full path and name for a given file name.
+     *
+     * This appends a number to the base name if the file already exists.
+     * It also prepends the transcode path and subdirectories to reduce the
+     * number of directory entries in a single directory
+     *
+     * @param string $filename The base output file name
+     * @param string $extension An optional alternate filename extension to use
+     * @return string
+     */
     protected function makeOutputFilename($filename, $extension = null)
     {
         if (empty($extension)) {
@@ -753,6 +871,12 @@ class Job extends CI_Controller
         return $fullname;
     }
 
+    /**
+     * Return a unique filename by appending a paranthesized number, if needed.
+     *
+     * @param string $name A full path file name
+     * @return string
+     */
     protected function getUniqueFilename($name)
     {
         while (file_exists($name)) {
@@ -766,6 +890,12 @@ class Job extends CI_Controller
         return $name;
     }
 
+    /**
+     * The callback function used by getUniqueFilename().
+     *
+     * @param array $matches
+     * @return string
+     */
     protected function getUniqueFilename_callback($matches)
     {
         $index = isset($matches[1]) ? intval($matches[1]) + 1 : 1;
@@ -773,6 +903,11 @@ class Job extends CI_Controller
         return ' ('.$index.')'.$ext;
     }
 
+    /**
+     * View the output log of a job as plain text.
+     *
+     * @param int $id The job ID
+     */
     public function log($id)
     {
         $log = $this->job_model->getLog($id);
@@ -784,6 +919,11 @@ class Job extends CI_Controller
         }
     }
 
+    /**
+     * Queue a validate job if a project file record has no more missing child files.
+     *
+     * @param array $file A file record
+     */
     protected function checkIfWasMissing($file)
     {
         $this->load->model('file_model');
@@ -815,9 +955,16 @@ class Job extends CI_Controller
         }
     }
 
+    /**
+     * Create a unique temporary file name with an extension.
+     *
+     * @param string $prefix An optional prefix to use, defaults to 'tmp'
+     * @param string $extension An optional filename extension, defaults to ''
+     * @param string $dir An optional directory in which to store the file,
+     * defaults to system temporary files directory if not supplied.
+     */
     protected function tempfile($prefix = 'tmp', $extension = '', $dir = null)
     {
-        // Get a unique temporary file name with an extension.
         $fileName = tempnam($dir? $dir : sys_get_temp_dir(), $prefix);
         if ($fileName) {
             $newFileName = $fileName . $extension;
@@ -831,7 +978,6 @@ class Job extends CI_Controller
         unlink($fileName);
         return false;
     }
-
 
     public function test_transcode($filename)
     {
