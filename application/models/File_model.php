@@ -20,6 +20,7 @@
 
 class File_model extends CI_Model
 {
+    /** Flags to indicate the status of file records. */
     const STATUS_UPLOADED   = 1;
     const STATUS_VALIDATED  = 2;
     const STATUS_CONVERTING = 4;
@@ -29,12 +30,21 @@ class File_model extends CI_Model
     const STATUS_PUBLISHED  = 64;
     const STATUS_ERROR      = 2147483648;
 
+    /** Construct a Job CodeIgniter Model. */
     public function __construct()
     {
         $this->load->database();
         log_message('debug', 'File Model Class Initialized');
     }
 
+    /**
+     * Get a file record by its ID.
+     *
+     * @param int $id File record ID
+     * @return array An empty array record (associative array keys with null
+     * values if the record is not found - to facilitate showing a form for a new
+     * record.
+     */
     public function getById($id = null)
     {
         if ($id) {
@@ -60,6 +70,12 @@ class File_model extends CI_Model
         return $data;
     }
 
+    /**
+     * Create a new file record.
+     *
+     * @param array $data An associative array representing the new file record
+     * @return int|bool The new record's ID or false on error
+     */
     public function create($data)
     {
         // Insert into main file table.
@@ -113,6 +129,14 @@ class File_model extends CI_Model
         return $this->db->trans_status()? $id : false;
     }
 
+    /**
+     * Update a file record.
+     *
+     * @param int $id The ID of the file record
+     * @param array $data An associative array representing the new file record
+     * @param string $comment An optional change message
+     * @return bool False on error
+     */
     public function update($id, $data, $comment = null)
     {
         // Check if any data changed.
@@ -203,6 +227,11 @@ class File_model extends CI_Model
         return $this->db->trans_status();
     }
 
+    /**
+     * Get a list of content licenses.
+     *
+     * @return array An associative array of value => label
+     */
     public function getLicenses()
     {
         return [
@@ -232,6 +261,11 @@ class File_model extends CI_Model
         ];
     }
 
+    /** Get a content license by its key/value.
+     *
+     * @param string $licenseKey
+     * @return string Defaults to something like "I don't know" if not found.
+     */
     public function getLicenseByKey($licenseKey)
     {
         $licenses = $this->getLicenses();
@@ -241,6 +275,12 @@ class File_model extends CI_Model
             $licenses['subst:uwl'];
     }
 
+    /**
+     * Get the most recently modified file record.
+     *
+     * @access private
+     * @return object|null
+     */
     private function getMostRecent()
     {
         $this->db->select('id, file_id');
@@ -250,6 +290,11 @@ class File_model extends CI_Model
         return ($query->num_rows() > 0)? $query->row() : null;
     }
 
+    /**
+     * Update the table of recently modified file records.
+     *
+     * @param int $id A file record ID
+     */
     public function updateRecent($id)
     {
         $recent = $this->getMostRecent();
@@ -262,6 +307,10 @@ class File_model extends CI_Model
         }
     }
 
+    /** Get the recently modified files.
+     *
+     * @return array
+     */
     public function getRecent()
     {
         $this->db->select('file_id, mime_type, title, name, file.updated_at');
@@ -274,6 +323,15 @@ class File_model extends CI_Model
         return $query->result_array();
     }
 
+    /**
+     * Perform a search for file records including full text.
+     *
+     * Full text searches only on title, description, author, and keywords fields.
+
+     * @param array|string $query Full text search only if string; otherwise,
+     * multiple criteria if associative array
+     * @return array
+     */
     public function search($query)
     {
         if (is_array($query)) {
@@ -322,6 +380,11 @@ class File_model extends CI_Model
         return $query->result_array();
     }
 
+    /**
+     * Delete a file record.
+     *
+     * @param int $id File record ID
+     */
     public function delete($id)
     {
         $this->db->trans_start();
@@ -347,6 +410,12 @@ class File_model extends CI_Model
             $this->db->delete('searchindex', ['file_id' => $id]);
     }
 
+    /**
+     * Get all of the file records created by a particular user.
+     *
+     * @param int $id A user ID
+     * @return array
+     */
     public function getByUserId($id)
     {
         $this->db->select('id, mime_type, title, author, updated_at');
@@ -355,6 +424,12 @@ class File_model extends CI_Model
         return $query->result_array();
     }
 
+    /**
+     * Get the history of changes to the file record.
+     *
+     * @param int File record ID
+     * @return array
+     */
     public function getHistory($id)
     {
         $this->db->select('file_history.id, revision, file_history.updated_at, name');
@@ -364,6 +439,12 @@ class File_model extends CI_Model
         return $this->db->get('file_history')->result_array();
     }
 
+    /**
+     * Get a file change record.
+     *
+     * @param int $id File history ID
+     * @return array
+     */
     public function getHistoryById($id)
     {
         $this->db->where('id', $id);
@@ -371,6 +452,13 @@ class File_model extends CI_Model
         return $query->row_array();
     }
 
+    /**
+     * Get a file change record.
+     *
+     * @param int $file_id File record ID
+     * @param int $revision The version number
+     * @return array
+     */
     public function getHistoryByRevision($file_id, $revision)
     {
         $this->db->select('title, author, description, keywords, language, license, recording_date, updated_at, comment, properties');
@@ -379,6 +467,13 @@ class File_model extends CI_Model
         return $query->row_array();
     }
 
+    /**
+     * Update a file record without changing the timestamp.
+     *
+     * @param int $id File record ID
+     * @param array $data The file record's new data
+     * @return bool False on error
+     */
     function staticUpdate($id, $data)
     {
         $this->db->where('id', $id);
@@ -387,6 +482,14 @@ class File_model extends CI_Model
         return $this->db->update('file');
     }
 
+    /**
+     * Get a file record by MD5 hash value.
+     *
+     * Searches on both source and output file hashes.
+     *
+     * @param string $hash An MD5 digest
+     * @return array
+     */
     public function getByHash($hash)
     {
         $this->db->where(['source_hash' => $hash]);
@@ -395,6 +498,14 @@ class File_model extends CI_Model
         return $query->row_array();
     }
 
+    /**
+     * Get a file record by filename.
+     *
+     * Does a substring search on both source and output filenames.
+     *
+     * @param string $path A filename
+     * @return array
+     */
     public function getByPath($path)
     {
         $this->db->like(['source_path' => $path]);
@@ -403,6 +514,13 @@ class File_model extends CI_Model
         return $query->row_array();
     }
 
+    /**
+     * Records a file record as a child of a parent.
+     *
+     * @param int $parentId The parent file record ID
+     * @param int $childId The child file record ID
+     * @return int|bool The new relationship record's ID or false on error
+     */
     public function addChild($parentId, $childId)
     {
         $this->db->where('file_id', $parentId);
@@ -419,6 +537,13 @@ class File_model extends CI_Model
             return false;
     }
 
+    /**
+     * Records a missing dependency for a project file record.
+     *
+     * @param int $fileId The parent file record ID
+     * @param string $name The child filename
+     * @return int|bool The new relationship record's ID or false on error
+     */
     public function addMissing($fileId, $name, $hash)
     {
         $this->db->where('file_id', $fileId);
@@ -436,6 +561,12 @@ class File_model extends CI_Model
             return false;
     }
 
+    /**
+     * Get the missing dependencies of a project file record.
+     *
+     * @param int $id File record ID
+     * @return array
+     */
     public function getMissingFiles($id)
     {
         $this->db->select('name');
@@ -443,6 +574,12 @@ class File_model extends CI_Model
         return $this->db->get('missing_files')->result_array();
     }
 
+    /**
+     * Get the child file records of a project file record.
+     *
+     * @param int $id File record ID
+     * @return array
+     */
     public function getChildren($id)
     {
         $this->db->select('child_id, file.mime_type, file.title, file.author');
@@ -451,6 +588,12 @@ class File_model extends CI_Model
         return $this->db->get('file_children')->result_array();
     }
 
+    /**
+     * Get all of the parent project file records for a child file record.
+     *
+     * @param int $id Child file record ID
+     * @return array
+     */
     public function getProjects($id)
     {
         $this->db->select('file.id, file.title, file.author, file.updated_at');
@@ -460,16 +603,34 @@ class File_model extends CI_Model
         return $this->db->get('file_children')->result_array();
     }
 
+    /**
+     * Get missing file records by MD5 hash.
+     *
+     * @param string $hash An MD5 digest of a media/dependent file.
+     * @return array
+     */
     public function getMissingByHash($hash)
     {
         return $this->db->get_where('missing_files', ['hash' => $hash])->result_array();
     }
 
+    /**
+     * Delete a missing file record.
+     *
+     * @param int $id A missing file record ID
+     */
     public function deleteMissing($id)
     {
         $this->db->where('id', $id)->delete('missing_files');
     }
 
+    /**
+     * Get only the extensible properties of a file record.
+     *
+     * @param int $id File record ID
+     * @return array A hierarchical PHP associative array decoded from the
+     * stored JSON properties data for this file record
+     */
     public function getProperties($id)
     {
         $this->db->select('properties');
