@@ -571,6 +571,22 @@ class File extends CI_Controller
                     $changes['keywords'] = implode(', ', explode("\t", $changes['keywords']));
                 if (isset($current['keywords']))
                     $current['keywords'] = implode(', ', explode("\t", $current['keywords']));
+                if (isset($current['properties'])) {
+                    $properties = json_decode($current['properties'], true);
+                    if ($properties !== null && array_key_exists('user', $properties)) {
+                        $current['properties'] = $this->implode_assoc($properties['user']);
+                    } else {
+                        unset($current['properties']);
+                    }
+                }
+                if (isset($changes['properties'])) {
+                    $properties = json_decode($changes['properties'], true);
+                    if ($properties !== null && array_key_exists('user', $properties)) {
+                        $changes['properties'] = $this->implode_assoc($properties['user']);
+                    } else {
+                        $changes['properties'] = '';
+                    }
+                }
 
                 $this->data = array_merge($this->data, $file);
                 $this->data['username'] = anchor('user/' . $this->data['username'], $this->data['username']);
@@ -592,6 +608,24 @@ class File extends CI_Controller
             }
         }
         show_404(uri_string());
+    }
+
+    /**
+     * Format an array of name/value key pairs.
+     *
+     * @param array An array of associative arrays.
+     * @return string
+     */
+    protected function implode_assoc($array)
+    {
+        $s = '';
+        $n = count($array);
+        foreach ($array as $item) {
+            $n--;
+            $s .= implode(' = ', $item);
+            if ($n) $s .= ', ';
+        }
+        return $s;
     }
 
     /**
