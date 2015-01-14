@@ -20,19 +20,27 @@
 
 class Job_model extends CI_Model
 {
-    /// If either registration is required or if registered user was demoted.
+    /** @var Job type constant for validating an uploaded media file */
     const TYPE_VALIDATE      = 0;
-    /// Can create and update data.
+    /** @var Job type constant for transcoding a proxy media file */
     const TYPE_TRANSCODE     = 1;
-    /// Can also delete data and demote user to guest.
+    /** @var Job type constant to render and encode a project file */
     const TYPE_RENDER        = 2;
 
+    /** Construct a Job CodeIgniter Model */
     public function __construct()
     {
         $this->load->database();
         log_message('debug', 'job Model Class Initialized');
     }
 
+    /**
+     * Create a job record.
+     *
+     * @param int $file_id File record ID
+     * @param int $type    A job type constant from this class
+     * @return int|bool Job record ID or false on error
+     */
     public function create($file_id, $type)
     {
         $result = $this->db->insert('job', [
@@ -45,6 +53,12 @@ class Job_model extends CI_Model
             return false;
     }
 
+    /**
+     * Get a job record by its ID.
+     *
+     * @param int $job_id Job record ID
+     * @return array
+     */
     function getWithFileById($job_id)
     {
         $this->db->select('job.id as job_id, file_id, type, progress, result, job.updated_at as job_updated_at, file.*');
@@ -54,12 +68,26 @@ class Job_model extends CI_Model
         return $query->row_array();
     }
 
+    /**
+     * Update a job record.
+     *
+     * @param int $job_id Job record ID
+     * @param array $data The job record data as an associative array
+     * @return bool False on error
+     */
     function update($id, $data)
     {
         $this->db->where('id', $id);
         return $this->db->update('job', $data);
     }
 
+    /**
+     * Get a job record by file ID and type of job.
+     *
+     * @param int $id File record ID
+     * @param int $jobType A job type constant from this class
+     * @return array
+     */
     function getByFileIdAndType($id, $jobType)
     {
         return $this->db->select('id, progress, result')
@@ -67,6 +95,12 @@ class Job_model extends CI_Model
                         ->row_array();
     }
 
+    /**
+     * Get a job's output log.
+     *
+     * @param int $id Job record ID
+     * @return string|null
+     */
     function getLog($id)
     {
         $row = $this->db->select('log')->get_where('job', ['id' => $id])->row();

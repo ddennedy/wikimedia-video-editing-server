@@ -28,6 +28,16 @@
 
 class Autologin_model extends CI_Model
 {
+    /**
+     * Create an Autologin CodeIgniter Model
+     *
+     * This is intended to be included in the CodeIgniter
+     * application/config/autoload.php:$autoload['model'] array.
+     * If the user session data does not contain a username, and a user cookie
+     * exists, then it attempts to lookup the user's record by their username,
+     * get an OAuth access token, verify the access token is still valid.
+     * If valid, then it puts the username and role into the user session data.
+     */
     public function __construct()
     {
         log_message('debug', 'Autologin Model Class Initialized');

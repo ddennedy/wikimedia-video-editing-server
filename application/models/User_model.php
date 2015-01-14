@@ -20,23 +20,31 @@
 
 class User_model extends CI_Model
 {
-    /// If either registration is required or if registered user was demoted.
+    /** @var Role constant - if either registration is required or if registered user was demoted. */
     const ROLE_GUEST      = 0;
-    /// Can create and update data.
+    /** @var Role constant for a user who can create and update data */
     const ROLE_USER       = 1;
-    /// Can also delete data and demote user to guest.
+    /** @var Role constant for a user who can edit data as well as delete data and demote user to guest */
     const ROLE_ADMIN      = 2;
-    /// Can do everything including designating managers and admins.
+    /** @var Role constant for a user who can do everything including designating admins and bureaucrats */
     const ROLE_BUREAUCRAT = 3;
 
+    /** @var A constant for the name of an encrypted HTTP cookie that stores a username */
     const COOKIE_NAME     = 'user';
 
+    /** Construct a User CodeIgniter Model. */
     public function __construct()
     {
         $this->load->database();
         log_message('debug', 'User Model Class Initialized');
     }
 
+    /**
+     * Get a user record by username.
+     *
+     * @param string $name The username
+     * @return array
+     */
     public function getByName($name = false)
     {
         if ($name) {
@@ -51,6 +59,12 @@ class User_model extends CI_Model
         return array();
     }
 
+    /**
+     * Get a User record ID.
+     *
+     * @param string $name The username
+     * @return int User record ID
+     */
     public function getUserId($name)
     {
         $this->db->select('id');
@@ -58,12 +72,27 @@ class User_model extends CI_Model
         return $query->row()->id;
     }
 
+    /**
+     * Authenticate a user by password.
+     *
+     * Included only for legacy, non-OAuth login support.
+     *
+     * @param string $name The username
+     * @param string $password The password (encrypted if stored that way)
+     * @return int 0 if failed or >0 if success
+     */
     public function login($name, $password)
     {
         $query = $this->db->get_where('user', ['name' => $name, 'password' => $password]);
         return $query->num_rows();
     }
 
+    /**
+     * Save an OAuth access token for the user.
+     *
+     * @param string $name The username
+     * @param string $token The OAuth access token
+     */
     public function setAccessTokenByName($name, $token)
     {
         $this->load->library('encryption');
@@ -72,6 +101,12 @@ class User_model extends CI_Model
         $this->db->update('user', ['access_token' => $x]);
     }
 
+    /**
+     * Create a new user record.
+     *
+     * @param array $data An associative array containing name/value pairs
+     * @return int|null The newly created user record ID or false on error
+     */
     public function create($data)
     {
         $this->load->library('encryption');
@@ -83,6 +118,11 @@ class User_model extends CI_Model
             return false;
     }
 
+    /**
+     * Send an encrypted HTTP cookie containing the username.
+     *
+     * @param string $name The username
+     */
     public function putUsernameInCookie($name)
     {
         $this->load->library('encryption');
@@ -91,6 +131,11 @@ class User_model extends CI_Model
         $this->input->set_cookie(User_model::COOKIE_NAME, $x, $expire);
     }
 
+    /**
+     * Get the username from an encrypted HTTP cookie.
+     *
+     * @return string The username
+     */
     public function getUsernameFromCookie()
     {
         $x = $this->input->cookie(User_model::COOKIE_NAME);
@@ -102,12 +147,25 @@ class User_model extends CI_Model
         }
     }
 
+    /**
+     * Update a user record with new/modified data.
+     *
+     * @param string $name The username
+     * @param array $data The user record data as associative array
+     * @return bool False on error
+     */
     public function update($name, $data)
     {
         $this->db->where('name', $name);
         return $this->db->update('user', $data);
     }
 
+    /**
+     * Get user names, optionally filtered by role.
+     *
+     * @param int $role An optional role constant
+     * @return array
+     */
     public function getByRole($role = null)
     {
         if ($role !== null)
@@ -117,6 +175,11 @@ class User_model extends CI_Model
         return $query->result_array();
     }
 
+    /**
+     * Get a list of languages available for the user interace.
+     *
+     * @return array
+     */
     public function getLanguages()
     {
         return [
@@ -125,6 +188,12 @@ class User_model extends CI_Model
         ];
     }
 
+    /**
+     * Get the descriptive name for a language given its 2-digit ISO code.
+     *
+     * @param string $languageKey The 2-digit ISO code for the language
+     * @return string
+     */
     public function getLanguageByKey($languageKey)
     {
         $languages = $this->getLanguages();
@@ -134,6 +203,11 @@ class User_model extends CI_Model
             return $languages['en'];
     }
 
+    /**
+     * Get a list of all possible roles.
+     *
+     * @return array
+     */
     public function getRoles()
     {
         return [
@@ -144,6 +218,12 @@ class User_model extends CI_Model
         ];
     }
 
+    /**
+     * Get a descriptive label for a role constant value.
+     *
+     * @param int $roleKey A role constant from this class
+     * @return string
+     */
     public function getRoleByKey($roleKey)
     {
         $roles = $this->getRoles();
