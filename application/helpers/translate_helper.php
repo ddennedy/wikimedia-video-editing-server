@@ -20,6 +20,14 @@
 
 if (!function_exists('tr'))
 {
+    /**
+     * Get the translated string for a given string key.
+     *
+     * @param string $line The translation table lookup key
+     * @param array $data An associate array of data for some strings that include
+     * variables for substitution
+     * @return string
+     */
     function tr($line, $data = null)
     {
         $s = get_instance()->lang->line($line);
