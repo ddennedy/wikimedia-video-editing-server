@@ -20,6 +20,12 @@
 
 class Upload extends CI_Controller
 {
+
+    /**
+     * Process a file upload.
+     *
+     * @param int @file_id File Record ID
+     */
     public function index($file_id = null)
     {
         if ('POST' == $this->input->method(true) && $file_id) {
@@ -95,6 +101,12 @@ class Upload extends CI_Controller
         }
     }
 
+    /**
+     * Determine if this is a project file (MLT XML).
+     *
+     * @param string $mimeType A MIME type
+     * @return bool
+     */
     protected function isMimeTypeMltXml($mimeType)
     {
         return $mimeType === 'application/xml' ||

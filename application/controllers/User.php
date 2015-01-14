@@ -22,6 +22,7 @@ class User extends CI_Controller
 {
     private $data = array();
 
+    /** Construct a User CodeIgniter Controller */
     public function __construct()
     {
         parent::__construct();
@@ -29,6 +30,11 @@ class User extends CI_Controller
         $this->data['session'] = $this->session->userdata();
     }
 
+    /**
+     * Initiate the manual login process with OAuth provider.
+     *
+     * @see Autologin_model::__construct()
+     */
     public function login()
     {
         // First, see if we remember the user by cookie.
@@ -61,6 +67,9 @@ class User extends CI_Controller
         $this->oauth_initiate();
     }
 
+    /**
+     * Log out the current user and destroy their session.
+     */
     public function logout()
     {
         $this->session->sess_destroy();
@@ -72,6 +81,11 @@ class User extends CI_Controller
         $this->load->view('templates/footer', $this->data);
     }
 
+    /**
+     * Peform the initiate phase of OAuth.
+     *
+     * @access private
+     */
     private function oauth_initiate()
     {
         $this->load->library('OAuth', $this->config->config);
@@ -85,6 +99,12 @@ class User extends CI_Controller
         }
     }
 
+    /**
+     * Process a the OAuth provider's call back to our site.
+     *
+     * If the user is not registered in our app, a page is displayed to ask them
+     * if they want to be remembered and use the app as more than guest.
+     */
     public function oauth_callback()
     {
         // Validate callback data.
@@ -147,6 +167,12 @@ class User extends CI_Controller
         }
     }
 
+    /**
+     * Process the user request to be added to the app.
+     *
+     * The first user added to the app is a bureaucrat; otherwise, users are
+     * added as a simple user until they are assigned a higher role by a bureaucrat.
+     */
     public function register()
     {
         $data = [
@@ -174,6 +200,12 @@ class User extends CI_Controller
         }
     }
 
+    /**
+     * Show the User page.
+     *
+     * @param string $name The username, taken from GET or session if not supplied
+     * @param int $offset A pagination offset into this user's list of files.
+     */
     public function index($name = null, $offset = 0)
     {
         // Get current user name if not provided.
@@ -235,6 +267,11 @@ class User extends CI_Controller
         }
     }
 
+    /**
+     * Show the form to edit a user record and process the newly submitted data.
+     *
+     * @param string $name The username, taken from session if ommitted
+     */
     public function edit($name = null)
     {
         // Get current user name if not provided.
@@ -304,6 +341,11 @@ class User extends CI_Controller
         $this->load->view('templates/footer', $this->data);
     }
 
+    /**
+     * Show a list of users, optionally filtered by role.
+     *
+     * @param int $role Optional user role constant, not filtered by role if not supplied
+     */
     public function grid($role = null)
     {
         $result = $this->user_model->getByRole($role);
@@ -323,6 +365,13 @@ class User extends CI_Controller
         $this->load->view('templates/footer', $this->data);
     }
 
+    /**
+     * Create the user app session data.
+     *
+     * @param string $name The username
+     * @param int $role The role constant value
+     * @param string $language The user interface language code
+     */
     private function establishSession($name, $role, $language)
     {
         $id = $this->user_model->getUserId($name);

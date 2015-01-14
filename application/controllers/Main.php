@@ -22,6 +22,7 @@ class Main extends CI_Controller
 {
     private $data = array();
 
+    /** Construct a Main CodeIgniter Controller */
     public function __construct()
     {
         parent::__construct();
@@ -29,6 +30,13 @@ class Main extends CI_Controller
         $this->data['lang'] = $this->lang->language;
     }
 
+    /**
+     * Show a page from a CodeIgniter view with the standard site-template's
+     * header and footer.
+     *
+     * @param string $page The optional name of a CodeIgniter view. If ommitted,
+     * then the "index" view is shown.
+     */
     public function index($page = 'index')
     {
         $this->load->view('templates/header', $this->data);
