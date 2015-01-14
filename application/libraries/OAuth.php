@@ -21,11 +21,19 @@
 require APPPATH.'libraries/oauth/OAuth.php';
 require APPPATH.'libraries/oauth/MWOAuthSignatureMethod.php';
 
+/**
+ * A logging callback function used by the included MWOAuthClient library
+ *
+ * Logs using the CodeIgniter logging system.
+ *
+ * @access private
+ */
 function wfDebugLog($method, $msg)
 {
     log_message('debug', "[$method] $msg");
 }
 
+/** My high-level OAuth class, oriented towards the MediaWiki OAuth provider */
 class OAuth
 {
     private $baseurl;
@@ -37,6 +45,7 @@ class OAuth
     private $userAgent;
     private $publishEndpoint;
 
+    /** Construct an OAuth class suitable for use with MediaWiki. */
     function __construct($config)
     {
         $this->baseurl = $config['oauth_base_url'];
@@ -49,6 +58,13 @@ class OAuth
         $this->publishEndpoint = $config['publish_endpoint'];
     }
 
+    /**
+     * Initiate OAuth with the provider.
+     *
+     * @return object Decoded JSON from the HTTP response, containing an
+     * authorization token as object->key and secret as object->secret, which
+     * will be supplied to OAuth::token() after the callback.
+     */
     function initiate()
     {
         $endpoint = $this->baseurl . '/initiate?format=json&oauth_callback=oob';
@@ -60,11 +76,28 @@ class OAuth
         return json_decode($result);
     }
 
+    /**
+     * Compute the OAuth provider's redirect URL.
+     *
+     * @param string $token An authorization token.
+     * @return string URL
+     */
     function redirect($token)
     {
         return $this->baseurl . '/authorize?oauth_token=' . $token . '&oauth_consumer_key=' . $this->consumerToken;
     }
 
+    /**
+     * Request the access token from the OAuth provider.
+     *
+     * @param string $requestToken The request/authorization token returned by initiate()
+     * @param string $secret The request/authorization secret returned by initiate()
+     * @param string $verifyCode The verification code provided by the callback
+     * from the OAuth provider.
+     * @return object Decoded JSON from the HTTP response, containing an access
+     * token as object->key and access secret as object->secret. These should be
+     * supplied with subsequent API calls as credentials.
+     */
     function token($requestToken, $secret, $verifyCode)
     {
         $token = new OAuthToken($requestToken, $secret);
@@ -77,6 +110,16 @@ class OAuth
         return json_decode($result);
     }
 
+    /**
+     * Get information about the user as a JSON Web Token (http://jwt.io).
+     *
+     * This also validates the JWT response.
+     *
+     * @param string $accessToken The OAuth access token
+     * @param string $secret The OAuth authorization secret
+     * @param string $issuer The expected issuer to be in the JWT.
+     * @return object Decoded JSON Web Token
+     */
     public function identify($accessToken, $secret, $issuer = null)
     {
         $token = new OAuthToken($accessToken, $secret);
@@ -97,6 +140,13 @@ class OAuth
         }
     }
 
+    /**
+     * Issue an HTTP GET request using OAuth credentials.
+     *
+     * @param string $accessToken The OAuth access token
+     * @param mixed $params Additional data to put into the query string per API
+     * @return string HTTP response body
+     */
     public function get($accessToken, $params)
     {
         $url = $this->publishEndpoint . '?' . http_build_query($params);
@@ -129,6 +179,14 @@ class OAuth
         return $response;
     }
 
+    /**
+     * Issue an HTTP POST request using OAuth credentials.
+     *
+     * @param string $accessToken The OAuth access token
+     * @param mixed $params Additional data to put into the query string per API
+     * @param array $data Associative array of POST values
+     * @return string HTTP response body
+     */
     public function post($accessToken, $params, $data)
     {
         $url = $this->publishEndpoint . '?' . http_build_query($params);
@@ -162,6 +220,15 @@ class OAuth
         return $response;
     }
 
+    /**
+     * Issue an HTTP GET request during the OAuth authorization process.
+     *
+     * @access private
+     * @param string $url The URL
+     * @param mixed $data Additional data to sign as associative array or object.
+     * @param string $token An authorization or access token
+     * @return string HTTP response body
+     */
     private function oauthRequest($url, $params, $token = null)
     {
         $request = OAuthRequest::from_consumer_and_token(
@@ -176,6 +243,14 @@ class OAuth
         return $this->httpRequest($url, $request->to_header());
     }
 
+    /**
+     * Issue a simple HTTP GET request.
+     *
+     * @access private
+     * @param string $url The full URL
+     * @param array $header Additional HTTP headers as an associative array
+     * @return string HTTP response body
+     */
     private function httpRequest($url, $header)
     {
         $curl = curl_init();
@@ -191,6 +266,17 @@ class OAuth
         return $result;
     }
 
+    /**
+     * Decode a JSON Web Token (http://jwt.io).
+     *
+     * Does not validate it.
+     *
+     * @access private
+     * @param string $JWT The JSON Web Token
+     * @param string $key Optional PEM formmatted public key (e.g. RSA) used to
+     * verify the signature, verification skipped if not supplied
+     * @return object Decoded JSON payload of the JWT
+     */
     private function decodeJWT($JWT, $key = null) {
         list( $headb64, $bodyb64, $sigb64 ) = explode( '.', $JWT );
         $payload = json_decode($this->urlsafeB64Decode($bodyb64));
@@ -206,6 +292,15 @@ class OAuth
         return $payload;
     }
 
+    /**
+     * Validate the JWT against issuer, OAuth client/consumer key/token, and nonce.
+     *
+     * @param object $identity The decoded JWT from the identify API
+     * @param string $consumerKey The client/consumer token/key
+     * @param string $isser Optional issuer against which to validate
+     * @param string $none Optional nonce value, usually as a MD5 hash
+     * @return bool False if error
+     */
     protected function validateJWT($identity, $consumerKey, $issuer = null, $nonce = null) {
         // Verify the issuer is who we expect (server sends $wgCanonicalServer)
         if ($issuer && $identity->iss !== $issuer) {
@@ -232,6 +327,13 @@ class OAuth
         return true;
     }
 
+    /**
+     * Decode a URL-encoded base64 string.
+     *
+     * @access private
+     * @param string $input URL-encoded base64 string
+     * @return string decoded value, possibly binary
+     */
     private function urlsafeB64Decode($input) {
         $remainder = strlen($input) % 4;
         if ($remainder) {
@@ -241,8 +343,16 @@ class OAuth
         return base64_decode(strtr($input, '-_', '+/'));
     }
 
-    // Constant time comparison
+    /**
+     * Compare two short binary hash values to see if they are the same.
+     *
+     * @access private
+     * @param string $hash1 The first hash value
+     * @param string $hash2 The second hash value
+     * @return bool True if they are the same
+     */
     private function compareHash($hash1, $hash2) {
+        // Constant time comparison
         $result = strlen($hash1) ^ strlen($hash2);
         $len = min(strlen($hash1), strlen($hash2)) - 1;
         for ($i = 0; $i < $len; $i++) {

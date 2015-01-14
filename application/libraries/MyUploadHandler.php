@@ -19,9 +19,21 @@
  */
 require APPPATH.'libraries/UploadHandler.php';
 
+/** A derived class of the jQuery File Upload Plugin provided UploadHandler */
 class MyUploadHandler extends UploadHandler
 {
+    /**
+     * An associative array containing all uploaded files, keyed by form field name
+     * @var array
+     */
     public $result;
+
+    /**
+     * Construct the UploadHandler class and immediately process the HTTP request.
+     *
+     * @param array $options UploadHandler options
+     * @see UploadHandler::__construct()
+     */
     public function __construct($options = null)
     {
         parent::__construct($options, false);
@@ -46,6 +58,13 @@ class MyUploadHandler extends UploadHandler
         }
     }
 
+    /**
+     * Make a filename unique by appending a paranthesized number to base name
+     * if needed.
+     *
+     * @param string $name Full path to the file
+     * @return string
+     */
     public function getUniqueFilename($name)
     {
         while (file_exists($name)) {
@@ -54,6 +73,13 @@ class MyUploadHandler extends UploadHandler
         return $name;
     }
 
+    /**
+     * Move/rename a file, making the directory in the new name, as needed.
+     *
+     * @param string $oldName Old file name
+     * @param string $newName The new file name
+     * @return bool False on error
+     */
     public function moveFile($oldName, $newName)
     {
         $dir = dirname($newName);
