@@ -20,15 +20,34 @@
 
 require APPPATH.'libraries/third_party/xmlreader-iterators.php';
 
+/**
+ * This class rewrites MLT XML namely to replace external file references
+ * with proxies or the originals.
+ */
 class MltXmlWriter
 {
+    /** @var array Data about external file references */
     private $fileData;
 
+    /**
+     * Construct a MltXmlWriter.
+     *
+     * @param array $fileData An array of external file references prepared
+     * using functions in MltXmlHelper
+     */
     public function __construct($fileData)
     {
         $this->fileData = $fileData;
     }
 
+    /**
+     * Transform a MLT XML file.
+     *
+     * @param string $inFilename Path to the input MLT XML file
+     * @param string $outFilename Optional path the output MLT XML file to write
+     * @return string|null The output XML as a string if no $outFilename
+     * @see XMLWritingIteration
+     */
     public function run($inFilename, $outFilename = null)
     {
         $reader = new XMLReader();

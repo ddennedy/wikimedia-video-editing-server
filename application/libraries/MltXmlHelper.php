@@ -20,14 +20,31 @@
 
 require APPPATH.'libraries/MltXmlReader.php';
 
+/**
+ * This class contains a set of MLT XML processing functions.
+ */
 class MltXmlHelper {
 
+    /**
+     * Determine if XML is syntactically well-formed.
+     *
+     * @param string $xml The XML data
+     * @return bool
+     */
     public static function isXmlWellFormed($xml)
     {
         libxml_use_internal_errors(true);
         return simplexml_load_string($xml) !== false;
     }
 
+    /**
+     * Get all the external files referenced by a MLT XML file.
+     *
+     * @param string $filename Path to the XML file
+     * @param string $log A reference to a string to which errors may be logged
+     * @return array
+     * @see MltXmlReader::getFiles()
+     */
     public static function getFilesData($filename, &$log)
     {
         try {
@@ -39,6 +56,18 @@ class MltXmlHelper {
         }
     }
 
+    /**
+     * Determine if all external file references are in the database.
+     *
+     * The database is updated with missing files or to add file records as children.
+     *
+     * @param object $file_model A reference to a File model
+     * @param array $file A file record
+     * @param array $childFiles A reference to the array of file external files
+     * @param string $log A reference to a string for logging
+     * @return bool Whether there are missing files
+     * @see MltXmlHelper::getFilesData()
+     */
     public static function checkFileReferences(&$file_model, $file, &$childFiles, &$log)
     {
         $isValid = true;
@@ -85,6 +114,16 @@ class MltXmlHelper {
         return $isValid;
     }
 
+    /**
+     * Update the array of external files with information about the proxy version of the files.
+     *
+     * @param object $file_model A reference to a File model
+     * @param array $file A file record
+     * @param array $childFiles A reference to the array of file external files
+     * @param string $log A reference to a string for logging
+     * @return bool Whether there are missing files
+     * @see MltXmlHelper::getFilesData()
+     */
     public static function substituteProxyFiles(&$file_model, $file, &$childFiles, &$log)
     {
         $isValid = true;
@@ -132,6 +171,14 @@ class MltXmlHelper {
         return $isValid;
     }
 
+    /**
+     * Supplement the external files with metadata from the proxy file to
+     * feed into the MltXmlWriter.
+     *
+     * @param array $childFiles A reference to the array of external files
+     * @param string $log A reference to a string for logging
+     * @see MltXmlHelper::getFilesData()
+     */
     public static function getFileMetadata(&$childFiles, &$log)
     {
         foreach($childFiles as $fileName => &$fileData) {
@@ -159,6 +206,16 @@ class MltXmlHelper {
         }
     }
 
+    /**
+     * Replace proxy file references in MLT XML with paths to the original files
+     * prior to rendering.
+     *
+     * @param object $file_model A reference to a File model
+     * @param array $file A file record
+     * @param array $childFiles A reference to the array of file external files
+     * @param string $log A reference to a string for logging
+     * @return bool Whether there are missing files
+     */
     public static function substituteOriginalFiles(&$file_model, $file, &$childFiles, &$log)
     {
         $isValid = true;

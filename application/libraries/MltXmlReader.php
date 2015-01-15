@@ -20,11 +20,21 @@
 
 require APPPATH.'libraries/third_party/SimpleXMLReader.php';
 
+/**
+ * A class derived from SimpleXMLReader specialized for MLT XML.
+ */
 class MltXmlReader extends SimpleXMLReader
 {
+    /** @var array Collects external file references */
     private $files = array();
+
+    /** @var string Saves the current mlt_service while processing other parts of the XML */
     private $mlt_service;
+
+    /** @var string Saves the current external file reference while processing other parts of the XML */
     private $resource;
+
+    /** @var array MLT services that can have an external file reference */
     private $valid_services = [
         // producers
         'avformat',
@@ -52,6 +62,7 @@ class MltXmlReader extends SimpleXMLReader
         //TODO identify filters and additional property names
     ];
 
+    /** Construct a MltXmlReader */
     public function __construct()
     {
         $this->registerCallback('producer', array($this, 'onProducer'));
@@ -59,6 +70,14 @@ class MltXmlReader extends SimpleXMLReader
         $this->registerCallback('kdenlive_producer', array($this, 'onKdenliveProducer'));
     }
 
+    /**
+     * The callback function to process a producer element
+     *
+     * This resets the mlt_service and resource state since this is a new producer.
+     *
+     * @param SimpleXmlReader $reader
+     * @return bool Whether to continue parsing
+     */
     protected function onProducer($reader)
     {
         // Reset state.
@@ -67,6 +86,15 @@ class MltXmlReader extends SimpleXMLReader
         return true;
     }
 
+    /**
+     * The callback function to process a property element
+     *
+     * When both a mlt_service and resource have been discovered, the external
+     * file reference is added to the files property.
+     *
+     * @param SimpleXmlReader $reader
+     * @return bool Whether to continue parsing
+     */
     protected function onProperty($reader)
     {
         if ($reader->hasAttributes) {
@@ -94,6 +122,14 @@ class MltXmlReader extends SimpleXMLReader
         return true;
     }
 
+    /**
+     * The callback function to process a property element
+     *
+     * This adds the external file's MD5 hash to the files array property.
+     *
+     * @param SimpleXmlReader $reader
+     * @return bool Whether to continue parsing
+     */
     protected function onKdenliveProducer($reader)
     {
         if ($reader->hasAttributes) {
@@ -117,6 +153,13 @@ class MltXmlReader extends SimpleXMLReader
         return true;
     }
 
+    /**
+     * Parse an MLT XML file.
+     *
+     * @param string $filename The path to the XML file
+     * @return array An associative array of all external file references keyed
+     * by the resource property value.
+     */
     public function getFiles($filename)
     {
         $this->files = array();
@@ -126,6 +169,11 @@ class MltXmlReader extends SimpleXMLReader
         return $this->files;
     }
 
+    /** Determine if a MIME type is MLT XML.
+     *
+     * @param string $mimeType The MIME type to check
+     * @return bool True if MIME type is for MLT XML
+     */
     public static function isMimeTypeMltXml($mimeType)
     {
         return $mimeType === 'application/xml' ||
