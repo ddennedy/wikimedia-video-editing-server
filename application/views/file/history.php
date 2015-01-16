@@ -23,11 +23,13 @@
 <?php if (!empty($comment)) echo '<p>' . tr('change_comment') . ": $comment</p>"; ?>
 <dl>
 <?php foreach($changes as $key => $value): ?>
+<?php if (array_key_exists($key, $current)): ?>
 <dt><?= tr('file_' . $key) ?></dt>
 <?php if ($value !== null): ?>
 <dd><code><b>-</b></code> <?= $value ?></dd>
 <?php endif ?>
 <dd><code>+</code> <?= $current[$key] ?></dd>
+<?php endif ?>
 <?php endforeach ?>
 </dl>
 <?php if ($isRestorable): ?>
