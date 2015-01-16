@@ -165,7 +165,7 @@
             url: '<?= site_url('upload/index/' . $id) ?>',
             dataType: 'json',
             maxChunkSize: 10000000, // 10 MB
-            uploadedBytes: <?= $size_bytes? $size_bytes : 0 ?>,
+            uploadedBytes: <?= isset($size_bytes)? $size_bytes : 0 ?>,
             add: function(e, data) {
                 $('#upload-button').hide();
                 $('#cancel-button').show();
