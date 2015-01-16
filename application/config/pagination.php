@@ -23,4 +23,4 @@ $config['prev_tag_close'] = '&nbsp;';
 $config['cur_tag_close'] = '&nbsp;';
 $config['num_tag_close'] = '&nbsp;';
 $config['next_tag_close'] = '&nbsp;';
-$config['per_page'] = 3;
+$config['per_page'] = 20;
