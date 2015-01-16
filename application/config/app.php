@@ -44,8 +44,8 @@ $config['beanstalkd_host'] = 'mysql';
 $config['beanstalkd_tube_validate'] = 'videoeditserver-validate';
 // Lump heavy transcode and MLT XML render jobs into the same tube to be
 // processed by the same set of workers.
-$config['beanstalkd_tube_transcode'] = 'videoeditserver-encode';
-$config['beanstalkd_tube_render'] = 'videoeditserver-encode';
+$config['beanstalkd_tube_transcode'] = 'videoeditserver-transcode';
+$config['beanstalkd_tube_render'] = 'videoeditserver-render';
 
 $config['transcode_audio_extension'] = 'ogg';
 $config['transcode_audio_options'] = '-map 0:a -codec libvorbis -qscale 5 -y';

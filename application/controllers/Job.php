@@ -178,6 +178,8 @@ class Job extends CI_Controller
     /**
      * Validate the audio/video file associated with a file record using ffprobe.
      *
+     * Enqueues a transcode job if valid and not already Ogg or WebM.
+     *
      * @param int $job_id The current job's ID
      * @param array $file The file record, passed by reference
      * @param string $majorType The first portion of the file's MIME type
@@ -362,6 +364,8 @@ class Job extends CI_Controller
      /**
      * Validate an XML project file associated with a file record using melt.
      *
+     * Enqueues a render job if the file is valid with all external files available.
+     *
      * @param int $job_id The current job's ID
      * @param array $file The file record, passed by reference
      * @param string $majorType The first portion of the file's MIME type
@@ -467,11 +471,11 @@ class Job extends CI_Controller
         }
     }
 
-    /** Resubmit a transcoding or render job.
+    /** Resubmit a transcoding job.
      *
      * @param int $job_id The ID of the job to resubmit.
      */
-    public function redo_encode($job_id)
+    public function redo_transcode($job_id)
     {
         // Put job into the queue.
         $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
@@ -486,13 +490,34 @@ class Job extends CI_Controller
         }
     }
 
+    /** Resubmit a render job.
+     *
+     * @param int $job_id The ID of the job to resubmit.
+     */
+    public function redo_render($job_id)
+    {
+        // Put job into the queue.
+        $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
+        if ($this->beanstalk->connect()) {
+            $tube = config_item('beanstalkd_tube_render');
+            $this->beanstalk->useTube($tube);
+            $priority = 10;
+            $delay = 0;
+            $ttr = 60; // seconds
+            $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
+            $this->beanstalk->disconnect();
+        }
+    }
+
     /**
      * The encode worker that transcodes a media file or renders a project.
+     *
+     * @param string @type The beanstalk tube (queue) to process: "transcode" or "render"
      */
-    public function encode()
+    public function encode($tube)
     {
         if ($this->beanstalk->connect()) {
-            $tube = config_item('beanstalkd_tube_transcode');
+            $tube = config_item("beanstalkd_tube_$tube");
             $this->beanstalk->useTube($tube);
             $this->beanstalk->watch($tube);
             $this->running = true;
