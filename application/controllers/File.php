@@ -160,7 +160,8 @@ class File extends CI_Controller
         }
         if (!isset($this->data['upload_button_text']))
             $this->data['upload_button_text'] = tr('file_upload_button');
-        $this->data['properties'] = json_decode($this->data['properties'], true);
+        if (is_string($this->data['properties']))
+            $this->data['properties'] = json_decode($this->data['properties'], true);
 
         // Display form.
         $this->load->helper('form');
