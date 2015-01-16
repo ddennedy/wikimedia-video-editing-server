@@ -534,10 +534,10 @@ class Job extends CI_Controller
                     if ($file) {
                         switch ($file['type']) {
                             case Job_model::TYPE_TRANSCODE:
-                                $this->transcode($file);
+                                $this->transcode($file, $job);
                                 break;
                             case Job_model::TYPE_RENDER:
-                                $this->render($file);
+                                $this->render($file, $job);
                                 break;
                             default:
                                 $log .= "Unknown job type $file[type].\n";
@@ -559,10 +559,11 @@ class Job extends CI_Controller
      * Transcode a media file using ffmpeg.
      *
      * @param array $file A file record.
+     * @param array $job The beanstalk job array
      * @return int The result code is negative for internal error or the return
      * code of the ffmpeg child process.
      */
-    protected function transcode($file)
+    protected function transcode($file, $job)
     {
         $result = -1;
         if (!empty($file['source_path'])) {
@@ -596,11 +597,11 @@ class Job extends CI_Controller
                         $majorType = explode('/', $mimeType)[0];
                         $log .= "majorType: $majorType\n";
                         if ($majorType === 'audio') {
-                            $result = $this->runFFmpeg($file, $log,
+                            $result = $this->runFFmpeg($file, $log, $job,
                                 config_item('transcode_audio_extension'),
                                 config_item('transcode_audio_options'));
                         } elseif ($majorType === 'video') {
-                            $result = $this->runFFmpeg($file, $log,
+                            $result = $this->runFFmpeg($file, $log, $job,
                                 config_item('transcode_video_extension'),
                                 config_item('transcode_video_options'));
                         } else {
@@ -632,12 +633,13 @@ class Job extends CI_Controller
      *
      * @param array $file A file record.
      * @param string $log A reference to a string used for logging.
+     * @param array $job The beanstalk job array
      * @param string $extension The filename extension for the output file.
      * @param string $options The command line options to pass to ffmpeg.
      * @return int The result code is negative for internal error or the return
      * code of the ffmpeg child process.
      */
-    protected function runFFmpeg($file, &$log, $extension, $options)
+    protected function runFFmpeg($file, &$log, $job, $extension, $options)
     {
         $result = -10;
         $file['duration_ms'] = intval($file['duration_ms']);
@@ -662,6 +664,7 @@ class Job extends CI_Controller
         if (is_resource($process)) {
             // Get ffmpeg output while running.
             while ($line = stream_get_line($pipes[2], 255, "\r")) {
+                $this->beanstalk->touch($job['id']);
                 $log .= "$line\n";
                 // Calculate progress as a percentage.
                 $i = strpos($line, 'time=');
@@ -719,10 +722,11 @@ class Job extends CI_Controller
      * Render and encode a project file using melt.
      *
      * @param array $file A file record.
+     * @param array $job The beanstalk job array
      * @return int The result code is negative for internal error or the return
      * code of the melt child process.
      */
-    protected function render($file)
+    protected function render($file, $job)
     {
         $result = -1;
         if (!empty($file['source_path'])) {
@@ -756,7 +760,7 @@ class Job extends CI_Controller
                         $log .= read_file($tmpFileName);
 
                         // Render and encode it.
-                        $result = $this->runMelt($tmpFileName, $file, $log,
+                        $result = $this->runMelt($tmpFileName, $file, $log, $job,
                             config_item('render_extension'), config_item('render_options'));
                         unlink($tmpFileName);
                     } else {
@@ -789,12 +793,13 @@ class Job extends CI_Controller
      *
      * @param array $file A file record.
      * @param string $log A reference to a string used for logging.
+     * @param array $job The beanstalk job array
      * @param string $extension The filename extension for the output file.
      * @param string $options The command line options to pass to melt.
      * @return int The result code is negative for internal error or the return
      * code of the melt child process.
      */
-    protected function runMelt($filename, $file, &$log, $extension, $options)
+    protected function runMelt($filename, $file, &$log, $job, $extension, $options)
     {
         $result = -10;
         $lastProgress = null;
@@ -817,6 +822,7 @@ class Job extends CI_Controller
         if (is_resource($process)) {
             // Get melt output while running.
             while ($line = stream_get_line($pipes[2], 255, "\n")) {
+                $this->beanstalk->touch($job['id']);
                 // Get progress as a percentage.
                 $i = strpos($line, 'percentage: ');
                 if ($i !== false) {
