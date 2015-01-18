@@ -169,7 +169,7 @@ class File_model extends CI_Model
         // Update main table with new values.
         $this->db->where('id', $id);
         $result = $this->db->update('file', $data);
-        if ($result) {
+        if ($result && array_key_exists('keywords', $data)) {
             // Add to recent table.
             $this->updateRecent($id);
 
