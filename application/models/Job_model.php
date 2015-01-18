@@ -91,9 +91,9 @@ class Job_model extends CI_Model
     function getByFileIdAndType($id, $jobType)
     {
         return $this->db->select('id, progress, result')
-                        ->get_where('job', ['file_id' => $id, 'type' => $jobType])
                         ->order_by('updated_at', 'DESC')
                         ->limit(1)
+                        ->get_where('job', ['file_id' => $id, 'type' => $jobType])
                         ->row_array();
     }
 
