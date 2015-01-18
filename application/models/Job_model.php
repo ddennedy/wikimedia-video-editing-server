@@ -92,6 +92,8 @@ class Job_model extends CI_Model
     {
         return $this->db->select('id, progress, result')
                         ->get_where('job', ['file_id' => $id, 'type' => $jobType])
+                        ->order_by('updated_at', 'DESC')
+                        ->limit(1)
                         ->row_array();
     }
 
