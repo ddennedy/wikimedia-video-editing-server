@@ -25,7 +25,7 @@
 <a href="<?= site_url('user/edit/' . $name) ?>"><?= tr('edit') ?></a> |
 <?php endif; ?>
 <a href="https://commons.wikimedia.org/wiki/User:<?= rawurlencode($name) ?>">
-    Wikimedia Commons <?= tr('file_user') ?></a>
+    Wikimedia Commons <?= tr('user_name') ?></a>
 <?php if (count($files)) echo $this->table->generate($files) ?>
 <?php if (isset($this->pagination)) echo $this->pagination->create_links(); ?>
 <p><small><?= $footer ?></small></p>
