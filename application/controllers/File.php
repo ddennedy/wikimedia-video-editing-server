@@ -211,8 +211,21 @@ class File extends CI_Controller
                             if ($job) $status .= ": $job[progress]%";
                         } else if ($file['status'] & File_model::STATUS_FINISHED) {
                             $this->data['isDownloadable'] = true;
+                            // Show project files as rendered.
+                            if ($this->data['isProject'] && is_file(config_item('transcode_path').$file['output_path'])) {
+                                $status .= ' =&gt; <a href="' . base_url(config_item('transcode_vdir') . $file['output_path']) . '">';
+                                $status .= tr('status_rendered') . '</a>';
+                                if (($file['status'] & File_model::STATUS_PUBLISHED) && !empty($file['publish_id'])) {
+                                    // Show publish status.
+                                    $this->load->library('parser');
+                                    $parseData = ['publish_id' => rawurlencode($file['publish_id'])];
+                                    $publishUrl = $this->parser->parse_string(config_item('publish_url_template'), $parseData, true);
+                                    $status .= " =&gt; <a href=\"$publishUrl\">";
+                                    $status .= tr('status_published') . '</a>';
+                                }
+                            }
                             // Ogg and WebM files are not transcoded and do not set output_path.
-                            if (is_file(config_item('transcode_path').$file['output_path'])) {
+                            else if (is_file(config_item('transcode_path').$file['output_path'])) {
                                 $status .= ' =&gt; <a href="' . base_url(config_item('transcode_vdir') . $file['output_path']) . '">';
                                 $status .= tr('status_converted') . '</a>';
                             }
@@ -229,13 +242,30 @@ class File extends CI_Controller
                         }
                     } else if ($file['status'] & File_model::STATUS_ERROR) {
                         $this->load->model('job_model');
-                        $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_VALIDATE);
-                            if (!$job) $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_RENDER);
+                        $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_PUBLISH);
                         if ($job) {
                             $status .= ' =&gt; <a href="' . site_url('job/log/' . $job['id'])  . '">';
-                            $status .= tr('status_error_validate') . '</a>';
+                            $status .= tr('status_error_publish') . '</a>';
                         } else {
-                            $status .= ' =&gt; ' . tr('status_error_validate');
+                            $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_RENDER);
+                            if ($job) {
+                                $status .= ' =&gt; <a href="' . site_url('job/log/' . $job['id'])  . '">';
+                                $status .= tr('status_error_render') . '</a>';
+                            } else {
+                                $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_TRANSCODE);
+                                if ($job) {
+                                    $status .= ' =&gt; <a href="' . site_url('job/log/' . $job['id'])  . '">';
+                                    $status .= tr('status_error_transcode') . '</a>';
+                                } else {
+                                    $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_VALIDATE);
+                                    if ($job) {
+                                        $status .= ' =&gt; <a href="' . site_url('job/log/' . $job['id'])  . '">';
+                                        $status .= tr('status_error_validate') . '</a>';
+                                    } else {
+                                        $status .= ' =&gt; ' . tr('status_error_validate');
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -720,99 +750,34 @@ class File extends CI_Controller
     }
 
     /**
-     * Publish the rendered project file to Wikimedia Commons.
+     * Create a job to publish the rendered project file.
      *
-     * @param int $id The file record ID.
+     * @param int $id The file record ID
      */
     public function publish($id)
     {
-        $this->load->model('file_model');
-        $file = $this->file_model->getById($id);
-        if (!empty($file['output_path'])) {
-            $filename = basename($file['output_path']);
-            $url = base_url(config_item('transcode_vdir') . $file['output_path']);
-        } else if (!empty($file['output_path'])) {
-            $filename = basename($file['source_path']);
-            $url = base_url(config_item('upload_vdir') . $file['source_path']);
+        // Add a job to the database.
+        $this->load->model('job_model');
+        $job_id = $this->job_model->create($id, Job_model::TYPE_PUBLISH);
+        if ($job_id) {
+            // Put job into the queue.
+            $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
+            if ($this->beanstalk->connect()) {
+                $tube = config_item('beanstalkd_tube_publish');
+                $this->beanstalk->useTube($tube);
+                $priority = 10;
+                $delay = 3;
+                $ttr = 3600; // seconds
+                $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
+                $this->beanstalk->disconnect();
+
+                // Show the file view page.
+                $this->view($id);
+            } else {
+                show_error(tr('file_error_publish'), 500, tr('file_error_heading'));
+            }
         } else {
             show_404(uri_string());
-            return;
         }
-        $text = $this->load->view('file/wikitext', $file, true);
-
-        // Lookup user in database.
-        $username = $this->session->userdata('username');
-        $user = $this->user_model->getByName($username);
-        if ($user && $user['access_token']) {
-            // User exists and has access token.
-            $this->load->library('OAuth', $this->config->config);
-
-            // Query the page by file.title for the edit token.
-            $accessToken = $user['access_token'];
-            $params = [
-                'action' => 'query',
-                'format' => 'php',
-                'continue' => '',
-                'titles' => $filename,
-                'meta' => 'tokens'
-            ];
-            $response = $this->oauth->get($accessToken, $params);
-            if (strpos($response, '<html') === false) {
-                log_message('debug', $response);
-                $response = unserialize($response);
-                if (array_key_exists('error', $response)) {
-                    # error set - return and start over
-                    log_message('error', 'MediaWiki query API error: '.$response['error']['info']);
-
-                } else if (isset($response['query']['pages'])) {
-                    # Extract edit token.
-                    if (isset($response['query']['tokens']['csrftoken']))
-                        $token = $response['query']['tokens']['csrftoken'];
-                    else if (isset($response['query']['pages'][-1]['edittoken']))
-                        $token = $response['query']['pages'][-1]['edittoken'];
-
-                    // Call the MediaWiki Upload API.
-                    if (isset($token)) {
-                        $params = [
-                            'action' => 'upload',
-                            'format' => 'php'
-                        ];
-                        $data = [
-                            'url' => $url,
-                            'filename' => $filename,
-                            'text' => $text,
-                            'asyncdownload' => 1,
-                            'ignorewarnings' => 1,
-                            'token' => $token
-                        ];
-                        $response = $this->oauth->post($accessToken, $params, $data);
-
-                        // Process the upload response.
-                        if (strpos($response, '<html') === false) {
-                            log_message('debug', $response);
-                            $response = unserialize($response);
-                            if (!array_key_exists('error', $response)) {
-                                // Success
-                                //TODO: Update database with publish flag and publish URL.
-                                // Show the file view page.
-                                $this->view($id);
-                                return;
-                            } else {
-                                log_message('error', 'MediaWiki upload API error: '.$response['error']['info']);
-                            }
-                        } else {
-                            log_message('error', 'MediaWiki upload API response: '.$response);
-                        }
-                    } else {
-                        log_message('error', 'No edit token found in MediaWiki API response.');
-                    }
-                } else {
-                    log_message('error', 'No pages found in MediaWiki API response.');
-                }
-            } else {
-                log_message('error', 'MediaWiki query API response: '.$response);
-            }
-        }
-        show_error(tr('file_error_publish'), 500, tr('file_error_heading'));
     }
 }

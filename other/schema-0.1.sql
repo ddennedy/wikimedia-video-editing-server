@@ -16,7 +16,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --
--- SCHEMA VERSION 0.2
+-- SCHEMA VERSION 0.1
 --
 
 CREATE DATABASE IF NOT EXISTS videoeditserver DEFAULT CHARACTER SET utf8
@@ -65,8 +65,7 @@ CREATE TABLE file (
   document_id varchar(32), -- kdenlive's documentid if needed
   publish_uri varchar(32), -- Wikimedia Commons URI
   status bit(64) default 0, -- see constants in PHP for values,
-  updated_at timestamp NOT NULL,
-  publish_id varchar(255)
+  updated_at timestamp NOT NULL
 );
 CREATE INDEX file_user_id ON file (user_id);
 CREATE INDEX file_recording_date ON file (recording_date);

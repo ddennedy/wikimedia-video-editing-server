@@ -26,6 +26,8 @@ class Job_model extends CI_Model
     const TYPE_TRANSCODE     = 1;
     /** @var Job type constant to render and encode a project file */
     const TYPE_RENDER        = 2;
+    /** @var Job type constant to publish a rendered project file */
+    const TYPE_PUBLISH       = 3;
 
     /** Construct a Job CodeIgniter Model */
     public function __construct()

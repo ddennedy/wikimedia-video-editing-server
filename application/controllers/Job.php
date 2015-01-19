@@ -1010,6 +1010,192 @@ class Job extends CI_Controller
         return false;
     }
 
+    /** Resubmit a publish job.
+     *
+     * @param int $job_id The ID of the job to resubmit.
+     */
+    public function redo_publish($job_id)
+    {
+        // Put job into the queue.
+        $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
+        if ($this->beanstalk->connect()) {
+            $tube = config_item('beanstalkd_tube_publish');
+            $this->beanstalk->useTube($tube);
+            $priority = 10;
+            $delay = 0;
+            $ttr = 3600; // seconds
+            $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
+            $this->beanstalk->disconnect();
+        }
+    }
+
+    /**
+     * The publish worker that uploads a file to Wikimedia Commons.
+     */
+    public function publish()
+    {
+        if ($this->beanstalk->connect()) {
+            $tube = config_item('beanstalkd_tube_publish');
+            $this->beanstalk->useTube($tube);
+            $this->beanstalk->watch($tube);
+            $this->running = true;
+            pcntl_signal(SIGINT, array(&$this, 'signalHandler'));
+            pcntl_signal(SIGTERM, array(&$this, 'signalHandler'));
+
+            while ($this->running) {
+                $job = $this->beanstalk->reserve();
+                $job_id = $job['body'];
+                if ($job) {
+                    echo "received job id $job_id\n";
+                    // lookup job/file in database
+                    $file = $this->job_model->getWithFileById($job_id);
+                    if ($file) {
+                        $this->publishFileRecord($file, $job);
+                    }
+                    // delete this job
+                    $this->beanstalk->delete($job['id']);
+                } else {
+                    echo "Error: beanstalkd reserve failed\n";
+                }
+                sleep(1);
+            }
+            $this->beanstalk->disconnect();
+        }
+    }
+
+    /**
+     * Publish the rendered project file to Wikimedia Commons.
+     *
+     * @param array $file The file record
+     * @param array $job The beanstalk job array
+     */
+    public function publishFileRecord($file, $job)
+    {
+        $result = -1;
+        $this->load->model('file_model');
+        if (!empty($file['output_path'])) {
+            $filename = basename($file['output_path']);
+            $url = base_url(config_item('transcode_vdir') . $file['output_path']);
+        } else if (!empty($file['source_path'])) {
+            $filename = basename($file['source_path']);
+            $url = base_url(config_item('upload_vdir') . $file['source_path']);
+        } else {
+            echo "output_path and source_path are both empty!\n";
+            return;
+        }
+        $log = "Publish: $file[title].\n";
+        if (!empty($file['publish_id']))
+            $filename = $file['publish_id'];
+        $text = $this->load->view('file/wikitext', $file, true);
+
+        // Lookup user in database.
+        $user = $this->db->get_where('user', ['id' => $file['user_id']])->row_array();
+        if ($user && $user['access_token']) {
+            // User exists and has access token.
+            $this->load->library('OAuth', $this->config->config);
+
+            // Query the page by file.title for the edit token.
+            $accessToken = $user['access_token'];
+            $params = [
+                'action' => 'query',
+                'format' => 'php',
+                'continue' => '',
+                'titles' => $filename,
+                'meta' => 'tokens'
+            ];
+            $response = $this->oauth->get($accessToken, $params);
+            if (strpos($response, '<html') === false) {
+                $log .= 'HTTP response: ' . json_encode($response) . "\n";
+                $response = unserialize($response);
+                if (array_key_exists('error', $response)) {
+                    # error set - return and start over
+                    $result = -2;
+                    $log .= 'MediaWiki query API error: '.$response['error']['info']."\n";
+
+                } else if (isset($response['query']['pages'])) {
+                    # Extract edit token.
+                    if (isset($response['query']['tokens']['csrftoken']))
+                        $token = $response['query']['tokens']['csrftoken'];
+                    else if (isset($response['query']['pages'][-1]['edittoken']))
+                        $token = $response['query']['pages'][-1]['edittoken'];
+                    if (isset($response['query']['pages'][-1]['title']))
+                        $file['publish_id'] = $response['query']['pages'][-1]['title'];
+
+                    // Call the MediaWiki Upload API.
+                    if (isset($token)) {
+                        $params = [
+                            'action' => 'upload',
+                            'format' => 'php'
+                        ];
+                        $data = [
+                            'url' => $url,
+                            'filename' => $filename,
+                            'text' => $text,
+                            'asyncdownload' => 1,
+                            'ignorewarnings' => 1,
+                            'token' => $token
+                        ];
+                        $response = $this->oauth->post($accessToken, $params, $data);
+
+                        // Process the upload response.
+                        if (strpos($response, '<html') === false) {
+                            $log .= 'HTTP response: ' . json_encode($response) . "\n";
+                            $response = unserialize($response);
+                            if (!array_key_exists('error', $response)) {
+                                // Success
+                                $result = 0;
+                            } else {
+                                $result = -2;
+                                $log .= 'MediaWiki upload API error: '.$response['error']['info']."\n";
+                            }
+                        } else {
+                            $result = -3;
+                            $log .= "MediaWiki upload API response: $response\n";
+                        }
+                    } else {
+                        $result = -4;
+                        $log .= "No edit token found in MediaWiki API response.\n";
+                    }
+                } else {
+                    $result = -5;
+                    $log .= "No pages found in MediaWiki API response.\n";
+                }
+            } else {
+                $result = -6;
+                $log .= "MediaWiki query API response: $response\n";
+            }
+        }
+
+        // Update the file table with results.
+        if ($result === 0) {
+            $status = intval($file['status']) | File_model::STATUS_PUBLISHED;
+            // Clear any previous error in case this was re-attempted.
+            $status &= ~File_model::STATUS_ERROR;
+            $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
+                'status' => $status,
+                'publish_id' => $file['publish_id']
+            ]);
+            if (!$isUpdated) {
+                $result = -10;
+                $log .= "Error updating the file table with output_path and hash.\n";
+            }
+        } else {
+            $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
+                'status' => intval($file['status']) | File_model::STATUS_ERROR
+            ]);
+            if (!$isUpdated) {
+                $result = -11;
+                $log .= "Error updating the file table with error status.\n";
+            }
+        }
+
+        // Update the job table with job results.
+        $this->job_model->update($file['job_id'], [
+            'result' => $result,
+            'log' => $log
+        ]);
+    }
+
     public function test_transcode($filename)
     {
         $log = '';
