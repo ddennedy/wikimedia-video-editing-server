@@ -1075,14 +1075,17 @@ class Job extends CI_Controller
         $this->load->model('file_model');
         if (!empty($file['output_path'])) {
             $filename = basename($file['output_path']);
-            $url = base_url(config_item('transcode_vdir') . $file['output_path']);
+            $url = base_url(config_item('transcode_vdir') . dirname($file['output_path']) .
+                   '/' . rawurlencode(basename($file['output_path'])));
         } else if (!empty($file['source_path'])) {
             $filename = basename($file['source_path']);
-            $url = base_url(config_item('upload_vdir') . $file['source_path']);
+            $url = base_url(config_item('upload_vdir') . dirname($file['source_path']) .
+                   '/' .  rawurlencode(basename($file['source_path'])));
         } else {
             echo "output_path and source_path are both empty!\n";
             return;
         }
+        $url = config_item('upload_base_url') . $url;
         $log = "Publish: $file[title].\n";
         if (!empty($file['publish_id']))
             $filename = $file['publish_id'];
@@ -1135,6 +1138,7 @@ class Job extends CI_Controller
                             'ignorewarnings' => 1,
                             'token' => $token
                         ];
+                        $log .= "Sending download URL: $url\n";
                         $response = $this->oauth->post($accessToken, $params, $data);
 
                         // Process the upload response.

@@ -56,3 +56,4 @@ $config['render_extension'] = 'webm';
 $config['render_options'] = 'progressive=1 acodec=libvorbis aqscale=5 vcodec=libvpx g=100 quality=good speed=0 vprofile=0 slices=4 threads=1 vb=10M crf=10 arnr_max_frames=7 arnr_strength=5 arnr_type=3';
 $config['http_client_user_agent'] = 'VideoEditingServer/1.0 (https://github.com/ddennedy/wikimedia-video-editing-server; dan@dennedy.org)';
 $config['publish_url_template'] = 'https://commons.wikimedia.org/wiki/File:{publish_id}';
+$config['upload_base_url'] = 'http://wikimedia.meltvideo.com/';
