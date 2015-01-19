@@ -131,7 +131,7 @@ class OAuth
 
         $data = $this->oauthRequest($endpoint, $params, $token);
         log_message('debug', 'OAuth/identify response: ' . $data);
-        $identity = $this->decodeJWT($data);
+        $identity = $this->decodeJWT($data, config_item('oauth_consumer_secret'));
         // Validate the JWT
         if (!$this->validateJWT($identity, $this->consumerToken, $issuer, $params['oauth_nonce'])) {
             return null;
@@ -273,21 +273,20 @@ class OAuth
      *
      * @access private
      * @param string $JWT The JSON Web Token
-     * @param string $key Optional PEM formmatted public key (e.g. RSA) used to
-     * verify the signature, verification skipped if not supplied
+     * @param string $secret The optional OAuth consumer secret used to
+     * verify the signature, skipped if not supplied
      * @return object Decoded JSON payload of the JWT
      */
-    private function decodeJWT($JWT, $key = null) {
+    private function decodeJWT($JWT, $secret = null) {
         list( $headb64, $bodyb64, $sigb64 ) = explode( '.', $JWT );
         $payload = json_decode($this->urlsafeB64Decode($bodyb64));
-        if ($key) {
-//             $header = json_decode($this->urlsafeB64Decode($headb64));
-//             $sig = $this->urlsafeB64Decode($sigb64);
-//             $expectSig = hash_hmac('sha256', "$headb64.$bodyb64", $secret, true);
-//             if ($header->alg !== 'HS256' || !$this->compareHash($sig, $expectSig)) {
-//                 throw new Exception("Invalid JWT signature from /identify.");
-//             }
-//             $success = openssl_verify("$headb64.$bodyb64", $sig, $key, 'SHA256');
+        if ($secret) {
+            $header = json_decode($this->urlsafeB64Decode($headb64));
+            $sig = $this->urlsafeB64Decode($sigb64);
+            $expectSig = hash_hmac('sha256', "$headb64.$bodyb64", $secret, true);
+            if ($header->alg !== 'HS256' || !$this->compareHash($sig, $expectSig)) {
+                throw new Exception("Invalid JWT signature from /identify.");
+            }
         }
         return $payload;
     }
