@@ -1075,24 +1075,20 @@ class Job extends CI_Controller
         $this->load->model('file_model');
         if (!empty($file['output_path'])) {
             $filename = basename($file['output_path']);
-            $url = base_url(config_item('transcode_vdir') . dirname($file['output_path']) .
-                   '/' . rawurlencode(basename($file['output_path'])));
+            $filepath = config_item('transcode_vdir') . $file['output_path'];
         } else if (!empty($file['source_path'])) {
             $filename = basename($file['source_path']);
-            $url = base_url(config_item('upload_vdir') . dirname($file['source_path']) .
-                   '/' .  rawurlencode(basename($file['source_path'])));
+            $filepath = config_item('transcode_vdir') . $file['source_path'];
         } else {
             echo "output_path and source_path are both empty!\n";
             return;
         }
-        $url = config_item('upload_base_url') . $url;
         $log = "Publish: $file[title].\n";
         if (!empty($file['publish_id']))
             $filename = $file['publish_id'];
-        $text = $this->load->view('file/wikitext', $file, true);
 
         // Lookup user in database.
-        $user = $this->db->get_where('user', ['id' => $file['user_id']])->row_array();
+        $user = $this->user_model->getByID($file['user_id']);
         if ($user && $user['access_token']) {
             // User exists and has access token.
             $this->load->library('OAuth', $this->config->config);
@@ -1108,8 +1104,8 @@ class Job extends CI_Controller
             ];
             $response = $this->oauth->get($accessToken, $params);
             if (strpos($response, '<html') === false) {
-                $log .= 'HTTP response: ' . json_encode($response) . "\n";
                 $response = unserialize($response);
+                $log .= 'HTTP response: ' . json_encode($response) . "\n";
                 if (array_key_exists('error', $response)) {
                     # error set - return and start over
                     $result = -2;
@@ -1121,30 +1117,38 @@ class Job extends CI_Controller
                         $token = $response['query']['tokens']['csrftoken'];
                     else if (isset($response['query']['pages'][-1]['edittoken']))
                         $token = $response['query']['pages'][-1]['edittoken'];
-                    if (isset($response['query']['pages'][-1]['title']))
+                    if (isset($response['query']['pages'][-1]['title'])) {
                         $file['publish_id'] = $response['query']['pages'][-1]['title'];
+                        $filename = $file['publish_id'];
+                    }
 
                     // Call the MediaWiki Upload API.
                     if (isset($token)) {
+                        // Generate Commons metadata.
+                        $file['username' ]= $user['name'];
+                        $text = $this->load->view('file/wikitext', $file, true);
+
                         $params = [
                             'action' => 'upload',
                             'format' => 'php'
                         ];
                         $data = [
-                            'url' => $url,
                             'filename' => $filename,
+                            'filesize' => filesize($filepath),
                             'text' => $text,
-                            'asyncdownload' => 1,
                             'ignorewarnings' => 1,
                             'token' => $token
                         ];
-                        $log .= "Sending download URL: $url\n";
+                        $log .= "Sending data: ".json_encode($data)."\n";
+                        $mimetype = mime_content_type($filepath);
+                        $this->load->helper('curl_helper');
+                        $data['file'] = curl_file_create($filepath, $mimetype, $filename);
                         $response = $this->oauth->post($accessToken, $params, $data);
 
                         // Process the upload response.
                         if (strpos($response, '<html') === false) {
-                            $log .= 'HTTP response: ' . json_encode($response) . "\n";
                             $response = unserialize($response);
+                            $log .= 'HTTP response: ' . json_encode($response) . "\n";
                             if (!array_key_exists('error', $response)) {
                                 // Success
                                 $result = 0;
@@ -1212,5 +1216,12 @@ class Job extends CI_Controller
         $file = $this->job_model->getWithFileById($job_id);
         if (!empty($file['source_hash']))
             $this->checkIfWasMissing($file);
+    }
+
+    public function test_publish($job_id)
+    {
+        $file = $this->job_model->getWithFileById($job_id);
+        if ($file)
+            $this->publishFileRecord($file, null);
     }
 }

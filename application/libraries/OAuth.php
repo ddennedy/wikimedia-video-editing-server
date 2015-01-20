@@ -168,10 +168,6 @@ class OAuth
         curl_setopt($curl, CURLOPT_HTTPHEADER, array($request->to_header()));
         curl_setopt($curl, CURLOPT_ENCODING, 'UTF-8');
         curl_setopt($curl, CURLOPT_USERAGENT, $this->userAgent);
-        $cookieFile = sys_get_temp_dir() . '/cookies.txt';
-        touch($cookieFile);
-        curl_setopt($curl, CURLOPT_COOKIEJAR, $cookieFile);
-        curl_setopt($curl, CURLOPT_COOKIEFILE, $cookieFile);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
         $response = curl_exec($curl);
         if (!$response)
@@ -209,10 +205,6 @@ class OAuth
         curl_setopt($curl, CURLOPT_HTTPHEADER, array($request->to_header()));
         curl_setopt($curl, CURLOPT_ENCODING, 'UTF-8');
         curl_setopt($curl, CURLOPT_USERAGENT, $this->userAgent);
-        $cookieFile = sys_get_temp_dir() . '/cookies.txt';
-        touch($cookieFile);
-        curl_setopt($curl, CURLOPT_COOKIEJAR, $cookieFile);
-        curl_setopt($curl, CURLOPT_COOKIEFILE, $cookieFile);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
         $response = curl_exec($curl);
         if (!$response)

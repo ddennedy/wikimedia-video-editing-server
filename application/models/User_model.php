@@ -60,6 +60,25 @@ class User_model extends CI_Model
     }
 
     /**
+     * Get a user record by user ID.
+     *
+     * @param string $id The user ID
+     * @return array|false
+     */
+    public function getByID($id)
+    {
+        $query = $this->db->get_where('user', ['id' => $id]);
+        $data = $query->row_array();
+        if ($data && $data['access_token']) {
+            $this->load->library('encryption');
+            $data['access_token'] = $this->encryption->decrypt($data['access_token']);
+            return $data;
+        } else {
+            return false;
+        }
+    }
+
+    /**
      * Get a User record ID.
      *
      * @param string $name The username
