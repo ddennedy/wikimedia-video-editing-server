@@ -28,6 +28,13 @@ class Job extends CI_Controller
      */
     protected $running = false;
 
+    /** The size of a chunk to use for chunked upload to Wikimedia Commons.
+     *
+     * @access protected
+     * @var int
+     */
+    protected $chunkSize = 20971520; // 20 MiB
+
     /** Construct a Job CodeIgniter Controller. */
     public function __construct()
     {
@@ -1075,10 +1082,10 @@ class Job extends CI_Controller
         $this->load->model('file_model');
         if (!empty($file['output_path'])) {
             $filename = basename($file['output_path']);
-            $filepath = config_item('transcode_vdir') . $file['output_path'];
+            $filepath = config_item('transcode_path') . $file['output_path'];
         } else if (!empty($file['source_path'])) {
             $filename = basename($file['source_path']);
-            $filepath = config_item('transcode_vdir') . $file['source_path'];
+            $filepath = config_item('upload_path') . $file['source_path'];
         } else {
             echo "output_path and source_path are both empty!\n";
             return;
@@ -1128,37 +1135,33 @@ class Job extends CI_Controller
                         $file['username' ]= $user['name'];
                         $text = $this->load->view('file/wikitext', $file, true);
 
-                        $params = [
-                            'action' => 'upload',
-                            'format' => 'php'
-                        ];
-                        $data = [
-                            'filename' => $filename,
-                            'filesize' => filesize($filepath),
-                            'text' => $text,
-                            'ignorewarnings' => 1,
-                            'token' => $token
-                        ];
-                        $log .= "Sending data: ".json_encode($data)."\n";
-                        $mimetype = mime_content_type($filepath);
-                        $this->load->helper('curl_helper');
-                        $data['file'] = curl_file_create($filepath, $mimetype, $filename);
-                        $response = $this->oauth->post($accessToken, $params, $data);
+                        if (filesize($filepath) > $this->chunkSize) {
+                            // Do chunked upload.
+                            $response = ['upload' => [
+                                'offset' => 0,
+                                'result' => 'Continue'
+                            ]];
+                            do {
+                                $response = $this->uploadChunk($response, $filepath,
+                                    $filename, $text, $token, $accessToken, $log);
+                                $uploadResult = isset($response['upload']['result'])? $response['upload']['result'] : false;
+                            } while (($uploadResult === 'Continue' || $uploadResult === 'Success')
+                                    && isset($response['upload']['filekey']));
+                        } else {
+                            // Upload the entire file at once.
+                            $response = $this->uploadFile($filepath, $filename, $text, $token, $accessToken, $log);
+                        }
 
                         // Process the upload response.
-                        if (strpos($response, '<html') === false) {
-                            $response = unserialize($response);
-                            $log .= 'HTTP response: ' . json_encode($response) . "\n";
-                            if (!array_key_exists('error', $response)) {
-                                // Success
-                                $result = 0;
-                            } else {
-                                $result = -2;
-                                $log .= 'MediaWiki upload API error: '.$response['error']['info']."\n";
-                            }
+                        if ($response && !array_key_exists('error', $response)) {
+                            // Success
+                            $result = 0;
+                        } else if ($response && array_key_exists('error', $response)) {
+                            $result = -2;
+                            $log .= 'MediaWiki upload API error: '.$response['error']['info']."\n";
                         } else {
                             $result = -3;
-                            $log .= "MediaWiki upload API response: $response\n";
+                            $log .= "MediaWiki upload API error: unknown\n";
                         }
                     } else {
                         $result = -4;
@@ -1203,6 +1206,109 @@ class Job extends CI_Controller
             'log' => $log
         ]);
     }
+
+    /**
+     * Upload a complete file to Wikimedia Commons using OAuth.
+     *
+     * @param string $filePath The full file path and name
+     * @param string $filename The name to give the file on Commons
+     * @param string $text The description and/or metadata for the Commons file item
+     * @param string $editToken The edit token obtained from a MediaWiki query API call
+     * @param string $accessToken The OAuth access token
+     * @param string $log A reference to a string for logging
+     * @return array|bool PHP-decoded HTTP response body or false on error
+     */
+    protected function uploadFile($filepath, $filename, $text, $editToken, $accessToken, &$log)
+    {
+        $params = [
+            'action' => 'upload',
+            'format' => 'php'
+        ];
+        $data = [
+            'filename' => $filename,
+            'filesize' => filesize($filepath),
+            'text' => $text,
+            'ignorewarnings' => 1,
+            'token' => $editToken
+        ];
+        $log .= "Sending data: ".json_encode($data)."\n";
+        $mimetype = mime_content_type($filepath);
+        $this->load->helper('curl_helper');
+        $data['file'] = curl_file_create($filepath, $mimetype, $filename);
+        $response = $this->oauth->post($accessToken, $params, $data);
+
+        if (strpos($response, '<html') === false) {
+            $response = unserialize($response);
+            $log .= 'HTTP response: ' . json_encode($response) . "\n";
+        } else {
+            $response = false;
+            $log .= "MediaWiki upload API error: $response\n";
+        }
+        return $response;
+    }
+
+    /**
+     * Upload a file chunk to Wikimedia Commons using OAuth.
+     *
+     * On the first call, seed the response with ['upload'=> ['offset'=> 0, 'result'=> 'Continue']].
+     *
+     * @param array  $response The response from a previous call
+     * @param string $filePath The full file path and name
+     * @param string $filename The name to give the file on Commons
+     * @param string $text The description and/or metadata for the Commons file item
+     * @param string $editToken The edit token obtained from a MediaWiki query API call
+     * @param string $accessToken The OAuth access token
+     * @param string $log A reference to a string for logging
+     * @return array|bool PHP-decoded HTTP response body or false on error
+     */
+    protected function uploadChunk($response, $filepath, $filename, $text, $editToken, $accessToken, &$log)
+    {
+        $params = [
+            'action' => 'upload',
+            'format' => 'php'
+        ];
+        $data = [
+            'filename' => $filename,
+            'filesize' => filesize($filepath),
+            'ignorewarnings' => 1,
+            'token' => $editToken
+        ];
+        if (isset($response['upload']['filekey'])) {
+            $data['filekey'] = $response['upload']['filekey'];
+        }
+        if ($response['upload']['result'] === 'Continue') {
+            $data['offset'] = $response['upload']['offset'];
+            $data['stash'] = 1;
+        } else if ($response['upload']['result'] === 'Success') {
+            $data['text'] = $text;
+        }
+        $log .= "Sending data: ".json_encode($data)."\n";
+
+        if (isset($data['offset'])) {
+            $mimetype = mime_content_type($filepath);
+            # build chunk - extract data from source file into chunk file
+            $chunkPath = $this->tempfile('ves-chunk');
+            $chunk = file_get_contents($filepath, false, null, $data['offset'], $this->chunkSize);
+            file_put_contents($chunkPath, $chunk);
+            # turn 'chunk' form field into a file upload
+            $this->load->helper('curl_helper');
+            $data['chunk'] = curl_file_create($chunkPath, $mimetype, $filename);
+        }
+
+        $response = $this->oauth->post($accessToken, $params, $data);
+        if (strpos($response, '<html') === false) {
+            $response = unserialize($response);
+            $log .= 'HTTP response: ' . json_encode($response) . "\n";
+        } else {
+            $response = false;
+            $log .= "MediaWiki upload API error: $response\n";
+        }
+
+        if (isset($chunkPath))
+            unlink($chunkPath);
+        return $response;
+    }
+
 
     public function test_transcode($filename)
     {

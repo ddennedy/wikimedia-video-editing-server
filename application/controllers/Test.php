@@ -28,6 +28,12 @@ class Test extends CI_Controller
         $this->load->model('user_model');
     }
 
+
+    public function test()
+    {
+        echo realpath("other/mediawiki-oauth-key.pem");
+    }
+
     public function index()
     {
         $this->load->library('unit_test');
