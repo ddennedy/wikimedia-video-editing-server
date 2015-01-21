@@ -143,6 +143,7 @@ class File_model extends CI_Model
         $query = $this->db->get_where('file', ['id' => $id]);
         $current = $query->row_array();
         unset($current['id']);
+        unset($current['publish_id']);
         $diff = array_diff($data, $current);
         if (!count($diff))
             return true;
