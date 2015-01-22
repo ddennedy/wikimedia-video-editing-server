@@ -87,16 +87,20 @@ class MltXmlWriter
                         $writer->startElement($node->name);
                         $writer->writeAttribute('name', $name);
                         $current = $reader->readString();
-                        if (isset($this->fileData[$current])) {
-                            $writer->text($this->fileData[$current]['resource']);
-                        } else {
-                            $writer->text($current);
+                        if (!empty($current)) {
+                            if (isset($this->fileData[$current])) {
+                                $writer->text($this->fileData[$current]['resource']);
+                            } else {
+                                $writer->text($current);
+                            }
                         }
-                        $reader->read();
+                        $writer->endElement();
+                        $reader->next();
                     } else {
                         $iterator->write();
                     }
                 } else {
+                    // Remove the meta properties.
                     $reader->next();
                 }
             } else if ($isElement && $node->name === 'kdenlive_producer') {
