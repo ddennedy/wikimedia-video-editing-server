@@ -50,6 +50,7 @@ class MltXmlWriter
      */
     public function run($inFilename, $outFilename = null)
     {
+        $prevNonPropertyEl = null;
         $reader = new XMLReader();
         $reader->open($inFilename);
 
@@ -65,6 +66,10 @@ class MltXmlWriter
 
         foreach ($iterator as $node) {
             $isElement = $node->nodeType === XMLReader::ELEMENT;
+
+            // Save the parent element name for property elements.
+            if ($isElement && $node->name !== 'property')
+                $prevNonPropertyEl = $node->name;
 
             if ($isElement && ($node->name === 'mlt' || $node->name === 'kdenlivedoc')) {
                 $writer->startElement($node->name);
@@ -88,11 +93,23 @@ class MltXmlWriter
                         $writer->writeAttribute('name', $name);
                         $current = $reader->readString();
                         if (!empty($current)) {
-                            if (isset($this->fileData[$current])) {
-                                $writer->text($this->fileData[$current]['resource']);
-                            } else {
-                                $writer->text($current);
+                            if ($prevNonPropertyEl === 'transition') {
+                                // Replace a gradient image file for luma transition.
+                                $baseName = basename($current);
+                                $parentDir = basename(dirname($current));
+                                $fullpath = implode('/',
+                                    [config_item('mlt_lumas_path'), $parentDir, $baseName]);
+                                if (file_exists($fullpath)) {
+                                    $current = $fullpath;
+                                } else {
+                                    $fullpath = implode('/',
+                                        [config_item('kdenlive_lumas_path'), $parentDir, $baseName]);
+                                    if (file_exists($fullpath)) $current = $fullpath;
+                                }
+                            } else if (isset($this->fileData[$current])) {
+                                $current = $this->fileData[$current]['resource'];
                             }
+                            $writer->text($current);
                         }
                         $writer->endElement();
                         $reader->next();
