@@ -153,6 +153,7 @@ $lang['status_converting'] = 'Converting Now';
 $lang['status_converted'] = 'Transcoded';
 $lang['status_validated'] = 'Validated';
 $lang['status_rendered'] = 'Rendered';
+$lang['status_approved'] = 'Publish Pending';
 $lang['status_published'] = 'Published';
 $lang['status_error_validate'] = 'Invalid';
 $lang['status_error_transcode'] = 'Transcode Error';

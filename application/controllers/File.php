@@ -222,6 +222,8 @@ class File extends CI_Controller
                                     $publishUrl = $this->parser->parse_string(config_item('publish_url_template'), $parseData, true);
                                     $status .= " =&gt; <a href=\"$publishUrl\">";
                                     $status .= tr('status_published') . '</a>';
+                                } else if ($file['status'] & File_model::STATUS_APPROVED) {
+                                    $status .=  ' =&gt; ' . tr('status_approved');
                                 }
                             }
                             // Ogg and WebM files are not transcoded and do not set output_path.
@@ -756,23 +758,33 @@ class File extends CI_Controller
      */
     public function publish($id)
     {
-        // Add a job to the database.
-        $this->load->model('job_model');
-        $job_id = $this->job_model->create($id, Job_model::TYPE_PUBLISH);
-        if ($job_id) {
-            // Put job into the queue.
-            $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
-            if ($this->beanstalk->connect()) {
-                $tube = config_item('beanstalkd_tube_publish');
-                $this->beanstalk->useTube($tube);
-                $priority = 10;
-                $delay = 3;
-                $ttr = 3600; // seconds
-                $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
-                $this->beanstalk->disconnect();
+        $file = $this->file_model->getById($id);
+        if ($file) {
+            // Add a job to the database.
+            $this->load->model('job_model');
+            $job_id = $this->job_model->create($id, Job_model::TYPE_PUBLISH);
+            if ($job_id) {
+                // Put job into the queue.
+                $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
+                if ($this->beanstalk->connect()) {
+                    $tube = config_item('beanstalkd_tube_publish');
+                    $this->beanstalk->useTube($tube);
+                    $priority = 10;
+                    $delay = 3;
+                    $ttr = 3600; // seconds
+                    $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
+                    $this->beanstalk->disconnect();
 
-                // Show the file view page.
-                $this->view($id);
+                    // Indicate that it was submitted for publishing.
+                    $this->file_model->staticUpdate($id, [
+                        'status' => $file['status'] | File_model::STATUS_APPROVED
+                    ]);
+
+                    // Show the file view page.
+                    redirect(site_url("file/$id"));
+                } else {
+                    show_error(tr('file_error_publish'), 500, tr('file_error_heading'));
+                }
             } else {
                 show_error(tr('file_error_publish'), 500, tr('file_error_heading'));
             }
