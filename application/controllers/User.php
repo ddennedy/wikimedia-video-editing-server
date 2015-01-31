@@ -144,18 +144,22 @@ class User extends CI_Controller
                         'role' => User_model::ROLE_GUEST,
                         'access_token' => $accessToken
                     ]);
-                    // Reload session data into view data.
-                    $this->data['session'] = $this->session->userdata();
+                    if (config_item('auto_register')) {
+                        $this->register();
+                    } else {
+                        // Reload session data into view data.
+                        $this->data['session'] = $this->session->userdata();
 
-                    $this->load->helper('form');
-                    $this->load->library('parser');
-                    $this->load->view('templates/header', $this->data);
-                    $template = tr('user_register_heading');
-                    $templateData = ['username' => $identity->username];
-                    $this->data['heading'] = $this->parser->parse_string($template,
-                        $templateData, true);
-                    $this->load->view('user/register', $this->data);
-                    $this->load->view('templates/footer', $this->data);
+                        $this->load->helper('form');
+                        $this->load->library('parser');
+                        $this->load->view('templates/header', $this->data);
+                        $template = tr('user_register_heading');
+                        $templateData = ['username' => $identity->username];
+                        $this->data['heading'] = $this->parser->parse_string($template,
+                            $templateData, true);
+                        $this->load->view('user/register', $this->data);
+                        $this->load->view('templates/footer', $this->data);
+                    }
                 }
             } else {
                 show_error(tr('user_error_oauth_access'), 500, tr('user_error_login_heading'));
