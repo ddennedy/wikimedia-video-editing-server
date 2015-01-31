@@ -198,8 +198,7 @@ class File extends CI_Controller
                 } else {
                     $status = tr('status_uploaded');
                     if ($file['status'] & File_model::STATUS_VALIDATED && !($file['status'] & File_model::STATUS_ERROR)) {
-                        $status .= ' =&gt; <a href="' . base_url(config_item('upload_vdir').$file['source_path']) . '">';
-                        $status .= tr('status_validated') . '</a>';
+                        $status .= ' =&gt; ' . tr('status_validated');
                         if ($this->data['isProject'])
                             $this->data['isProjectDownloadable'] = true;
                         // Determine conversion status.
