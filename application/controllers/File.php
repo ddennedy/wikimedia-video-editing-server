@@ -580,10 +580,13 @@ class File extends CI_Controller
                 $current = $this->file_model->getHistoryByRevision($id, $revision);
                 $file['updated_at'] = $current['updated_at'];
                 $file['comment'] = $current['comment'];
+                $this->data['file_history_id'] = $current['id'];
+                unset($current['id']);
                 unset($current['updated_at']);
                 unset($current['comment']);
                 if ($revision > 0) {
                     $previous = $this->file_model->getHistoryByRevision($id, $revision - 1);
+                    unset($previous['id']);
                     unset($previous['updated_at']);
                     unset($previous['comment']);
                     $changes = array_diff_assoc($previous, $current);
@@ -632,6 +635,9 @@ class File extends CI_Controller
 
                 // Only show the restore action if admin-level and higher.
                 $this->data['isRestorable'] = false && ($this->session->userdata('role') >= User_model::ROLE_ADMIN);
+
+                $this->load->library('MltXmlReader');
+                $this->data['isDownloadable'] = $this->mltxmlreader->isMimeTypeMltXml($file['mime_type']);
 
                 // Build the page.
                 $this->load->view('templates/header', $this->data);
@@ -724,6 +730,43 @@ class File extends CI_Controller
     {
         $file = $this->file_model->getById($id);
         if ($file && ($file['status'] & File_model::STATUS_VALIDATED)) {
+            if ($file['source_path']) {
+                $filename = config_item('upload_path').$file['source_path'];
+                if (is_file($filename)) {
+                    $this->load->library('MltXmlHelper');
+                    $log = '';
+                    $childFiles = $this->mltxmlhelper->getFilesData($filename, $log);
+                    $isValid = $this->mltxmlhelper->substituteProxyFiles($this->file_model, $file, $childFiles, $log);
+
+                    // If still valid, create a new version of the XML with proxy clips.
+                    if ($isValid) {
+                        // If still valid, get new metadata for each proxy file.
+                        $this->mltxmlhelper->getFileMetadata($childFiles, $log);
+                        // Prepare the output file.
+                        $this->load->library('MltXmlWriter', $childFiles);
+                        $xml = $this->mltxmlwriter->run($filename);
+                        $this->load->helper('download');
+                        force_download(basename($file['source_path']), $xml);
+                        return;
+                    } else {
+                        show_error($log, 500, tr('file_error_heading'));
+                    }
+                }
+            }
+        }
+        show_404(uri_string());
+    }
+
+    /** Force download of an old project file.
+     *
+     * A forced download prevents the browser from trying to open the file.
+     *
+     * @param int $id The file_history record ID.
+     */
+    public function download_history($id)
+    {
+        $file = $this->file_model->getHistoryById($id);
+        if ($file) {
             if ($file['source_path']) {
                 $filename = config_item('upload_path').$file['source_path'];
                 if (is_file($filename)) {

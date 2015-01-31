@@ -36,3 +36,7 @@
 <hr>
 <a href="<?= site_url("file/restore/$id") ?>"><?= tr('restore') ?></a>
 <?php endif; ?>
+<?php if ($isDownloadable): ?>
+<hr>
+<a href="<?= site_url("file/download_history/$file_history_id") ?>"><?= tr('download') ?></a>
+<?php endif; ?>
