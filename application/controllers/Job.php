@@ -762,7 +762,8 @@ class Job extends CI_Controller
                     $tmpFileName = $this->tempfile('ves', '.xml');
                     if ($tmpFileName) {
                         // Create XML input file.
-                        $this->mltxmlwriter->run($filename, $tmpFileName);
+                        $fixLumas = true;
+                        $this->mltxmlwriter->run($filename, $tmpFileName, $fixLumas);
                         $this->load->helper('file');
                         $log .= read_file($tmpFileName);
 

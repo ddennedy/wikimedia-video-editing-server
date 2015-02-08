@@ -45,10 +45,12 @@ class MltXmlWriter
      *
      * @param string $inFilename Path to the input MLT XML file
      * @param string $outFilename Optional path the output MLT XML file to write
+     * @param bool $fixLumaPaths Whether to try to adjust the path to luma
+     * transition resource files to something usable on this server
      * @return string|null The output XML as a string if no $outFilename
      * @see XMLWritingIteration
      */
-    public function run($inFilename, $outFilename = null)
+    public function run($inFilename, $outFilename = null, $fixLumaPaths = false)
     {
         $prevNonPropertyEl = null;
         $reader = new XMLReader();
@@ -93,7 +95,7 @@ class MltXmlWriter
                         $writer->writeAttribute('name', $name);
                         $current = $reader->readString();
                         if (!empty($current)) {
-                            if ($prevNonPropertyEl === 'transition') {
+                            if ($fixLumaPaths && $prevNonPropertyEl === 'transition') {
                                 // Replace a gradient image file for luma transition.
                                 $baseName = basename($current);
                                 $parentDir = basename(dirname($current));
