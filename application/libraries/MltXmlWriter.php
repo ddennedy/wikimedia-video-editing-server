@@ -124,8 +124,8 @@ class MltXmlWriter
                 }
             } else if ($isElement && $node->name === 'kdenlive_producer') {
                 $data = array();
-                $writer->startElement($node->name);
                 if (isset($this->fileData[$reader->getAttribute('resource')])) {
+                    $writer->startElement($node->name);
                     $data = $this->fileData[$reader->getAttribute('resource')];
                     if ($reader->moveToFirstAttribute()) {
                         do {
@@ -134,8 +134,11 @@ class MltXmlWriter
                             else
                                 $writer->writeAttribute($reader->name, $reader->value);
                         } while ($reader->moveToNextAttribute());
-                        $reader->moveToElement();
                     }
+                    $writer->endElement();
+                    $reader->next();
+                } else {
+                    $iterator->write();
                 }
             } else if ($isElement && $node->name === 'metaproperty' && is_array($data)
                        && element('mlt_service', $data) == 'avformat') {
