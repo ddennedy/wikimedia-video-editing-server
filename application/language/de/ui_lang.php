@@ -113,7 +113,8 @@ $lang['tools_username_placeholder'] = 'Benutzername';
 
 // Files area
 $lang['file_new_heading'] = 'Upload File';
-$lang['file_new_message'] = 'Please enter some information about the file you are about to upload.';
+$lang['file_new_message'] = 'You must enter a <strong>Title</strong> and <strong>Save</strong> before you start upload.
+Then, you can enter additional information during the upload and <strong>Save</strong> again <em>after</em> upload completes.';
 $lang['file_edit_heading'] = 'Editing File: {title}';
 $lang['file_view_heading'] = 'File: {title}';
 $lang['file_view_footer'] = 'This file was last modified {updated_at} UTC.';
