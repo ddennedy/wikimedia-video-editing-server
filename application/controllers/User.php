@@ -361,7 +361,20 @@ class User extends CI_Controller
         }
         $this->data['users'] = $result;
 
-        $this->data['heading'] = tr('user_list_heading');
+        switch ($role) {
+            case User_model::ROLE_BUREAUCRAT:
+                $this->data['heading'] = tr('tools_bureaucrats');
+                break;
+            case User_model::ROLE_ADMIN:
+                $this->data['heading'] = tr('tools_administrators');
+                break;
+            case null:
+                $this->data['heading'] = tr('tools_list_users');
+                break;
+            case 0:
+                $this->data['heading'] = tr('tools_list_guests');
+                break;
+        }
         $this->load->library('table');
         $this->table->set_heading('Name', 'Role', 'Updated');
         $this->load->view('templates/header', $this->data);

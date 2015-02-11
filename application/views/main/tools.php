@@ -25,7 +25,7 @@
     <?= tr('tools_bureaucrats') ?></a></li>
   <li><a href="<?= site_url('user/list/' . User_model::ROLE_ADMIN) ?>">
     <?= tr('tools_administrators') ?></a></li>
-  <li><a href="<?= site_url('user/list/' . User_model::ROLE_USER) ?>">
+  <li><a href="<?= site_url('user/list') ?>">
     <?= tr('tools_list_users') ?></a></li>
   <li><a href="<?= site_url('user/list/' . User_model::ROLE_GUEST) ?>">
     <?= tr('tools_list_guests') ?></a></li>
