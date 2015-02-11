@@ -103,7 +103,7 @@ $lang['user_list_heading'] = 'List Users';
 $lang['user_files_caption'] = 'This user\'s files';
 
 // Tools area
-$lang['tools_user_mgmt'] = 'Benutzerverwaltung';
+$lang['tools_user_mgmt'] = 'Active Users';
 $lang['tools_bureaucrats'] = 'List bureaucrats';
 $lang['tools_administrators'] = 'List administrators';
 $lang['tools_list_users'] = 'List users';
