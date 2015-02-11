@@ -93,7 +93,7 @@ class Job extends CI_Controller
                         if (!empty($mimeType)) {
                             $isValid = true;
                             $majorType = explode('/', $mimeType)[0];
-                            echo "majorType: $majorType\n";
+                            echo "mimeType: $mimeType\n";
                             if ($majorType === 'audio' || $majorType === 'video') {
                                 $isValid = $this->validateAudioVideo($job_id, $file, $majorType);
                             } else if ($majorType === 'image' || $extension === '.svg') {
@@ -393,6 +393,7 @@ class Job extends CI_Controller
             if ($this->mltxmlhelper->isXmlWellFormed($xml)) {
                 // verify all dependent files are available
                 $childFiles = $this->mltxmlhelper->getFilesData($filename, $log);
+                $log .= "getFilesData:\n" . json_encode($childFiles, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
                 $isValid = $this->mltxmlhelper->checkFileReferences($this->file_model, $file, $childFiles, $log);
 
                 // If still valid, create the render job.

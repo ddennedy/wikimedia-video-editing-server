@@ -28,6 +28,9 @@ class MltXmlReader extends SimpleXMLReader
     /** @var array Collects external file references */
     private $files = array();
 
+    /** @var string Saves the root attribute on the root element to qualify relative paths */
+    private $root;
+
     /** @var string Saves the current mlt_service while processing other parts of the XML */
     private $mlt_service;
 
@@ -65,9 +68,26 @@ class MltXmlReader extends SimpleXMLReader
     /** Construct a MltXmlReader */
     public function __construct()
     {
+        $CI =& get_instance();
+        $CI->load->helper('path');
+        $this->registerCallback('mlt', array($this, 'onMlt'));
         $this->registerCallback('producer', array($this, 'onProducer'));
         $this->registerCallback('property', array($this, 'onProperty'));
         $this->registerCallback('kdenlive_producer', array($this, 'onKdenliveProducer'));
+    }
+
+    /**
+     * The callback function to process the root mlt element
+     *
+     * This resets the mlt_service and resource state since this is a new producer.
+     *
+     * @param SimpleXmlReader $reader
+     * @return bool Whether to continue parsing
+     */
+    protected function onMlt($reader)
+    {
+        $this->root = $reader->getAttribute('root');
+        return true;
     }
 
     /**
@@ -103,7 +123,12 @@ class MltXmlReader extends SimpleXMLReader
                 if ($reader->value === 'mlt_service') {
                     $this->mlt_service = $value;
                 } else if ($reader->value === 'resource') {
-                    $this->resource = $value;
+                    // Convert relative path to absolute.
+                    if (isPathRelative($value)) {
+                        $this->resource = joinPaths($this->root, $value);
+                    } else {
+                        $this->resource = $value;
+                    }
                 }
                 // If state is ready.
                 if ($this->mlt_service && $this->resource) {
@@ -137,7 +162,12 @@ class MltXmlReader extends SimpleXMLReader
             $file_hash = null;
             while ($reader->moveToNextAttribute()) {
                 if ($reader->name === 'resource') {
-                    $this->resource = $reader->value;
+                    // Convert relative path to absolute.
+                    if (isPathRelative($reader->value)) {
+                        $this->resource = joinPaths($this->root, $reader->value);
+                    } else {
+                        $this->resource = $reader->value;
+                    }
                 } else if ($reader->name === 'file_hash') {
                     $file_hash = $reader->value;
                 }
