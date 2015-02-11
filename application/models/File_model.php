@@ -314,7 +314,7 @@ class File_model extends CI_Model
      */
     public function getRecent()
     {
-        $this->db->select('file_id, mime_type, title, name, file.updated_at');
+        $this->db->select('file_id, mime_type, title, name, recent.updated_at');
         $this->db->from('recent');
         $this->db->join('file', 'file.id = file_id');
         $this->db->join('user', 'user_id = user.id');
