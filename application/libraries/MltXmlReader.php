@@ -124,7 +124,7 @@ class MltXmlReader extends SimpleXMLReader
                     $this->mlt_service = $value;
                 } else if ($reader->value === 'resource') {
                     // Convert relative path to absolute.
-                    if (isPathRelative($value)) {
+                    if ($this->root && isPathRelative($value)) {
                         $this->resource = joinPaths($this->root, $value);
                     } else {
                         $this->resource = $value;
@@ -163,7 +163,7 @@ class MltXmlReader extends SimpleXMLReader
             while ($reader->moveToNextAttribute()) {
                 if ($reader->name === 'resource') {
                     // Convert relative path to absolute.
-                    if (isPathRelative($reader->value)) {
+                    if ($this->root && isPathRelative($reader->value)) {
                         $this->resource = joinPaths($this->root, $reader->value);
                     } else {
                         $this->resource = $reader->value;
