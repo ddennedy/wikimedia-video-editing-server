@@ -98,8 +98,7 @@ class MltXmlHelper {
                 } else {
                     $isValid = false;
                     // Add child to missing_files table.
-                    $file_hash = empty($child['output_path'])? $child['source_hash'] : $child['output_hash'];
-                    if ($file_model->addMissing($file['id'], $name, $file_hash))
+                    if ($file_model->addMissing($file['id'], $name, $fileData['file_hash']))
                         $log .= "Added to missing_files table: $file[id] -> $name.\n";
                     else
                         $log .= "Error adding record to missing_files table: $file[id] -> $name.\n";
