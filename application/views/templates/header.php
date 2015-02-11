@@ -42,9 +42,7 @@
     <a href="<?= site_url('file/edit') ?>"><?= tr('menu_upload') ?></a> |
     <?php endif; ?>
     <a href="<?= site_url('main') ?>"><?= tr('menu_main') ?></a> |
-    <?php if (element('role', $session) == User_model::ROLE_BUREAUCRAT): ?>
     <a href="<?= site_url('main/tools') ?>"><?= tr('menu_tools') ?></a> |
-    <?php endif; ?>
     <a href="<?= site_url('file/recent') ?>"><?= tr('menu_recent') ?></a> |
     <input type="text" name="q" placeholder="<?= tr('search') ?>"><input type="submit" value="<?= tr('go') ?>">
     </form>
