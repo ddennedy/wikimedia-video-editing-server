@@ -181,7 +181,8 @@ class MltXmlHelper {
     public static function getFileMetadata(&$childFiles, &$log)
     {
         foreach($childFiles as $fileName => &$fileData) {
-            $xml = shell_exec("/usr/bin/nice melt -consumer xml '$fileData[proxy_path]' 2>/dev/null");
+            $melt = config_item('melt_full_path');
+            $xml = shell_exec("/usr/bin/nice $melt -consumer xml '$fileData[proxy_path]' 2>/dev/null");
             $mlt = simplexml_load_string($xml);
             if ($mlt && isset($mlt->producer)) {
                 $streamType = null;

@@ -29,6 +29,9 @@ class MltXmlWriter
     /** @var array Data about external file references */
     private $fileData;
 
+    /** @var string Saves the root attribute on the root element to qualify relative paths */
+    private $root;
+
     /**
      * Construct a MltXmlWriter.
      *
@@ -38,6 +41,8 @@ class MltXmlWriter
     public function __construct($fileData)
     {
         $this->fileData = $fileData;
+        $CI =& get_instance();
+        $CI->load->helper('path');
     }
 
     /**
@@ -77,10 +82,14 @@ class MltXmlWriter
                 $writer->startElement($node->name);
                 if ($reader->moveToFirstAttribute()) {
                     do {
-                        if ($reader->name === 'root' || $reader->name === 'projectfolder')
+                        if ($reader->name === 'root') {
+                            $this->root = $reader->value;
                             $writer->writeAttribute($reader->name, '$CURRENTPATH');
-                        else
+                        } else if ($reader->name === 'projectfolder') {
+                            $writer->writeAttribute($reader->name, '$CURRENTPATH');
+                        } else {
                             $writer->writeAttribute($reader->name, $reader->value);
+                        }
                     } while ($reader->moveToNextAttribute());
                     $reader->moveToElement();
                 }
@@ -94,6 +103,10 @@ class MltXmlWriter
                         $writer->startElement($node->name);
                         $writer->writeAttribute('name', $name);
                         $current = $reader->readString();
+                        // Convert relative path to absolute.
+                        if ($this->root && isPathRelative($current)) {
+                            $current = joinPaths($this->root, $current);
+                        }
                         if (!empty($current)) {
                             if ($fixLumaPaths && $prevNonPropertyEl === 'transition') {
                                 // Replace a gradient image file for luma transition.
