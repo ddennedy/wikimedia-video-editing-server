@@ -59,6 +59,6 @@ $config['http_client_user_agent'] = 'VideoEditingServer/1.0 (https://github.com/
 $config['publish_url_template'] = 'https://commons.wikimedia.org/wiki/File:{publish_id}';
 $config['melt_full_path'] = '/opt/Shotcut/Shotcut.app/melt';
 $config['mlt_lumas_path'] = '/opt/Shotcut/Shotcut.app/share/mlt/lumas';
-$config['kdenlive_lumas_path'] = '/opt/kdenlive/data';
+$config['kdenlive_lumas_path'] = '/opt/kdenlive/share/apps/kdenlive/lumas';
 
 $config['auto_register'] = true;
