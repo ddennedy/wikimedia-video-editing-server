@@ -500,10 +500,11 @@ class Job extends CI_Controller
 
     /** Resubmit a render job.
      *
-     * @param int $job_id The ID of the job to resubmit.
+     * @param int $file_id The file ID
      */
-    public function redo_render($job_id)
+    public function redo_render($file_id)
     {
+        $job = $this->job_model->getByFileIdAndType($file_id, Job_model::TYPE_RENDER);
         // Put job into the queue.
         $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
         if ($this->beanstalk->connect()) {
@@ -512,7 +513,7 @@ class Job extends CI_Controller
             $priority = 10;
             $delay = 0;
             $ttr = 60; // seconds
-            $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
+            $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job['id']);
             $this->beanstalk->disconnect();
         }
     }
