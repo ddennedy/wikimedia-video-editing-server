@@ -1,8 +1,8 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 /*
  * Wikimedia Video Editing Server
- * Copyright (C) 2014 Dan R. Dennedy <dan@dennedy.org>
- * Copyright (C) 2014 CDC Leuphana University Lueneburg
+ * Copyright (C) 2014-2015 Dan R. Dennedy <dan@dennedy.org>
+ * Copyright (C) 2014-2015 CDC Leuphana University Lueneburg
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,8 +81,8 @@ $lang['user_role'] = 'Role';
 $lang['user_language'] = 'Language';
 $lang['user_comment'] = 'Comment';
 $lang['user_error_comment'] = 'The user does not exist.';
-$lang['user_error_language'] = 'The password is incorrect.';
 $lang['user_register_heading'] = 'Welcome, {username}';
+$lang['user_register_local_heading'] = 'Register';
 $lang['user_register_body'] = 'Do you want to register on this site as a user?
 As a user, you will have permission to upload and edit media files and
 projects. If you do not register, you may continue to use the site as a guest
@@ -180,3 +180,12 @@ $lang['search_advanced_heading'] = 'Advanced Search';
 $lang['reset'] = 'Reset';
 $lang['date_from_placeholder'] = 'from';
 $lang['date_to_placeholder'] = 'to';
+
+// Local database password authentication form
+$lang['login_heading'] = 'Login';
+$lang['login_username'] = 'User ID';
+$lang['login_password'] = 'Password';
+$lang['login_confirm_password'] = 'Confirm password';
+$lang['login_success'] = 'Login successful';
+$lang['login_error_invalid_user'] = 'The user does not exist.';
+$lang['login_error_incorrect_password'] = 'The password is incorrect.';

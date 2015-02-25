@@ -1,8 +1,8 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 /*
  * Wikimedia Video Editing Server
- * Copyright (C) 2014 Dan R. Dennedy <dan@dennedy.org>
- * Copyright (C) 2014 CDC Leuphana University Lueneburg
+ * Copyright (C) 2014-2015 Dan R. Dennedy <dan@dennedy.org>
+ * Copyright (C) 2014-2015 CDC Leuphana University Lueneburg
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,9 @@ class User_model extends CI_Model
 
     /** @var A constant for the name of an encrypted HTTP cookie that stores a username */
     const COOKIE_NAME     = 'user';
+
+    const AUTH_LOCAL      = 0;
+    const AUTH_WIKIMEDIA  = 1;
 
     /** Construct a User CodeIgniter Model. */
     public function __construct()
@@ -98,12 +101,18 @@ class User_model extends CI_Model
      *
      * @param string $name The username
      * @param string $password The password (encrypted if stored that way)
-     * @return int 0 if failed or >0 if success
+     * @return bool
      */
     public function login($name, $password)
     {
-        $query = $this->db->get_where('user', ['name' => $name, 'password' => $password]);
-        return $query->num_rows();
+        $query = $this->db->get_where('user', ['name' => $name]);
+        $data = $query->row();
+        if ($data->id && !empty($password)) {
+            $this->load->library('encryption');
+            return $this->encryption->decrypt($data->password) === $password;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -129,7 +138,10 @@ class User_model extends CI_Model
     public function create($data)
     {
         $this->load->library('encryption');
-        $data['access_token'] = $this->encryption->encrypt($data['access_token']);
+        if (array_key_exists('access_token', $data))
+            $data['access_token'] = $this->encryption->encrypt($data['access_token']);
+        if (array_key_exists('password', $data))
+            $data['password'] = $this->encryption->encrypt($data['password']);
         $this->db->insert('user', $data);
         if ($this->db->affected_rows())
             return $this->db->insert_id();

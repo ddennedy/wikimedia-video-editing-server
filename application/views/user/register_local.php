@@ -1,8 +1,8 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 /*
  * Wikimedia Video Editing Server
- * Copyright (C) 2014-2015 Dan R. Dennedy <dan@dennedy.org>
- * Copyright (C) 2014-2015 CDC Leuphana University Lueneburg
+ * Copyright (C) 2015 Dan R. Dennedy <dan@dennedy.org>
+ * Copyright (C) 2015 CDC Leuphana University Lueneburg
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 <h2><?= $heading ?></h2>
 <?= validation_errors(); ?>
 
-<?php echo form_open('user/login') ?>
+<?php echo form_open('user/register') ?>
     <div class="field">
         <label for="username"><?= tr('login_username') ?></label>
         <input type="input" name="username" value="<?= set_value('username') ?>">
@@ -32,7 +32,17 @@
         <input type="password" name="password">
     </div>
 
+    <div class="field">
+        <label for="confirm_password"><?= tr('login_confirm_password') ?></label>
+        <input type="password" name="confirm_password">
+    </div>
+
+    <div class="field">
+        <label for="language"><?= tr('user_language') ?></label>
+        <?= form_dropdown('language', $languages, set_value('language', $language)) ?>
+    </div>
+
     <div class="action-bar">
-        <input type="submit" name="submit" value="Login">
+        <input type="submit" name="submit" value="<?= tr('user_register_button') ?>">
     </div>
 </form>

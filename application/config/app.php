@@ -21,6 +21,7 @@
 $config['debug'] = false;
 $config['videos_dir'] = '/media/videos/';
 
+$config['auth'] = 1; // Corresponds to User_model::AUTH_WIKIMEDIA
 $config['oauth_base_url']= 'https://commons.wikimedia.org/wiki/Special:OAuth';
 $config['publish_endpoint']= 'https://commons.wikimedia.org/w/api.php';
 

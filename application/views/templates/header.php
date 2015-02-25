@@ -1,8 +1,8 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 /*
  * Wikimedia Video Editing Server
- * Copyright (C) 2014 Dan R. Dennedy <dan@dennedy.org>
- * Copyright (C) 2014 CDC Leuphana University Lueneburg
+ * Copyright (C) 2014-2015 Dan R. Dennedy <dan@dennedy.org>
+ * Copyright (C) 2014-2015 CDC Leuphana University Lueneburg
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,9 @@
         <a href="<?= site_url('user/logout') ?>"><?= tr('menu_logout') ?></a> |
     <?php else: ?>
         <a href="<?= site_url('user/login') ?>"><?= tr('menu_login') ?></a> |
+        <?php if (config_item('auth') === User_model::AUTH_LOCAL): ?>
+            <a href="<?= site_url('user/register') ?>"><?= tr('user_register_button') ?></a> |
+        <?php endif; ?>
     <?php endif; ?>
     <?php if (element('role', $session) != User_model::ROLE_GUEST): ?>
     <a href="<?= site_url('file/edit') ?>"><?= tr('menu_upload') ?></a> |

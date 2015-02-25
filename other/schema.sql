@@ -1,7 +1,7 @@
 --
 -- Wikimedia Video Editing Server
--- Copyright (C) 2014 Dan Dennedy <dan@dennedy.org>
--- Copyright (C) 2014 C.D.C. Leuphana University Lueneburg
+-- Copyright (C) 2014-2015 Dan Dennedy <dan@dennedy.org>
+-- Copyright (C) 2014-2015 C.D.C. Leuphana University Lueneburg
 
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --
--- SCHEMA VERSION 0.2
+-- SCHEMA VERSION 0.3
 --
 
 CREATE DATABASE IF NOT EXISTS videoeditserver DEFAULT CHARACTER SET utf8
@@ -31,7 +31,7 @@ DROP TABLE IF EXISTS user;
 CREATE TABLE user (
   id int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
   name varchar(255) NOT NULL, -- may be mapped to an external auth account
-  password char(41), -- if not using external auth, should be encrypted
+  password varchar(255), -- if not using external auth, should be encrypted
   role tinyint unsigned NOT NULL default 0, -- see constants in PHP for values
   language char(3) DEFAULT 'en', -- ISO 639 code for user interface
   comment varchar(1000),

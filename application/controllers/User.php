@@ -1,8 +1,8 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 /*
  * Wikimedia Video Editing Server
- * Copyright (C) 2014 Dan R. Dennedy <dan@dennedy.org>
- * Copyright (C) 2014 CDC Leuphana University Lueneburg
+ * Copyright (C) 2014-2015 Dan R. Dennedy <dan@dennedy.org>
+ * Copyright (C) 2014-2015 CDC Leuphana University Lueneburg
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,8 +63,54 @@ class User extends CI_Controller
                 }
             }
         }
-        // Otherwise, start OAuth.
-        $this->oauth_initiate();
+        if ($this->config->item('auth') === User_model::AUTH_LOCAL) {
+            $this->load->helper('form');
+            $this->load->library('form_validation');
+            $this->form_validation->set_rules('username', 'lang:login_username',
+                'required|callback_exists');
+            $this->form_validation->set_rules('password', 'lang:login_password',
+                'required|callback_check_password');
+
+            // Display login form
+            if ($this->form_validation->run()) {
+                $data = $this->user_model->getByName($this->input->post('username'));
+                $this->establishSession($data['name'], $data['role'], $data['language']);
+                $this->user_model->putUsernameInCookie($data['name']);
+                //TODO Take them back to previous page. For now, show the user page.
+                $this->index($data['name']);
+                return;
+            } else {
+                $this->data['heading'] = tr('login_heading');
+                $this->load->view('templates/header', $this->data);
+                $this->load->view('user/login', $this->data);
+                $this->load->view('templates/footer', $this->data);
+            }
+        } else {
+            // Otherwise, start OAuth.
+            $this->oauth_initiate();
+        }
+    }
+
+    function exists($name)
+    {
+        if (count($this->user_model->getByName($name)))
+            return true;
+        else
+            $this->form_validation->set_message('exists', $this->lang->line('login_error_invalid_user'));
+        return false;
+    }
+
+    function check_password($password)
+    {
+        $username = $this->input->post('username');
+        if (!$this->exists($username))
+            return true;
+        if ($this->user_model->login($username, $password))
+            return true;
+        else
+            $this->form_validation->set_message('check_password',
+                $this->lang->line('login_error_incorrect_password'));
+        return false;
     }
 
     /**
@@ -179,10 +225,76 @@ class User extends CI_Controller
      */
     public function register()
     {
+        if ($this->config->item('auth') === User_model::AUTH_LOCAL) {
+            $this->register_local();
+        } else {
+            $this->register_oauth();
+        }
+    }
+
+    protected function register_local()
+    {
+        $this->load->helper('form');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('username', 'lang:login_username',
+            'trim|max_length[255]|xss_clean|required|callback_not_exists');
+        $this->form_validation->set_rules('password', 'lang:login_password',
+            'required|xss_clean');
+        $this->form_validation->set_rules('confirm_password', 'lang:login_password',
+            'required|matches[password]|xss_clean');
+
+        if ('POST' == $this->input->method(true) && $this->form_validation->run()) {
+            // Update database
+            $data = [
+                'name' => $this->input->post('username'),
+                'password' => $this->input->post('password'),
+                'role' => User_model::ROLE_USER,
+                'language' => $this->input->post('language')
+            ];
+            // The first user is a bureaucrat. Subsequent users default to user.
+            if ($this->db->count_all('user') === 0)
+                $data['role'] = User_model::ROLE_BUREAUCRAT;
+            if ($this->user_model->create($data) !== false) {
+                $this->establishSession($data['name'], $data['role'], $data['language']);
+                $this->user_model->putUsernameInCookie($data['name']);
+                $this->data['role'] = $this->user_model->getRoleByKey($data['role']);
+                $this->load->view('templates/header', $this->data);
+                $this->load->view('user/login_success', $this->data);
+            }
+        } else {
+            // Display registration form
+            $this->data = array_merge($this->data, $_POST);
+            $this->data['heading'] = tr('user_register_local_heading');
+            $this->data['languages'] = $this->user_model->getLanguages();
+            if ('GET' === $this->input->method(true))
+                $this->data['language'] = $this->config->item('language');
+            $this->load->view('templates/header', $this->data);
+            $this->load->view('user/register_local', $this->data);
+        }
+        $this->load->view('templates/footer', $this->data);
+    }
+
+    function not_exists($name)
+    {
+        if (count($this->user_model->getByName($name)))
+            $this->form_validation->set_message('not_exists', tr('user_error_register'));
+        else
+            return true;
+        return false;
+    }
+
+    /**
+     * Process the user request to be added to the app.
+     *
+     * The first user added to the app is a bureaucrat; otherwise, users are
+     * added as a simple user until they are assigned a higher role by a bureaucrat.
+     */
+    protected function register_oauth()
+    {
         $data = [
             'name' => $this->session->userdata('username'),
             'access_token' => $this->session->userdata('access_token'),
-            'role' => user_model::ROLE_USER
+            'role' => User_model::ROLE_USER
         ];
         // Ensure user does not exist.
         if (!count($this->user_model->getByName($data['name']))) {
