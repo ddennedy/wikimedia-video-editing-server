@@ -19,6 +19,7 @@
  */
 
 require APPPATH.'libraries/third_party/SimpleXMLReader.php';
+require APPPATH.'libraries/KdenliveTitleReader.php';
 
 /**
  * A class derived from SimpleXMLReader specialized for MLT XML.
@@ -128,6 +129,13 @@ class MltXmlReader extends SimpleXMLReader
                         $this->resource = joinPaths($this->root, $value);
                     } else {
                         $this->resource = $value;
+                    }
+                } else if ($reader->value === 'xmldata') {
+                    try {
+                        $xml = html_entity_decode($value, ENT_XML1);
+                        $reader = new KdenlivetitleReader();
+                        $this->files = array_merge($this->files, $reader->getFiles($xml));
+                    } catch (Exception $e) {
                     }
                 }
                 // If state is ready.

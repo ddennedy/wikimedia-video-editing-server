@@ -548,7 +548,11 @@ class File_model extends CI_Model
     public function addMissing($fileId, $name, $hash)
     {
         $this->db->where('file_id', $fileId);
-        $this->db->where('hash', $hash);
+        if (!empty($hash)) {
+            $this->db->where('hash', $hash);
+        } else {
+            $this->db->where('name', $name);
+        }
         if ($this->db->get('missing_files')->num_rows() > 0)
             return true;
         $result = $this->db->insert('missing_files', [
