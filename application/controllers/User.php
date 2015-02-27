@@ -257,7 +257,8 @@ class User extends CI_Controller
         $this->load->helper('form');
         $this->load->library('form_validation');
         $this->form_validation->set_rules('username', 'lang:login_username',
-            'trim|max_length[255]|xss_clean|required|callback_not_exists');
+            'trim|max_length[255]|xss_clean|required|is_unique[user.name]',
+            ['is_unique' => tr('user_error_register')]);
         $this->form_validation->set_rules('password', 'lang:login_password',
             'required|xss_clean');
         $this->form_validation->set_rules('confirm_password', 'lang:login_password',
@@ -292,15 +293,6 @@ class User extends CI_Controller
             $this->load->view('user/register_local', $this->data);
         }
         $this->load->view('templates/footer', $this->data);
-    }
-
-    function not_exists($name)
-    {
-        if (count($this->user_model->getByName($name)))
-            $this->form_validation->set_message('not_exists', tr('user_error_register'));
-        else
-            return true;
-        return false;
     }
 
     /**
