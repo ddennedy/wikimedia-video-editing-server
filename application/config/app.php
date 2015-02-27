@@ -27,7 +27,7 @@ $config['publish_endpoint']= 'https://commons.wikimedia.org/w/api.php';
 
 // http://php.local/index.php/oath-callback
 $config['oauth_consumer_token'] = 'cd6de1b723cd2968f8a87ce2b399abd3';
-$config['oauth_consumer_secret'] = '';
+$config['oauth_consumer_secret'] = '2aee3ad868bd51594b42e91450503dee0cfc3426';
 // https://wikimedia-video-editing-server-ddennedy.c9.io/index.php/oauth-callback
 // $config['oauth_consumer_token'] = '7d5a9d401d351da32c8ef0e6df71ae02';
 // secret = 95cc2d20d1682bc85fb6cc4d984bed3b809a72fb
