@@ -32,7 +32,10 @@ class User_model extends CI_Model
     /** @var A constant for the name of an encrypted HTTP cookie that stores a username */
     const COOKIE_NAME     = 'user';
 
+    /** @var The config/app.php constant to use database password authentication */
     const AUTH_LOCAL      = 0;
+
+    /** @var The config/app.php constant to use Wikimedia OAuth authentication */
     const AUTH_WIKIMEDIA  = 1;
 
     /** Construct a User CodeIgniter Model. */

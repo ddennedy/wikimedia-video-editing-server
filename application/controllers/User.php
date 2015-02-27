@@ -91,6 +91,14 @@ class User extends CI_Controller
         }
     }
 
+    /**
+     * Form validation callback to determine if username is valid.
+     *
+     * @see login()
+     * @access private
+     * @param string $name The username
+     * @return bool True if user with name exists
+     */
     function exists($name)
     {
         if (count($this->user_model->getByName($name)))
@@ -100,6 +108,15 @@ class User extends CI_Controller
         return false;
     }
 
+    /**
+     * Form validation callback to determine if password is correct.
+     *
+     * Username is obtained from POST data.
+     * @see login()
+     * @access private
+     * @param string $password The password
+     * @return bool True if password is correct
+     */
     function check_password($password)
     {
         $username = $this->input->post('username');
@@ -232,6 +249,9 @@ class User extends CI_Controller
         }
     }
 
+    /**
+     * Process a form to register a user with password in the database.
+     */
     protected function register_local()
     {
         $this->load->helper('form');
@@ -284,7 +304,7 @@ class User extends CI_Controller
     }
 
     /**
-     * Process the user request to be added to the app.
+     * Process the user request to be added to the app as an OAuth user.
      *
      * The first user added to the app is a bureaucrat; otherwise, users are
      * added as a simple user until they are assigned a higher role by a bureaucrat.
