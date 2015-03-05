@@ -16,7 +16,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --
--- SCHEMA VERSION 0.3
+-- SCHEMA VERSION 0.4
 --
 
 CREATE DATABASE IF NOT EXISTS videoeditserver DEFAULT CHARACTER SET utf8
@@ -56,7 +56,7 @@ CREATE TABLE file (
   language char(3),
   license varchar(255),
   mime_type varchar(255),
-  size_bytes int unsigned,
+  size_bytes bigint unsigned,
   duration_ms int unsigned,
   source_path varchar(255), -- storage location of uploaded file
   source_hash char(32), -- md5 hash of source file based on the algorithm Kdenlive uses
@@ -166,7 +166,7 @@ CREATE TABLE file_history (
   language char(3),
   license varchar(255),
   mime_type varchar(255),
-  size_bytes int unsigned,
+  size_bytes bigint unsigned,
   duration_ms int unsigned,
   source_path varchar(255), -- storage location of uploaded file
   source_hash char(32), -- md5 hash of source file based on the algorithm Kdenlive uses
