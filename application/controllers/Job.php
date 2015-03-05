@@ -41,6 +41,7 @@ class Job extends CI_Controller
         parent::__construct();
         $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
         $this->load->model('job_model');
+        $this->load->model('file_model');
     }
 
     /**
@@ -109,13 +110,13 @@ class Job extends CI_Controller
                                 // the user manually approve it as a supplemental file
                                 // needed by the project
                                 $log = "Validate: $file[source_path].\n";
-                                $log = "Unhandled MIME type: $mimeType.\n";
+                                $log .= "Unhandled MIME type: $mimeType.\n";
                                 $filename = config_item('upload_path') . $file['source_path'];
                                 $file['source_hash'] = $this->getFileHash($filename);
                                 if ($file['source_hash'] === false) {
                                     $log .= "Failed to compute MD5 hash.\n";
                                 } else {
-                                    $file['status'] = intval($file['status']) | File_model::STATUS_VALIDATED;
+                                    $file['status'] = intval($file['status']) | File_model::STATUS_VALIDATED | File_model::STATUS_FINISHED;
                                     // Clear any previous error in case this was re-attempted.
                                     $file['status'] &= ~File_model::STATUS_ERROR;
                                     $result = $this->file_model->staticUpdate($file['id'], [
@@ -218,7 +219,6 @@ class Job extends CI_Controller
      */
     protected function validateAudioVideo($job_id, &$file, $majorType)
     {
-        $this->load->model('file_model');
         $isValid = true;
         $log = "Validate: $file[source_path].\n";
         $filename = config_item('upload_path') . $file['source_path'];
@@ -324,7 +324,6 @@ class Job extends CI_Controller
     protected function validateImage($job_id, &$file, $majorType)
     {
         // verify melt can read it
-        $this->load->model('file_model');
         $isValid = true;
         $log = "Validate: $file[source_path].\n";
         $filename = config_item('upload_path') . $file['source_path'];
@@ -405,7 +404,6 @@ class Job extends CI_Controller
    protected function validateMLTXML($job_id, &$file, $majorType)
     {
         // verify melt can load it
-        $this->load->model('file_model');
         $isValid = true;
         $log = "Validate: $file[source_path].\n";
         $filename = config_item('upload_path') . $file['source_path'];
@@ -600,7 +598,6 @@ class Job extends CI_Controller
     {
         $result = -1;
         if (!empty($file['source_path'])) {
-            $this->load->model('file_model');
             $log = "Transcode: $file[source_path].\n";
             $filename = config_item('upload_path') . $file['source_path'];
             if (is_file($filename)) {
@@ -763,7 +760,6 @@ class Job extends CI_Controller
     {
         $result = -1;
         if (!empty($file['source_path'])) {
-            $this->load->model('file_model');
             $log = "Render: $file[source_path].\n";
             $filename = config_item('upload_path') . $file['source_path'];
             if (is_file($filename)) {
@@ -991,7 +987,6 @@ class Job extends CI_Controller
      */
     protected function checkIfWasMissing($file)
     {
-        $this->load->model('file_model');
         $results = $this->file_model->getMissingByHash($file['source_hash']);
         // For each project file waw missing this file.
         foreach ($results as $missing) {
@@ -1106,7 +1101,6 @@ class Job extends CI_Controller
     public function publishFileRecord($file, $job)
     {
         $result = -1;
-        $this->load->model('file_model');
         if (!empty($file['output_path'])) {
             $filename = basename($file['output_path']);
             $filepath = config_item('transcode_path') . $file['output_path'];
