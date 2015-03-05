@@ -108,6 +108,28 @@ class Job extends CI_Controller
                                 //TODO flag this somehow as possible invalid, let
                                 // the user manually approve it as a supplemental file
                                 // needed by the project
+                                $log = "Validate: $file[source_path].\n";
+                                $log = "Unhandled MIME type: $mimeType.\n";
+                                $filename = config_item('upload_path') . $file['source_path'];
+                                $file['source_hash'] = $this->getFileHash($filename);
+                                if ($file['source_hash'] === false) {
+                                    $log .= "Failed to compute MD5 hash.\n";
+                                } else {
+                                    $file['status'] = intval($file['status']) | File_model::STATUS_VALIDATED;
+                                    // Clear any previous error in case this was re-attempted.
+                                    $file['status'] &= ~File_model::STATUS_ERROR;
+                                    $result = $this->file_model->staticUpdate($file['id'], [
+                                        'source_hash' => $file['source_hash'],
+                                        'status' => $file['status']
+                                    ]);
+                                    if (!$result)
+                                        $log .= "Error updating the file table with hash and status.\n";
+                                }
+                                $this->job_model->update($job_id, [
+                                    'progress' => 100,
+                                    'result' => 0,
+                                    'log' => $log
+                                ]);
                             }
                             if (!empty($file['source_hash']))
                                 $this->checkIfWasMissing($file);
@@ -121,9 +143,11 @@ class Job extends CI_Controller
                     echo "Error: beanstalkd reserve failed\n";
                 }
                 sleep(1);
-            };
+            }
 
             $this->beanstalk->disconnect();
+        } else {
+            echo "Error: failed to connect to beanstalkd\n";
         }
     }
 
