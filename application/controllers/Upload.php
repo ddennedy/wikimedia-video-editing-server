@@ -39,20 +39,31 @@ class Upload extends CI_Controller
 
             // UploadHandler sets $file->url when the download is complete.
             if (isset($file->url)) {
-                if (strlen($file->name) > 2) {
-                    // Change the file name to something more useful.
-                    $record = $this->file_model->getById($file_id);
-                    if (!empty($record['title'])) {
-                        // Use CodeIgniter's url_title() to convert the file's title
-                        // into a filename.
-                        $extension = strrchr($file->name, '.');
-                        $extension = ($extension !== false)? strtolower($extension) : '';
-                        $this->load->helper('text');
-                        $lowerCase = true;
-                        $maxLength = 250;
-                        $basename = character_limiter(url_title($record['title'], '-', $lowerCase), $maxLength);
+                if (!empty($file->name)) {
+                    $name = null;
+                    $this->load->helper('path');
+                    $extension = getExtension($file->name);
+                    if ('titlepart' === $extension) {
+                        // Do not rename Kdenlive files after the file record's title.
+                        // Kdenlive does not store a hash for titleparts in its XML. So,
+                        // we must be able to look them up by their source path.
+                        $name = basename($file->name);
+                    } else {
+                        // Change the file name to something more useful.
+                        $record = $this->file_model->getById($file_id);
+                        if (!empty($record['title'])) {
+                            // Use CodeIgniter's url_title() to convert the file's title
+                            // into a filename.
+                            $this->load->helper('text');
+                            $lowerCase = true;
+                            $maxLength = 250;
+                            $basename = character_limiter(url_title($record['title'], '-', $lowerCase), $maxLength);
+                            $name = "$basename.$extension";
+                        }
+                    }
+                    if (strlen($name) > 2) {
                         // Put file into sub-folder to make directories more manageable.
-                        $name = "$basename[0]/$basename[1]/$basename$extension";
+                        $name = "$name[0]/$name[1]/$name";
                         $fullname = config_item('upload_path') . $name;
                         $fullname = $this->myuploadhandler->getUniqueFilename($fullname);
                         if ($this->myuploadhandler->moveFile(

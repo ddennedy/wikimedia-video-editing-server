@@ -43,3 +43,16 @@ function joinPaths($path1, $path2)
         $path1 .= (strpos($path1.$path2, '\\') !== false)? '\\' : '/';
     return $path1 . $path2;
 }
+
+/**
+ * Get a file name extension.
+ *
+ * @param string $path The file name, optionally with path
+ * @return string The extension or empty string if no extension, in lower case
+ * without the leading dot.
+ */
+function getExtension($path)
+{
+    $extension = pathinfo($path, PATHINFO_EXTENSION);
+    return ($extension !== false)? strtolower($extension) : '';
+}
