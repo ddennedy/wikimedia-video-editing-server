@@ -484,10 +484,11 @@ class Job extends CI_Controller
     /**
      * Resubmit a validation job.
      *
-     * @param int $job_id The ID of the job to resubmit
+     * @param int $file_id The file ID
      */
-    public function redo_validate($job_id)
+    public function redo_validate($file_id)
     {
+        $job = $this->job_model->getByFileIdAndType($file_id, Job_model::TYPE_VALIDATE);
         // Put job into the queue.
         $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
         if ($this->beanstalk->connect()) {
@@ -496,17 +497,18 @@ class Job extends CI_Controller
             $priority = 10;
             $delay = 0;
             $ttr = 60; // seconds
-            $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
+            $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job['id']);
             $this->beanstalk->disconnect();
         }
     }
 
     /** Resubmit a transcoding job.
      *
-     * @param int $job_id The ID of the job to resubmit.
+     * @param int $file_id The file ID
      */
-    public function redo_transcode($job_id)
+    public function redo_transcode($file_id)
     {
+        $job = $this->job_model->getByFileIdAndType($file_id, Job_model::TYPE_TRANSCODE);
         // Put job into the queue.
         $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
         if ($this->beanstalk->connect()) {
@@ -515,7 +517,7 @@ class Job extends CI_Controller
             $priority = 10;
             $delay = 0;
             $ttr = 60; // seconds
-            $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
+            $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job['id']);
             $this->beanstalk->disconnect();
         }
     }
@@ -988,7 +990,7 @@ class Job extends CI_Controller
     protected function checkIfWasMissing($file)
     {
         $results = $this->file_model->getMissingByHash($file['source_hash']);
-        // For each project file waw missing this file.
+        // For each project file that was missing this file.
         foreach ($results as $missing) {
             // Remove this file from missing_files and add to file_children.
             $this->file_model->deleteMissing($missing['id']);
@@ -1041,10 +1043,11 @@ class Job extends CI_Controller
 
     /** Resubmit a publish job.
      *
-     * @param int $job_id The ID of the job to resubmit.
+     * @param int $file_id The file ID
      */
-    public function redo_publish($job_id)
+    public function redo_publish($file_id)
     {
+        $job = $this->job_model->getByFileIdAndType($file_id, Job_model::TYPE_PUBLISH);
         // Put job into the queue.
         $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
         if ($this->beanstalk->connect()) {
@@ -1053,7 +1056,7 @@ class Job extends CI_Controller
             $priority = 10;
             $delay = 0;
             $ttr = 3600; // seconds
-            $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
+            $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job['id']);
             $this->beanstalk->disconnect();
         }
     }
