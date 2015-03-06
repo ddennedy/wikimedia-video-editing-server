@@ -49,13 +49,10 @@ class KdenliveTitleReader extends SimpleXMLReader
             $value = $reader->readString();
             $url = $reader->getAttribute('url');
             if ($url) {
-                $extension = strrchr($url, '.');
-                $file_hash = null;
-                if ('.titlepart' === strtolower($extension))
-                    $file_hash = basename($url, $extension);
+                $extension = getExtension($url);
                 $this->files[$url] = [
                     'mlt_service' => 'kdenlivetitle',
-                    'file_hash' => $file_hash
+                    'file_hash' => null
                 ];
             }
         }
