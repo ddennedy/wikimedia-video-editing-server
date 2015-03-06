@@ -611,12 +611,15 @@ class File_model extends CI_Model
     /**
      * Get missing file records by MD5 hash.
      *
-     * @param string $hash An MD5 digest of a media/dependent file.
+     * @param string $name A file base name
+     * @param string $hash An MD5 digest of a media/dependent file
      * @return array
      */
-    public function getMissingByHash($hash)
+    public function getMissingByNameOrHash($name, $hash)
     {
-        return $this->db->get_where('missing_files', ['hash' => $hash])->result_array();
+        $this->db->where('name', $name);
+        $this->db->or_where('hash', $hash);
+        return $this->db->get('missing_files')->result_array();
     }
 
     /**

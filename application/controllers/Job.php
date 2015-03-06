@@ -989,7 +989,8 @@ class Job extends CI_Controller
      */
     protected function checkIfWasMissing($file)
     {
-        $results = $this->file_model->getMissingByHash($file['source_hash']);
+        $results = $this->file_model->getMissingByNameOrHash(
+            basename($file['source_path']), $file['source_hash']);
         // For each project file that was missing this file.
         foreach ($results as $missing) {
             // Remove this file from missing_files and add to file_children.
