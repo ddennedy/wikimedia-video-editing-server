@@ -1,8 +1,8 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 /*
  * Wikimedia Video Editing Server
- * Copyright (C) 2014 Dan R. Dennedy <dan@dennedy.org>
- * Copyright (C) 2014 CDC Leuphana University Lueneburg
+ * Copyright (C) 2014-2015 Dan R. Dennedy <dan@dennedy.org>
+ * Copyright (C) 2014-2015 CDC Leuphana University Lueneburg
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
  */
 
 require APPPATH.'libraries/third_party/xmlreader-iterators.php';
+require APPPATH.'libraries/KdenliveTitleWriter.php';
 
 /**
  * This class rewrites MLT XML namely to replace external file references
@@ -128,6 +129,18 @@ class MltXmlWriter
                         }
                         $writer->endElement();
                         $reader->next();
+                    } else if ($name === 'xmldata') {
+                        try {
+                            $value = $reader->readString();
+                            $kdenlivetitle = new KdenliveTitleWriter($this->fileData);
+                            $xml = $kdenlivetitle->run(html_entity_decode($value, ENT_XML1), $fixLumaPaths);
+                            $writer->startElement($node->name);
+                            $writer->writeAttribute('name', $name);
+                            $writer->text($xml);
+                            $writer->endElement();
+                            $reader->next();
+                        } catch (Exception $e) {
+                        }
                     } else {
                         $iterator->write();
                     }
@@ -137,6 +150,7 @@ class MltXmlWriter
                 }
             } else if ($isElement && $node->name === 'kdenlive_producer') {
                 $data = array();
+                $xml = $reader->getAttribute('xmldata');
                 if (isset($this->fileData[$reader->getAttribute('resource')])) {
                     $writer->startElement($node->name);
                     $data = $this->fileData[$reader->getAttribute('resource')];
@@ -150,6 +164,23 @@ class MltXmlWriter
                     }
                     $writer->endElement();
                     $reader->next();
+                } else if (!empty($xml)) {
+                    try {
+                        $kdenlivetitle = new KdenliveTitleWriter($this->fileData);
+                        $xml = $kdenlivetitle->run(html_entity_decode($xml, ENT_XML1), $fixLumaPaths);
+                        $writer->startElement($node->name);
+                        if ($reader->moveToFirstAttribute()) {
+                            do {
+                                if ($reader->name === 'xmldata')
+                                    $writer->writeAttribute($reader->name, $xml);
+                                else
+                                    $writer->writeAttribute($reader->name, $reader->value);
+                            } while ($reader->moveToNextAttribute());
+                        }
+                        $writer->endElement();
+                        $reader->next();
+                    } catch (Exception $e) {
+                    }
                 } else {
                     $iterator->write();
                 }
