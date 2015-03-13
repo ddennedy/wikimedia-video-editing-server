@@ -21,7 +21,7 @@
 <h2><?= $heading ?></h2>
 <?= validation_errors(); ?>
 
-<?php echo form_open('user/login') ?>
+<?= form_open(uri_string()) ?>
     <div class="field">
         <label for="username"><?= tr('login_username') ?></label>
         <input type="input" name="username" value="<?= set_value('username') ?>">
@@ -33,6 +33,6 @@
     </div>
 
     <div class="action-bar">
-        <input type="submit" name="submit" value="Login">
+        <input type="submit" name="submit" value="<?= tr('login_heading') ?>">
     </div>
 </form>

@@ -88,6 +88,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 $route['oauth-callback'] = 'user/oauth_callback';
 
 $route['user/login'] = 'user/login';
+$route['user/login_archive'] = 'user/login_archive';
 $route['user/register'] = 'user/register';
 $route['user/logout'] = 'user/logout';
 $route['user/edit'] = 'user/edit';

@@ -25,6 +25,7 @@ $lang['role_admin'] = 'Administrator';
 $lang['role_bureaucrat'] = 'Bureaucrat';
 $lang['language_en'] = 'English';
 $lang['language_de'] = 'German';
+
 $lang['license_self|GFDL|cc-by-sa-all|migration=redundant'] = 'Own work, copyleft, attribution required (Multi-license GFDL, CC-BY-SA all versions)';
 $lang['license_self|Cc-zero'] = 'CC0 1.0 Universal Public Domain Dedication, all rights waived (Public domain)';
 $lang['license_PD-self'] = 'Own work, all rights released (Public domain)';
@@ -189,3 +190,9 @@ $lang['login_confirm_password'] = 'Confirm password';
 $lang['login_success'] = 'Login successful';
 $lang['login_error_invalid_user'] = 'The user does not exist.';
 $lang['login_error_incorrect_password'] = 'The password is incorrect.';
+
+$lang['wikimedia_commons'] = 'Wikimedia Commons';
+$lang['s3_provider'] = 'Internet Archive';
+$lang['s3_connect_action'] = "Connect $lang[s3_provider] Account";
+$lang['s3_auth_error'] = 'The user name or password is incorrect.';
+$lang['s3_get_keys_error'] = 'Error fetching the S3 API keys.';

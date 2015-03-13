@@ -59,6 +59,7 @@ class User_model extends CI_Model
             if ($data['access_token']) {
                 $this->load->library('encryption');
                 $data['access_token'] = $this->encryption->decrypt($data['access_token']);
+                $data['s3_secret_key'] = $this->encryption->decrypt($data['s3_secret_key']);
             }
             return $data;
         }
@@ -78,6 +79,7 @@ class User_model extends CI_Model
         if ($data && $data['access_token']) {
             $this->load->library('encryption');
             $data['access_token'] = $this->encryption->decrypt($data['access_token']);
+            $data['s3_secret_key'] = $this->encryption->decrypt($data['s3_secret_key']);
             return $data;
         } else {
             return false;
@@ -265,5 +267,23 @@ class User_model extends CI_Model
             return $roles[$roleKey];
         else
             return $roles[User_model::ROLE_GUEST];
+    }
+
+    /**
+     * Save the S3 access and secret keys for the user.
+     *
+     * @param string $id The user record ID
+     * @param string $access The S3 access key
+     * @param string $secret The S3 secret key
+     */
+    public function setS3Keys($id, $access, $secret)
+    {
+        $this->load->library('encryption');
+        $secret = $this->encryption->encrypt($secret);
+        $this->db->where('id', $id);
+        $this->db->update('user', [
+            's3_access_key' => $access,
+            's3_secret_key' => $secret
+        ]);
     }
 }

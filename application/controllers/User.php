@@ -524,4 +524,65 @@ class User extends CI_Controller
         ]);
         $this->data['session'] = $this->session->userdata();
     }
+
+    /**
+     * Attempt to authenticate with Interet Archive and get S3 keys.
+     */
+    public function login_archive()
+    {
+        $this->load->helper('form');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('username', 'lang:login_username',
+            'required');
+        $this->form_validation->set_rules('password', 'lang:login_password',
+            'required|callback_authenticate_archive');
+
+        // Display login form
+        if ($this->form_validation->run()) {
+            $this->data['role'] = tr('s3_provider');
+            $this->load->view('templates/header', $this->data);
+            $this->load->view('user/login_success', $this->data);
+            $this->load->view('templates/footer', $this->data);
+        } else {
+            $this->data['heading'] = tr('s3_connect_action');
+            $this->load->view('templates/header', $this->data);
+            $this->load->view('user/login', $this->data);
+            $this->load->view('templates/footer', $this->data);
+         }
+    }
+
+    /**
+     * Form validation callback to determine if Internet Archive username and password is correct.
+     *
+     * Username is obtained from POST data.
+     * @see login_archive()
+     * @access private
+     * @param string $password The password
+     * @return bool True if username and password is correct and fetching the S3 keys succeeded.
+     */
+    function authenticate_archive($password)
+    {
+        $this->load->library('InternetArchive', $this->config->config);
+        $username = $this->input->post('username');
+        $signature = $this->internetarchive->login($username, $password);
+        if ($signature) {
+            $result = $this->internetarchive->getS3Keys($username, $signature);
+            if ($result['success']) {
+                $key = $result['key'];
+                echo "<!-- S3 Access Key: $key[s3accesskey] -->\n";
+                echo "<!-- S3 Secret Key: $key[s3secretkey] -->\n";
+                $this->user_model->setS3Keys($this->session->userdata('userid'),
+                    $key['s3accesskey'], $key['s3secretkey']);
+                return true;
+            } else {
+                $this->form_validation->set_message('authenticate_archive',
+                    tr('s3_get_keys_error'));
+            }
+        } else {
+            // Login failed
+            $this->form_validation->set_message('authenticate_archive',
+                tr('s3_auth_error'));
+        }
+        return false;
+    }
 }

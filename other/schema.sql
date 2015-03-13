@@ -16,7 +16,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --
--- SCHEMA VERSION 0.4
+-- SCHEMA VERSION 0.5
 --
 
 CREATE DATABASE IF NOT EXISTS videoeditserver DEFAULT CHARACTER SET utf8
@@ -36,6 +36,8 @@ CREATE TABLE user (
   language char(3) DEFAULT 'en', -- ISO 639 code for user interface
   comment varchar(1000),
   access_token varchar(255), -- encrypted
+  s3_access_key varchar(64),
+  s3_secret_key varchar(255),-- encrypted
   updated_at timestamp NOT NULL
 );
 CREATE UNIQUE INDEX user_name ON user (name);

@@ -22,10 +22,17 @@
 <p><?= $comment ?></p>
 <hr>
 <?php if ($isEditable): ?>
-<a href="<?= site_url('user/edit/' . $name) ?>"><?= tr('edit') ?></a> |
-<?php endif; ?>
-<a href="https://commons.wikimedia.org/wiki/User:<?= rawurlencode($name) ?>">
-    Wikimedia Commons <?= tr('user_name') ?></a>
-<?php if (count($files)) echo $this->table->generate($files) ?>
-<?php if (isset($this->pagination)) echo $this->pagination->create_links(); ?>
+<a href="<?= site_url('user/edit/' . $name) ?>"><?= tr('edit') ?></a>
+<?php endif;
+if (!empty($access_token)): ?>
+| <a href="https://commons.wikimedia.org/wiki/User:<?= rawurlencode($name) ?>">
+    <?= tr('wikimedia_commons') . tr('user_name') ?></a>
+<?php endif;
+if (empty($s3_access_key)): ?>
+| <a href="<?= site_url('user/login_archive') ?>">
+    <?= tr('s3_connect_action') ?></a>
+<?php endif;
+if (count($files)) echo $this->table->generate($files);
+if (isset($this->pagination)) echo $this->pagination->create_links();
+?>
 <p><small><?= $footer ?></small></p>
