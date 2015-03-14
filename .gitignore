@@ -10,3 +10,6 @@ uploads/
 transcodes/
 .idea/
 docs
+composer.phar
+composer.lock
+vendor/
