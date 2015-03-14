@@ -56,11 +56,11 @@ class User_model extends CI_Model
         if ($name) {
             $query = $this->db->get_where('user', ['name' => $name]);
             $data = $query->row_array();
-            if ($data['access_token']) {
-                $this->load->library('encryption');
+            $this->load->library('encryption');
+            if (!empty($data['access_token']))
                 $data['access_token'] = $this->encryption->decrypt($data['access_token']);
+            if (!empty($data['s3_secret_key']))
                 $data['s3_secret_key'] = $this->encryption->decrypt($data['s3_secret_key']);
-            }
             return $data;
         }
         return array();
@@ -78,8 +78,10 @@ class User_model extends CI_Model
         $data = $query->row_array();
         if ($data && $data['access_token']) {
             $this->load->library('encryption');
-            $data['access_token'] = $this->encryption->decrypt($data['access_token']);
-            $data['s3_secret_key'] = $this->encryption->decrypt($data['s3_secret_key']);
+            if (!empty($data['access_token']))
+                $data['access_token'] = $this->encryption->decrypt($data['access_token']);
+            if (!empty($data['s3_secret_key']))
+                $data['s3_secret_key'] = $this->encryption->decrypt($data['s3_secret_key']);
             return $data;
         } else {
             return false;
