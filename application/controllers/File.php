@@ -61,9 +61,11 @@ class File extends CI_Controller
                             $file['size_bytes'] = $size;
                             $file['upload_button_text'] = tr('file_upload_resume',
                                 ['filename' => basename($file['source_path'])]);
+                            $file['base_name'] = basename($file['source_path']);
                             unset($file['source_path']);
                         }
                     } else {
+                        $file['base_name'] = basename($file['source_path']);
                         unset($file['source_path']);
                         $file['size_bytes'] = 0;
                     }

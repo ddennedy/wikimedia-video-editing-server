@@ -142,6 +142,7 @@ $lang['file_edit_message'] = '';
 $lang['file_upload_button'] = 'Click to choose a file or drag &amp; drop a file onto the page.';
 $lang['file_upload_success'] = 'File upload completed successfully!';
 $lang['file_upload_resume'] = 'Incomplete: choose "{filename}" to resume.';
+$lang['file_upload_error_network'] = 'Upload failed due to network error or server not responding.';
 $lang['file_upload'] = 'Upload';
 $lang['file_mime_type'] = 'MIME Type';
 $lang['file_size'] = 'Size';

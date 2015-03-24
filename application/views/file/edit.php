@@ -165,14 +165,22 @@
             url: '<?= site_url('upload/index/' . $id) ?>',
             dataType: 'json',
             maxChunkSize: 10000000, // 10 MB
-            uploadedBytes: <?= isset($size_bytes)? $size_bytes : 0 ?>,
+            maxRetries: 100,
+            retryTimeout: 500,
             add: function(e, data) {
                 $('#upload-button').hide();
                 $('#cancel-button').show();
                 $('#status').text('');
                 $('#save-button').hide();
                 $('#cancel-link').hide();
-                jqXHR = data.submit();
+                data.context = this;
+                $.getJSON('<?= site_url('upload') ?>',
+                    {file: <?= empty($base_name)? 'data.files[0].name' : "'$base_name'" ?>},
+                    function (result) {
+                        data.uploadedBytes = result.file && result.file.size;
+                        jqXHR = data.submit();
+                    }
+                );
             },
             done: function (e, data) {
                 $.each(data.result.files, function (index, file) {
@@ -199,6 +207,41 @@
                 $('#progress-bar').css('width', progress + '%');
                 $('#progress-bar').html('&nbsp;' + progress + '%');
                 $('#progress-bar').show();
+            },
+            fail: function (e, data) {
+                // jQuery Widget Factory uses "namespace-widgetname" since version 1.10.0:
+                var fu = $(this).data('blueimp-fileupload') || $(this).data('fileupload');
+                var retries = data.context.retries || 0;
+                var retry = function () {
+                        $.getJSON('<?= site_url('upload') ?>',
+                            {file:<?= empty($base_name)? 'data.files[0].name' : "'$base_name'" ?>})
+                            .done(function (result) {
+                                data.uploadedBytes = result.file && result.file.size;
+                                // clear the previous data:
+                                data.data = null;
+                                data.submit();
+                            })
+                            .fail(function () {
+                                fu._trigger('fail', e, data);
+                            });
+                    };
+                if (data.errorThrown !== 'abort' && data.uploadedBytes < data.files[0].size) {
+                    if (retries < fu.options.maxRetries) {
+                        retries += 1;
+                        data.context.retries = retries;
+                        window.setTimeout(retry, retries * fu.options.retryTimeout);
+                        return;
+                    } else {
+                        fu._trigger('done', e, {
+                            'result': {
+                                'files': [{
+                                    'error': '<?= tr('file_upload_error_network') ?>'
+                                }]
+                            }
+                        });
+                    }
+                }
+                data.context.retries = 0;
             }
         });
         $('#cancel-button').click(function (e) {

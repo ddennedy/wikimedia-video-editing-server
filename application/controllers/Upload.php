@@ -107,8 +107,12 @@ class Upload extends CI_Controller
                 // Put the filename into the database without making a revision.
                 $this->file_model->staticUpdate($file_id, $data);
             }
-        } else {
-            set_status_header('405');
+        } else if ('GET' == $this->input->method(true)) {
+            $this->load->library('UploadHandler', [
+                'upload_dir' => config_item('upload_path'),
+                'upload_url' => base_url('uploads') . '/', // This is actually for making a download url.
+                'image_versions' => array()
+            ]);
         }
     }
 
