@@ -31,7 +31,8 @@ class UploadHandler
         'max_width' => 'Image exceeds maximum width',
         'min_width' => 'Image requires a minimum width',
         'max_height' => 'Image exceeds maximum height',
-        'min_height' => 'Image requires a minimum height'
+        'min_height' => 'Image requires a minimum height',
+        'chunked_sync_error' => 'The uploaded chunk does not match the existing file size.'
     );
 
     function __construct($options = null, $initialize = true) {
@@ -388,6 +389,15 @@ class UploadHandler
             $file->error = $this->get_error_message('max_number_of_files');
             return false;
         }
+        $file_path = $this->get_upload_path($file->name);
+        if (isset($_SERVER['HTTP_CONTENT_RANGE']) && is_file($file_path)) {
+            $content_range = preg_split('/[^0-9]+/', $_SERVER['HTTP_CONTENT_RANGE']);
+            $uploaded_bytes = $this->fix_integer_overflow(intval($content_range[1]));
+            if ($uploaded_bytes !== $this->get_file_size($file_path)) {
+                $file->error = $this->get_error_message('chunked_sync_error');
+                return false;
+            }
+        }
         list($img_width, $img_height) = @getimagesize($uploaded_file);
         if (is_int($img_width)) {
             if ($this->options['max_width'] && $img_width > $this->options['max_width']) {
@@ -459,8 +469,10 @@ class UploadHandler
     }
 
     protected function get_file_name($name, $type, $index, $content_range) {
+        $name = $this->trim_file_name($name, $type, $index, $content_range);
+        if ($content_range) return $name;
         return $this->get_unique_filename(
-            $this->trim_file_name($name, $type, $index, $content_range),
+            $name,
             $type,
             $index,
             $content_range
