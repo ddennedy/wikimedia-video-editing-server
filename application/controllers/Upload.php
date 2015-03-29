@@ -95,7 +95,7 @@ class Upload extends CI_Controller
             $data = [
                 'source_path' => $file->name,
                 'size_bytes' => $file->total_size,
-                'mime_type' => $file->type,
+                'mime_type' => $this->getMimeType($file->type, config_item('upload_path') . $file->name),
                 'status' => File_model::STATUS_UPLOADED
             ];
 
@@ -114,6 +114,28 @@ class Upload extends CI_Controller
                 'image_versions' => array()
             ]);
         }
+    }
+
+    /**
+     * Return the MIME type for a file record.
+     *
+     * @param string $mimeType The current MIME type
+     * @param string $filePath Path to the file
+     * @return string
+     */
+    protected function getMimeType($mimeType, $filePath)
+    {
+        if (empty($mimeType) || 'application/octet-stream' === $mimeType) {
+            $this->load->helper('file');
+            $mimeType = get_mime_by_extension($filePath);
+            if (empty($mimeType)) {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mimeType = finfo_file($finfo, $filePath);
+                finfo_close($finfo);
+                //$mimeType = trim(shell_exec("file --brief --mime-type '$filename'"));
+            }
+        }
+        return strtolower($mimeType);
     }
 
     /**

@@ -90,12 +90,14 @@ class Job extends CI_Controller
                         $extension = ($extension !== false)? strtolower($extension) : '';
 
                         // Get the MIME type.
-                        $mimeType = $this->getMimeType($file);
+                        $mimeType = $file['mime_type'];
                         if (!empty($mimeType)) {
                             $isValid = true;
                             $majorType = explode('/', $mimeType)[0];
                             echo "mimeType: $mimeType\n";
-                            if ($majorType === 'audio' || $majorType === 'video') {
+                            if ($majorType === 'audio' ||
+                                $majorType === 'video' ||
+                                $mimeType  === 'application/mxf') {
                                 $isValid = $this->validateAudioVideo($job_id, $file, $majorType);
                             } else if ($majorType === 'image' || $extension === '.svg') {
                                 $isValid = $this->validateImage($job_id, $file, $majorType);
@@ -150,31 +152,6 @@ class Job extends CI_Controller
         } else {
             echo "Error: failed to connect to beanstalkd\n";
         }
-    }
-
-    /**
-     * Return the MIME type for a file record.
-     *
-     * @param array $file A file record.
-     * @return string
-     */
-    protected function getMimeType($file)
-    {
-        $mimeType = '';
-        if (!empty($file['mime_type'])) {
-            $mimeType = $file['mime_type'];
-        } else {
-            $this->load->helper('file');
-            $mimeType = get_mime_by_extension($file['source_path']);
-            if (empty($mimeType)) {
-                $filename = config_item('upload_path') . $file['source_path'];
-                $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                $mimeType = finfo_file($finfo, $filename);
-                finfo_close($finfo);
-                //$mimeType = trim(shell_exec("file --brief --mime-type '$filename'"));
-            }
-        }
-        return strtolower($mimeType);
     }
 
     /**
@@ -611,7 +588,7 @@ class Job extends CI_Controller
                     $log .= "Error updating the file table with converting status.\n";
 
                 // Get the MIME type.
-                $mimeType = $this->getMimeType($file);
+                $mimeType = $file['mime_type'];
                 if (!empty($mimeType)) {
                     // Skip transcoding if already Ogg or WebM.
                     if (strpos($mimeType, '/ogg') !== false || strpos($mimeType, '/webm')) {
@@ -632,12 +609,10 @@ class Job extends CI_Controller
                             $result = $this->runFFmpeg($file, $log, $job,
                                 config_item('transcode_audio_extension'),
                                 config_item('transcode_audio_options'));
-                        } elseif ($majorType === 'video') {
+                        } else {
                             $result = $this->runFFmpeg($file, $log, $job,
                                 config_item('transcode_video_extension'),
                                 config_item('transcode_video_options'));
-                        } else {
-                            $log .= "Error: unable to transcode MIME type $mimeType\n";
                         }
                     }
                 } else {
