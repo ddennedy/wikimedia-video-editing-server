@@ -206,11 +206,13 @@ class Job extends CI_Controller
             // verify tracks match codec_type
             $ffprobe = json_decode($json);
             $isValid = false;
-            foreach ($ffprobe->streams as $stream) {
-                if (isset($stream->codec_type) && $stream->codec_type === $majorType) {
-                    $log .= "ffprobe found a stream with codec_type \"$stream->codec_type\" that matches the MIME type.\n";
-                    $isValid = true;
-                    break;
+            if (isset($ffprobe->streams)) {
+                foreach ($ffprobe->streams as $stream) {
+                    if (isset($stream->codec_type) && $stream->codec_type === $majorType) {
+                        $log .= "ffprobe found a stream with codec_type \"$stream->codec_type\" that matches the MIME type.\n";
+                        $isValid = true;
+                        break;
+                    }
                 }
             }
             if (!$isValid)
