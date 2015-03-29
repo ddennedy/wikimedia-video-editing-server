@@ -26,7 +26,7 @@
 <?php endif;
 if (!empty($access_token)): ?>
 | <a href="https://commons.wikimedia.org/wiki/User:<?= rawurlencode($name) ?>">
-    <?= tr('wikimedia_commons') . tr('user_name') ?></a>
+    <?= tr('wikimedia_commons') . ' ' . tr('user_name') ?></a>
 <?php endif;
 if (empty($s3_access_key)): ?>
 | <a href="<?= site_url('user/login_archive') ?>">
