@@ -368,7 +368,8 @@ class User extends CI_Controller
                 $offset |= $this->input->get('offset');
                 $this->pagination->initialize([
                     'base_url' => site_url('user/'. $name),
-                    'total_rows' => count($result)
+                    'total_rows' => count($result),
+                    'uri_segment' => 4
                 ]);
                 $result = array_slice($result, $offset, $this->pagination->per_page);
             }
