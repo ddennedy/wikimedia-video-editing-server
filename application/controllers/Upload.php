@@ -92,10 +92,11 @@ class Upload extends CI_Controller
             }
 
             // Collect data updates for database.
+            $file->type = $this->getMimeType(null, config_item('upload_path') . $file->name);
             $data = [
                 'source_path' => $file->name,
                 'size_bytes' => $file->total_size,
-                'mime_type' => $this->getMimeType($file->type, config_item('upload_path') . $file->name),
+                'mime_type' => $file->type,
                 'status' => File_model::STATUS_UPLOADED
             ];
 
