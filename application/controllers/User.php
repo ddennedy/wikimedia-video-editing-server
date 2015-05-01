@@ -547,7 +547,7 @@ class User extends CI_Controller
         } else {
             $this->data['heading'] = tr('s3_connect_action');
             $this->load->view('templates/header', $this->data);
-            $this->load->view('user/login', $this->data);
+            $this->load->view('user/login_ia', $this->data);
             $this->load->view('templates/footer', $this->data);
          }
     }

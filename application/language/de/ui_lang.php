@@ -186,6 +186,7 @@ $lang['date_to_placeholder'] = 'to';
 // Local database password authentication form
 $lang['login_heading'] = 'Login';
 $lang['login_username'] = 'User ID';
+$lang['login_email'] = 'E-mail address';
 $lang['login_password'] = 'Password';
 $lang['login_confirm_password'] = 'Confirm password';
 $lang['login_success'] = 'Login successful';
