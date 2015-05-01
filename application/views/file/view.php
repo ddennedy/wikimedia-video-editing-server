@@ -33,6 +33,9 @@
 <?php if ($isDeletable): ?>
         | <a href="<?= site_url('file/delete/' . $id) ?>"><?= tr('delete') ?></a>
 <?php endif; ?>
+<?php if (!empty($S3URL)): ?>
+        | <a href="<?= htmlspecialchars($S3URL) ?>"><?= tr('s3_provider') ?></a>
+<?php endif; ?>
 <?php if ($isDownloadable): ?>
         | <a href="<?= site_url('file/download/' . $id) ?>"><?= tr('download') ?></a>
 <?php endif; ?>

@@ -587,7 +587,7 @@ class File_model extends CI_Model
      */
     public function getChildren($id)
     {
-        $this->db->select('child_id, file.mime_type, file.title, file.author');
+        $this->db->select('child_id, file.mime_type, file.title, file.author, file.source_path, file.output_path');
         $this->db->where('file_id', $id);
         $this->db->join('file', 'child_id = file.id');
         return $this->db->get('file_children')->result_array();

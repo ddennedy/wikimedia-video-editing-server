@@ -76,7 +76,7 @@ class User_model extends CI_Model
     {
         $query = $this->db->get_where('user', ['id' => $id]);
         $data = $query->row_array();
-        if ($data && $data['access_token']) {
+        if ($data && ($data['access_token'] || $data['password'])) {
             $this->load->library('encryption');
             if (!empty($data['access_token']))
                 $data['access_token'] = $this->encryption->decrypt($data['access_token']);

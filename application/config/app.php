@@ -49,6 +49,7 @@ $config['beanstalkd_tube_validate'] = 'videoeditserver-validate';
 $config['beanstalkd_tube_transcode'] = 'videoeditserver-transcode';
 $config['beanstalkd_tube_render'] = 'videoeditserver-render';
 $config['beanstalkd_tube_publish'] = 'videoeditserver-publish';
+$config['beanstalkd_tube_archive'] = 'videoeditserver-archive';
 
 $config['transcode_audio_extension'] = 'ogg';
 $config['transcode_audio_options'] = '-map 0:a -codec libvorbis -qscale:a 5 -y';
@@ -63,3 +64,6 @@ $config['mlt_lumas_path'] = '/opt/Shotcut/Shotcut.app/share/mlt/lumas';
 $config['kdenlive_lumas_path'] = '/opt/kdenlive/share/apps/kdenlive/lumas';
 
 $config['auto_register'] = true;
+// The generic video editing server S3 account credentials.
+$config['s3_access_key'] = '';
+$config['s3_secret_key'] = '';

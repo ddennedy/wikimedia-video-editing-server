@@ -195,7 +195,7 @@ class File extends CI_Controller
             if (!empty($file['source_path']) &&
                     is_file(config_item('upload_path').$file['source_path'])) {
                 $size = filesize(config_item('upload_path').$file['source_path']);
-                if ($size != $file['size_bytes']) {
+                if ($size != $file['size_bytes'] && $size !== 0) {
                     $status = tr('upload_partialupload');
                 } else {
                     $status = tr('status_uploaded');
@@ -211,11 +211,17 @@ class File extends CI_Controller
                             if (!$job) $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_RENDER);
                             if ($job) $status .= ": $job[progress]%";
                         } else if ($file['status'] & File_model::STATUS_FINISHED) {
+                            $this->load->library('InternetArchive', $this->config->config);
+                            $this->data['S3URL'] = $this->internetarchive->getItemURL($file);
                             $this->data['isDownloadable'] = true;
                             // Show project files as rendered.
                             if ($this->data['isProject'] && is_file(config_item('transcode_path').$file['output_path'])) {
-                                $status .= ' =&gt; <a href="' . base_url(config_item('transcode_vdir') . $file['output_path']) . '">';
-                                $status .= tr('status_rendered') . '</a>';
+                                if ($size === 0) { //archived
+                                    $status .= ' =&gt; ' . tr('status_rendered');
+                                } else {
+                                    $status .= ' =&gt; <a href="' . base_url(config_item('transcode_vdir') . $file['output_path']) . '">';
+                                    $status .= tr('status_rendered') . '</a>';
+                                }
                                 if (($file['status'] & File_model::STATUS_PUBLISHED) && !empty($file['publish_id'])) {
                                     // Show publish status.
                                     $this->load->library('parser');
@@ -229,8 +235,12 @@ class File extends CI_Controller
                             }
                             // Ogg and WebM files are not transcoded and do not set output_path.
                             else if (is_file(config_item('transcode_path').$file['output_path'])) {
-                                $status .= ' =&gt; <a href="' . base_url(config_item('transcode_vdir') . $file['output_path']) . '">';
-                                $status .= tr('status_converted') . '</a>';
+                                if ($size === 0) { // archived
+                                    $status .= ' =&gt; ' . tr('status_converted');
+                                } else {
+                                    $status .= ' =&gt; <a href="' . base_url(config_item('transcode_vdir') . $file['output_path']) . '">';
+                                    $status .= tr('status_converted') . '</a>';
+                                }
                             }
                         } else if ($file['status'] & File_model::STATUS_ERROR) {
                             $this->load->model('job_model');
@@ -338,7 +348,7 @@ class File extends CI_Controller
                 if (!empty($file['source_path']) &&
                         is_file(config_item('upload_path').$file['source_path'])) {
                     $size = filesize(config_item('upload_path').$file['source_path']);
-                    if ($size != $file['size_bytes']) {
+                    if ($size != $file['size_bytes'] && $size !== 0) {
                         // Need to resume file upload.
                         $this->data['size_bytes'] = $size;
                         $this->data['upload_button_text'] = tr('file_upload_resume',
@@ -393,6 +403,8 @@ class File extends CI_Controller
                         $row['title'] = anchor("file/$row[child_id]", htmlspecialchars($row['title']));
                         $row['download'] = anchor("file/download/$row[child_id]", tr('download'));
                         unset($row['child_id']);
+                        unset($row['source_path']);
+                        unset($row['output_path']);
                     }
                     $this->load->library('table');
                     $this->table->set_heading('', tr('file_title'), tr('file_author'), '');
@@ -704,17 +716,21 @@ class File extends CI_Controller
         if ($file && ($file['status'] & File_model::STATUS_VALIDATED)) {
             if ($file['output_path']) {
                 $filename = config_item('transcode_path').$file['output_path'];
-                if (is_file($filename)) {
+                if (filesize($filename)) {
                     $this->load->helper('download');
                     force_download($filename, null);
-                    return;
+                } else {
+                    $this->load->library('InternetArchive', $this->config->config);
+                    $this->internetarchive->forceDownload($id, $file['output_path']);
                 }
             } else if ($file['source_path']) {
                 $filename = config_item('upload_path').$file['source_path'];
-                if (is_file($filename)) {
+                if (filesize($filename)) {
                     $this->load->helper('download');
                     force_download($filename, null);
-                    return;
+                } else {
+                    $this->load->library('InternetArchive', $this->config->config);
+                    $this->internetarchive->forceDownload($id, $file['source_path']);
                 }
             }
         }
@@ -733,7 +749,13 @@ class File extends CI_Controller
         if ($file && ($file['status'] & File_model::STATUS_VALIDATED)) {
             if ($file['source_path']) {
                 $filename = config_item('upload_path').$file['source_path'];
-                if (is_file($filename)) {
+                // Restore file from archive if needed.
+                if (!filesize($filename)) {
+                    $log .= "Restoring from archive: $filename.\n";
+                    $this->load->library('InternetArchive', $this->config->config);
+                    $this->internetarchive->download($id , $filename);
+                }
+                if (filesize($filename)) {
                     $this->load->library('MltXmlHelper');
                     $log = '';
                     $childFiles = $this->mltxmlhelper->getFilesData($filename, $log);
@@ -742,15 +764,21 @@ class File extends CI_Controller
                     // If still valid, create a new version of the XML with proxy clips.
                     if ($isValid) {
                         // If still valid, get new metadata for each proxy file.
-                        $this->mltxmlhelper->getFileMetadata($childFiles, $log);
+                        //TODO: Generate this proxy version of the project at validation time and store it.
+                        //$this->mltxmlhelper->getFileMetadata($childFiles, $log);
                         // Prepare the output file.
                         $this->load->library('MltXmlWriter', $childFiles);
                         $xml = $this->mltxmlwriter->run($filename);
+
+                        // Truncate the restored files.
+                        // force_download() calls exit() so we must cleanup now.
+                        fclose(fopen($filename, 'w'));
+
                         $this->load->helper('download');
                         force_download(basename($file['source_path']), $xml);
-                        return;
                     } else {
                         show_error($log, 500, tr('file_error_heading'));
+                        return;
                     }
                 }
             }
@@ -770,7 +798,13 @@ class File extends CI_Controller
         if ($file) {
             if ($file['source_path']) {
                 $filename = config_item('upload_path').$file['source_path'];
-                if (is_file($filename)) {
+                // Restore file from archive if needed.
+                if (!filesize($filename)) {
+                    $log .= "Restoring from archive: $filename.\n";
+                    $this->load->library('InternetArchive', $this->config->config);
+                    $this->internetarchive->download($id , $filename);
+                }
+                if (filesize($filename)) {
                     $this->load->library('MltXmlHelper');
                     $log = '';
                     $childFiles = $this->mltxmlhelper->getFilesData($filename, $log);
@@ -779,15 +813,21 @@ class File extends CI_Controller
                     // If still valid, create a new version of the XML with proxy clips.
                     if ($isValid) {
                         // If still valid, get new metadata for each proxy file.
-                        $this->mltxmlhelper->getFileMetadata($childFiles, $log);
+                        //TODO: Generate this proxy version of the project at validation time and store it.
+                        //$this->mltxmlhelper->getFileMetadata($childFiles, $log);
                         // Prepare the output file.
                         $this->load->library('MltXmlWriter', $childFiles);
                         $xml = $this->mltxmlwriter->run($filename);
+
+                        // Truncate the restored files.
+                        // force_download() calls exit() so we must cleanup now.
+                        fclose(fopen($filename, 'w'));
+
                         $this->load->helper('download');
                         force_download(basename($file['source_path']), $xml);
-                        return;
                     } else {
                         show_error($log, 500, tr('file_error_heading'));
+                        return;
                     }
                 }
             }

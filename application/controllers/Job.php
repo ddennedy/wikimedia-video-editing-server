@@ -42,6 +42,7 @@ class Job extends CI_Controller
         $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
         $this->load->model('job_model');
         $this->load->model('file_model');
+        $this->load->library('InternetArchive', $this->config->config);
     }
 
     /**
@@ -85,57 +86,79 @@ class Job extends CI_Controller
                     $file = $this->job_model->getWithFileById($job_id);
                     if ($file && !empty($file['source_path'])) {
                         $filename = config_item('upload_path') . $file['source_path'];
-                        // TODO verify file still exists
                         $extension = strrchr($file['source_path'], '.');
                         $extension = ($extension !== false)? strtolower($extension) : '';
 
                         // Get the MIME type.
                         $mimeType = $file['mime_type'];
                         if (!empty($mimeType)) {
-                            $isValid = true;
-                            $majorType = explode('/', $mimeType)[0];
-                            echo "mimeType: $mimeType\n";
-                            if ($majorType === 'audio' ||
-                                $majorType === 'video' ||
-                                $mimeType  === 'application/mxf') {
-                                $isValid = $this->validateAudioVideo($job_id, $file, $majorType);
-                            } else if ($majorType === 'image' || $extension === '.svg') {
-                                $isValid = $this->validateImage($job_id, $file, $majorType);
-                            } else if ($mimeType === 'application/xml' ||
-                                       $mimeType === 'text/xml' ||
-                                       $mimeType === 'application/x-kdenlive' ||
-                                       $mimeType === 'application/mlt+xml') {
-                                // if mlt xml, verify melt can read it
-                                $isValid = $this->validateMLTXML($job_id, $file, $majorType);
-                            } else {
-                                //TODO flag this somehow as possible invalid, let
-                                // the user manually approve it as a supplemental file
-                                // needed by the project
-                                $log = "Validate: $file[source_path].\n";
-                                $log .= "Unhandled MIME type: $mimeType.\n";
-                                $filename = config_item('upload_path') . $file['source_path'];
-                                $file['source_hash'] = $this->getFileHash($filename);
-                                if ($file['source_hash'] === false) {
-                                    $log .= "Failed to compute MD5 hash.\n";
-                                } else {
-                                    $file['status'] = intval($file['status']) | File_model::STATUS_VALIDATED | File_model::STATUS_FINISHED;
-                                    // Clear any previous error in case this was re-attempted.
-                                    $file['status'] &= ~File_model::STATUS_ERROR;
-                                    $result = $this->file_model->staticUpdate($file['id'], [
-                                        'source_hash' => $file['source_hash'],
-                                        'status' => $file['status']
-                                    ]);
-                                    if (!$result)
-                                        $log .= "Error updating the file table with hash and status.\n";
+                            // Restore file from archive if needed.
+                            $filename = config_item('upload_path') . $file['source_path'];
+                            if (!filesize($filename)) {
+                                $log .= "Restoring from archive: $filename.\n";
+                                $status = $this->internetarchive->download($file['id'], $filename);
+                                if ($status !== true) {
+                                    $priority = 10;
+                                    $delay = 3;
+                                    $this->beanstalk->release($job['id'], $priority, $delay);
+                                    sleep(60);
+                                    continue;
                                 }
-                                $this->job_model->update($job_id, [
-                                    'progress' => 100,
-                                    'result' => 0,
-                                    'log' => $log
-                                ]);
                             }
-                            if (!empty($file['source_hash']))
-                                $this->checkIfWasMissing($file);
+                            if (filesize($filename)) {
+                                $isValid = true;
+                                $toArchive = true;
+                                $majorType = explode('/', $mimeType)[0];
+                                echo "mimeType: $mimeType\n";
+                                if ($majorType === 'audio' ||
+                                    $majorType === 'video' ||
+                                    $mimeType  === 'application/mxf') {
+                                    $isValid = $this->validateAudioVideo($job_id, $file, $majorType);
+                                    $toArchive = !$isValid;
+                                } else if ($majorType === 'image' || $extension === '.svg') {
+                                    $isValid = $this->validateImage($job_id, $file, $majorType);
+                                } else if ($mimeType === 'application/xml' ||
+                                        $mimeType === 'text/xml' ||
+                                        $mimeType === 'application/x-kdenlive' ||
+                                        $mimeType === 'application/mlt+xml') {
+                                    // if mlt xml, verify melt can read it
+                                    $isValid = $this->validateMLTXML($job_id, $file, $majorType);
+                                    $toArchive = !$isValid;
+                                } else {
+                                    //TODO flag this somehow as possible invalid, let
+                                    // the user manually approve it as a supplemental file
+                                    // needed by the project
+                                    $log = "Validate: $file[source_path].\n";
+                                    $log .= "Unhandled MIME type: $mimeType.\n";
+                                    $file['source_hash'] = $this->getFileHash($filename);
+                                    if ($file['source_hash'] === false) {
+                                        $log .= "Failed to compute MD5 hash.\n";
+                                    } else {
+                                        $file['status'] = intval($file['status']) | File_model::STATUS_VALIDATED | File_model::STATUS_FINISHED;
+                                        // Clear any previous error in case this was re-attempted.
+                                        $file['status'] &= ~File_model::STATUS_ERROR;
+                                        $result = $this->file_model->staticUpdate($file['id'], [
+                                            'source_hash' => $file['source_hash'],
+                                            'status' => $file['status']
+                                        ]);
+                                        if (!$result)
+                                            $log .= "Error updating the file table with hash and status.\n";
+                                    }
+                                    $this->job_model->update($job_id, [
+                                        'progress' => 100,
+                                        'result' => 0,
+                                        'log' => $log
+                                    ]);
+                                }
+                                if (!empty($file['source_hash']))
+                                    $this->checkIfWasMissing($file);
+                                if ($toArchive) {
+                                    $archiveJobId = $this->createArchiveJob($file['id']);
+                                    $this->beanstalk->useTube(config_item("beanstalkd_tube_validate"));
+                                }
+                            } else {
+                                echo "Error, invalid file: $filename\n";
+                            }
                         } else {
                             echo "Error: failed to get MIME type for $filename\n";
                         }
@@ -544,16 +567,25 @@ class Job extends CI_Controller
                     // lookup job/file in database
                     $file = $this->job_model->getWithFileById($job_id);
                     if ($file) {
+                        $result = 0; // success
                         switch ($file['type']) {
                             case Job_model::TYPE_TRANSCODE:
-                                $this->transcode($file, $job);
+                                $result = $this->transcode($file, $job);
                                 break;
                             case Job_model::TYPE_RENDER:
-                                $this->render($file, $job);
+                                $result = $this->render($file, $job);
                                 break;
                             default:
                                 $log .= "Unknown job type $file[type].\n";
                                 break;
+                        }
+                        if ($result === -1) {
+                            // Restoring files failed, try again in a little bit.
+                            $priority = 10;
+                            $delay = 3;
+                            $this->beanstalk->release($job['id'], $priority, $delay);
+                            sleep(60);
+                            continue;
                         }
                     }
                     // delete this job
@@ -577,52 +609,71 @@ class Job extends CI_Controller
      */
     protected function transcode($file, $job)
     {
-        $result = -1;
+        $result = 0;
         if (!empty($file['source_path'])) {
             $log = "Transcode: $file[source_path].\n";
             $filename = config_item('upload_path') . $file['source_path'];
-            if (is_file($filename)) {
-                // Set file record status to converting.
-                $result = $this->file_model->staticUpdate($file['file_id'], [
-                    'status' => intval($file['status']) | File_model::STATUS_CONVERTING
-                ]);
-                if (!$result)
-                    $log .= "Error updating the file table with converting status.\n";
+            // Set file record status to converting.
+            $success = $this->file_model->staticUpdate($file['file_id'], [
+                'status' => intval($file['status']) | File_model::STATUS_CONVERTING
+            ]);
+            if (!$success) {
+                $log .= "Error updating the file table with converting status.\n";
+                $result = -2;
+            }
 
-                // Get the MIME type.
-                $mimeType = $file['mime_type'];
-                if (!empty($mimeType)) {
-                    // Skip transcoding if already Ogg or WebM.
-                    if (strpos($mimeType, '/ogg') !== false || strpos($mimeType, '/webm')) {
-                        $result = 0;
-                        $log .= "Skipping transcode since MIME type is $mimeType.\n";
-                        // Update file table with status.
-                        $status = intval($file['status']) | File_model::STATUS_FINISHED;
-                        if (!$this->file_model->staticUpdate($file['file_id'], ['status' => $status])) {
-                            $result = -5;
-                            $log .= "Error updating the file table with output_path and hash.\n";
-                        }
-                    } else {
-                        // Transcode it.
-                        $result = -2;
-                        $majorType = explode('/', $mimeType)[0];
-                        $log .= "majorType: $majorType\n";
-                        if ($majorType === 'audio') {
-                            $result = $this->runFFmpeg($file, $log, $job,
-                                config_item('transcode_audio_extension'),
-                                config_item('transcode_audio_options'));
-                        } else {
-                            $result = $this->runFFmpeg($file, $log, $job,
-                                config_item('transcode_video_extension'),
-                                config_item('transcode_video_options'));
+            // Get the MIME type.
+            $mimeType = $file['mime_type'];
+            if ($result === 0 && !empty($mimeType)) {
+                // Skip transcoding if already Ogg or WebM.
+                if (strpos($mimeType, '/ogg') !== false || strpos($mimeType, '/webm')) {
+                    $log .= "Skipping transcode since MIME type is $mimeType.\n";
+                    // Update file table with status.
+                    $status = intval($file['status']) | File_model::STATUS_FINISHED;
+                    if (!$this->file_model->staticUpdate($file['file_id'], ['status' => $status])) {
+                        $result = -5;
+                        $log .= "Error updating the file table with output_path and hash.\n";
+                    }
+                    $archiveJobId = $this->createArchiveJob($file['id']);
+                    $this->beanstalk->useTube(config_item("beanstalkd_tube_transcode"));
+                    $log .= "Created archive job with ID $archiveJobId.\n";
+                } else {
+                    // Restore file from archive if needed.
+                    if (!filesize($filename)) {
+                        $log .= "Restoring from archive: $filename.\n";
+                        $status = $this->internetarchive->download($file['id'], $filename);
+                        if ($status !== true) {
+                            $log .= "Restoring failed.\n";
+                            $result = -1;
                         }
                     }
-                } else {
-                    $log .= "Error: failed to get MIME type for $filename\n";
+                    if ($result === 0) {
+                        // Transcode it.
+                        if (filesize($filename)) {
+                            $majorType = explode('/', $mimeType)[0];
+                            $log .= "majorType: $majorType\n";
+                            if ($majorType === 'audio') {
+                                $result = $this->runFFmpeg($file, $log, $job,
+                                    config_item('transcode_audio_extension'),
+                                    config_item('transcode_audio_options'));
+                            } else {
+                                $result = $this->runFFmpeg($file, $log, $job,
+                                    config_item('transcode_video_extension'),
+                                    config_item('transcode_video_options'));
+                            }
+                        } else {
+                            $result = -3;
+                            $log .= "Source file does not exist: $filename.\n";
+                        }
+                    }
+                    if ($result === 0) {
+                        $archiveJobId = $this->createArchiveJob($file['id']);
+                        $this->beanstalk->useTube(config_item("beanstalkd_tube_transcode"));
+                        $log .= "Created archive job with ID $archiveJobId.\n";
+                    }
                 }
             } else {
-                $result = -3;
-                $log .= "Source file does not exist: $filename.\n";
+                $log .= "Error: failed to get MIME type for $filename\n";
             }
         } else {
             $result = -4;
@@ -648,7 +699,7 @@ class Job extends CI_Controller
      * @return int The result code is negative for internal error or the return
      * code of the ffmpeg child process.
      */
-    protected function runFFmpeg($file, &$log, $job, $extension, $options)
+    protected function runFFmpeg(&$file, &$log, $job, $extension, $options)
     {
         $result = -10;
         $file['duration_ms'] = intval($file['duration_ms']);
@@ -701,15 +752,17 @@ class Job extends CI_Controller
 
         // Update the file table with results.
         if ($result === 0) {
-            $status = intval($file['status']) | File_model::STATUS_FINISHED;
+            $file['status'] = intval($file['status']) | File_model::STATUS_FINISHED;
             // Clear any previous error in case this was re-attempted.
-            $status &= ~File_model::STATUS_ERROR;
+            $file['status'] &= ~File_model::STATUS_ERROR;
             // Clear the converting flag.
-            $status &= ~File_model::STATUS_CONVERTING;
+            $file['status'] &= ~File_model::STATUS_CONVERTING;
+            $file['output_path'] = str_replace(config_item('transcode_path'), '', $outputName);
+            $file['output_hash'] = $this->getFileHash($outputName);
             $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
-                'status' => $status,
-                'output_path' => str_replace(config_item('transcode_path'), '', $outputName),
-                'output_hash' => $this->getFileHash($outputName)
+                'status' => $file['status'],
+                'output_path' => $file['output_path'],
+                'output_hash' => $file['output_hash']
             ]);
             if (!$isUpdated) {
                 $result = -12;
@@ -737,17 +790,28 @@ class Job extends CI_Controller
      */
     protected function render($file, $job)
     {
-        $result = -1;
+        $result = 0;
         if (!empty($file['source_path'])) {
             $log = "Render: $file[source_path].\n";
             $filename = config_item('upload_path') . $file['source_path'];
-            if (is_file($filename)) {
+            // Restore file from archive if needed.
+            if (!filesize($filename)) {
+                $log .= "Restoring from archive: $filename.\n";
+                $status = $this->internetarchive->download($file['id'] , $filename);
+                if ($status !== true) {
+                    $log .= "Restoring failed.\n";
+                    $result = -1;
+                }
+            }
+            if ($result === 0 && filesize($filename)) {
                 // Set file record status to converting.
-                $result = $this->file_model->staticUpdate($file['file_id'], [
+                $success = $this->file_model->staticUpdate($file['file_id'], [
                     'status' => intval($file['status']) | File_model::STATUS_CONVERTING
                 ]);
-                if (!$result)
+                if (!$success) {
                     $log .= "Error updating the file table with converting status.\n";
+                    $result = -5;
+                }
 
                 // Generate XML using original file references.
                 $this->load->library('MltXmlHelper');
@@ -755,8 +819,8 @@ class Job extends CI_Controller
                 $isValid = $this->mltxmlhelper->substituteoriginalFiles($this->file_model, $file, $childFiles, $log);
 
                 // If still valid, create a new version of the XML with proxy clips.
-                if ($isValid) {
-                    // If still valid, get new metadata for each proxy file.
+                if ($result === 0 && $isValid) {
+                    // Get new metadata for each proxy file.
                     $this->mltxmlhelper->getFileMetadata($childFiles, $log);
                     // Prepare the output file.
                     $this->load->library('MltXmlWriter', $childFiles);
@@ -768,20 +832,55 @@ class Job extends CI_Controller
                         $this->load->helper('file');
                         $log .= read_file($tmpFileName);
 
-                        // Render and encode it.
-                        $result = $this->runMelt($tmpFileName, $file, $log, $job,
-                            config_item('render_extension'), config_item('render_options'));
-                        unlink($tmpFileName);
+                        // Restore original files.
+                        $children = $this->file_model->getChildren($file['id']);
+                        foreach ($children as $child) {
+                            if ($child['source_path']) {
+                                $childFilePath = config_item('upload_path') . $child['source_path'];
+                                if (!is_file($childFilePath) || !filesize($childFilePath)) {
+                                    $log .= "Restoring from archive: $childFilePath.\n";
+                                    $status = $this->internetarchive->download($child['child_id'], $childFilePath);
+                                    if ($status !== true) {
+                                        $log .= "Restoring failed.\n";
+                                        $result = -1;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if ($result === 0) {
+                            // Render and encode it.
+                            $result = $this->runMelt($tmpFileName, $file, $log, $job,
+                                config_item('render_extension'), config_item('render_options'));
+                            unlink($tmpFileName);
+
+                            // Truncate the restored originals.
+                            foreach ($children as $child) {
+                                $childFilePath = config_item('upload_path') . $child['source_path'];
+                                fclose(fopen($childFilePath, 'w'));
+                            }
+
+                            // Archive the rendered file.
+                            if ($result === 0) {
+                                $archiveJobId = $this->createArchiveJob($file['id']);
+                                $this->beanstalk->useTube(config_item("beanstalkd_tube_render"));
+                                $log .= "Created archive job with ID $archiveJobId.\n";
+                            }
+                        }
                     } else {
                         $result = -2;
                         $log .= "Failed to create a temporary file for the XML.\n";
+                    }
+                    if ($result === 0) {
+                        // Truncate the restored project file.
+                        fclose(fopen($filename, 'w'));
                     }
                 } else {
                     $result = -3;
                     $log .= "This file has problems with dependencies\n";
                 }
             } else {
-                $result = -3;
+                $result = -6;
                 $log .= "Source file does not exist: $filename.\n";
             }
         } else {
@@ -800,6 +899,7 @@ class Job extends CI_Controller
     /**
      * Run melt as a child process.
      *
+     * @param string $filename The MLT XML file path and name
      * @param array $file A file record.
      * @param string $log A reference to a string used for logging.
      * @param array $job The beanstalk job array
@@ -808,7 +908,7 @@ class Job extends CI_Controller
      * @return int The result code is negative for internal error or the return
      * code of the melt child process.
      */
-    protected function runMelt($filename, $file, &$log, $job, $extension, $options)
+    protected function runMelt($filename, &$file, &$log, $job, $extension, $options)
     {
         $result = -10;
         $lastProgress = null;
@@ -855,16 +955,22 @@ class Job extends CI_Controller
         }
 
         // Update the file table with results.
+        if ($result === 0 && !is_file($outputName)) {
+            $result = -14;
+            $log .= "Output file \"$outputName\" does not exist.\n";
+        }
         if ($result === 0) {
-            $status = intval($file['status']) | File_model::STATUS_FINISHED;
+            $file['status'] = intval($file['status']) | File_model::STATUS_FINISHED;
             // Clear any previous error in case this was re-attempted.
-            $status &= ~File_model::STATUS_ERROR;
+            $file['status'] &= ~File_model::STATUS_ERROR;
             // Clear the converting flag.
-            $status &= ~File_model::STATUS_CONVERTING;
+            $file['status'] &= ~File_model::STATUS_CONVERTING;
+            $file['output_path'] = str_replace(config_item('transcode_path'), '', $outputName);
+            $file['output_hash'] = $this->getFileHash($outputName);
             $isUpdated = $this->file_model->staticUpdate($file['file_id'], [
-                'status' => $status,
-                'output_path' => str_replace(config_item('transcode_path'), '', $outputName),
-                'output_hash' => $this->getFileHash($outputName)
+                'status' => $file['status'],
+                'output_path' => $file['output_path'],
+                'output_hash' => $file['output_hash']
             ]);
             if (!$isUpdated) {
                 $result = -12;
@@ -1060,7 +1166,15 @@ class Job extends CI_Controller
                     // lookup job/file in database
                     $file = $this->job_model->getWithFileById($job_id);
                     if ($file) {
-                        $this->publishFileRecord($file, $job);
+                        $result = $this->publishFileRecord($file, $job);
+                        if ($result !== 0) {
+                            // Requeue the failed job 5 minutes from now.
+                            $priority = 10;
+                            $delay = 3;
+                            $this->beanstalk->release($job['id'], $priority, $delay);
+                            sleep(60);
+                            continue;
+                        }
                     }
                     // delete this job
                     $this->beanstalk->delete($job['id']);
@@ -1078,6 +1192,7 @@ class Job extends CI_Controller
      *
      * @param array $file The file record
      * @param array $job The beanstalk job array
+     * @return int The result code is zero for success and non-zero for error.
      */
     public function publishFileRecord($file, $job)
     {
@@ -1090,7 +1205,7 @@ class Job extends CI_Controller
             $filepath = config_item('upload_path') . $file['source_path'];
         } else {
             echo "output_path and source_path are both empty!\n";
-            return;
+            return $result;
         }
         $log = "Publish: $file[title].\n";
         if (!empty($file['publish_id']))
@@ -1137,6 +1252,16 @@ class Job extends CI_Controller
                         $file['username' ]= $user['name'];
                         $text = $this->load->view('file/wikitext', $file, true);
 
+                        // Restore the file if needed.
+                        if (!filesize($filepath)) {
+                            $log .= "Restoring from archive: $filepath.\n";
+                            $status = $this->internetarchive->download($file['id'] , $filepath);
+                            if ($status !== true) {
+                                $log .= "Restoring failed.\n";
+                                $result = -1;
+                                return $result;
+                            }
+                        }
                         if (filesize($filepath) > $this->chunkSize) {
                             // Do chunked upload.
                             $response = ['upload' => [
@@ -1153,6 +1278,8 @@ class Job extends CI_Controller
                             // Upload the entire file at once.
                             $response = $this->uploadFile($filepath, $filename, $text, $token, $accessToken, $log);
                         }
+                        // Truncate the restored file.
+                        fclose(fopen($filepath, 'w'));
 
                         // Process the upload response.
                         if ($response && !array_key_exists('error', $response)) {
@@ -1207,6 +1334,7 @@ class Job extends CI_Controller
             'result' => $result,
             'log' => $log
         ]);
+        return $result;
     }
 
     /**
@@ -1331,5 +1459,173 @@ class Job extends CI_Controller
         $file = $this->job_model->getWithFileById($job_id);
         if ($file)
             $this->publishFileRecord($file, null);
+    }
+
+    /**
+     * Create an archive job record in the database and put a message into a queue for it.
+     *
+     * @param int $file_id A file record ID
+     * @return int|false The new job record ID or false on error
+     */
+    public function createArchiveJob($file_id)
+    {
+        $jobId = $this->job_model->create($file_id, Job_model::TYPE_ARCHIVE);
+        if ($jobId) {
+            // Put job into the queue.
+            $tube = config_item('beanstalkd_tube_archive');
+            $this->beanstalk->useTube($tube);
+            $priority = 10;
+            $delay = 0;
+            $ttr = 3600; // seconds
+            $this->beanstalk->put($priority, $delay, $ttr, $jobId);
+            return $jobId;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * The archive worker that uploads files to Internet Archive.
+     */
+    public function archive()
+    {
+        if ($this->beanstalk->connect()) {
+            $tube = config_item('beanstalkd_tube_archive');
+            $this->beanstalk->useTube($tube);
+            $this->beanstalk->watch($tube);
+            $this->running = true;
+            pcntl_signal(SIGINT, array(&$this, 'signalHandler'));
+            pcntl_signal(SIGTERM, array(&$this, 'signalHandler'));
+
+            while ($this->running) {
+                $job = $this->beanstalk->reserve();
+                $job_id = $job['body'];
+                if ($job) {
+                    echo "received job id $job_id\n";
+                    // lookup job/file in database
+                    $file = $this->job_model->getWithFileById($job_id);
+                    if ($file) {
+                        if (!$this->archiveFileRecord($file, $job)) {
+                            // Requeue the failed job 5 minutes from now.
+                            $priority = 10;
+                            $delay = 300; // seconds
+                            $this->beanstalk->release($job['id'], $priority, $delay);
+                            continue;
+                        }
+                        sleep(30);
+                    }
+                    // delete this job
+                    $this->beanstalk->delete($job['id']);
+                } else {
+                    echo "Error: beanstalkd reserve failed\n";
+                }
+                sleep(1);
+            }
+            $this->beanstalk->disconnect();
+        }
+    }
+
+    /**
+     * Archive a file as a new S3 item.
+     *
+     * @param string $filename The full path to the file to be archive
+     * @param array $file A file record
+     * @return bool True on success
+     */
+    protected function archiveFile($filename, $file)
+    {
+        // Use the file record's creator's S3 credentials if possible.
+        $user = $this->user_model->getByID($file['user_id']);
+        $s3_access_key = empty($user['s3_access_key']) ? config_item('s3_access_key') : $user['s3_access_key'];
+        $s3_secret_key = empty($user['s3_secret_key']) ? config_item('s3_secret_key') : $user['s3_secret_key'];
+
+        $result = $this->internetarchive->createItem($s3_access_key, $s3_secret_key, $filename, $file);
+        $result = ($result === true);
+
+        if ($result) {
+            // truncate file to 0 bytes
+            fclose(fopen($filename, 'w'));
+        }
+        return $result;
+    }
+
+    /**
+     * Archive a file to an existing S3 item.
+     *
+     * @param string $filename The full path to the file to be archive
+     * @param array $file A file record
+     * @return bool True on success
+     */
+    protected function addToArchive($filename, $file)
+    {
+        // Use the file record's creator's S3 credentials if possible.
+        $user = $this->user_model->getByID($file['user_id']);
+        $s3_access_key = empty($user['s3_access_key']) ? config_item('s3_access_key') : $user['s3_access_key'];
+        $s3_secret_key = empty($user['s3_secret_key']) ? config_item('s3_secret_key') : $user['s3_secret_key'];
+
+        $result = $this->internetarchive->addFileToItem($s3_access_key, $s3_secret_key, $filename, $file);
+        $result = ($result === true);
+
+        if ($result) {
+            // truncate file to 0 bytes
+            fclose(fopen($filename, 'w'));
+        }
+        return $result;
+    }
+
+    /**
+     * Archive the files belonging to a file record.
+     *
+     * This does not process a queue. It is intended to be run manually and not
+     * used in a HTML page.
+     *
+     * @param int $file_id A file record ID
+     * @param bool True on success
+     */
+    protected function archiveFileRecord($file)
+    {
+        $success = true;
+        $log = '';
+        if ($file['source_path']) {
+            $filename = config_item('upload_path') . $file['source_path'];
+            if (filesize($filename)) {
+                $log .= "Archiving $filename\n";
+                $success = $this->archiveFile($filename, $file);
+                if (!$success)
+                    $log .= "Failed to archive $filename\n";
+            } else {
+                $log .= "Skipping $filename\n";
+            }
+        }
+        if ($success && $file['output_path']) {
+            $filename = config_item('transcode_path') . $file['output_path'];
+            if (filesize($filename)) {
+                $log .= "Archiving $filename\n";
+                $success = $this->addToArchive($filename, $file);
+                if (!$success)
+                    $log .= "Failed to archive $filename\n";
+            } else {
+                $log .= "Skipping $filename\n";
+            }
+        }
+        // Update the job table with job results.
+        $this->job_model->update($file['job_id'], [
+            'result' => $success ? 0 : 1,
+            'log' => $log
+        ]);
+        return $success;
+    }
+
+    /**
+     * Archive all of the files.
+     *
+     * This is intended to be run manually from the command line and not used in
+     * a HTML page.
+     */
+    public function archiveAll()
+    {
+        $query = $this->db->query('select id from file');
+        foreach ($query->result() as $row)
+            $this->createArchiveJob($row->id);
     }
 }

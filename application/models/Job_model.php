@@ -28,6 +28,8 @@ class Job_model extends CI_Model
     const TYPE_RENDER        = 2;
     /** @var Job type constant to publish a rendered project file */
     const TYPE_PUBLISH       = 3;
+    /** @var Job type constant to archive the assets associated with a file */
+    const TYPE_ARCHIVE       = 4;
 
     /** Construct a Job CodeIgniter Model */
     public function __construct()
