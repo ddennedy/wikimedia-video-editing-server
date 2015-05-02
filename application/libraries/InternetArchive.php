@@ -277,7 +277,7 @@ class InternetArchive extends GuzzleHttp\Client
             return true;
         } catch (RequestException $e) {
             if ($e->hasResponse()) {
-                $responsde = $e->getResponse();
+                $response = $e->getResponse();
                 log_message('error', "Error archiving $url: " . $response->getStatusCode() .' '. $response->getReasonPhrase());
                 return $response->getStatusCode();
             } else {
@@ -307,7 +307,7 @@ class InternetArchive extends GuzzleHttp\Client
             return true;
         } catch (RequestException $e) {
             if ($e->hasResponse()) {
-                $responsde = $e->getResponse();
+                $response = $e->getResponse();
                 log_message('error', "Error archiving $url: " . $response->getStatusCode() .' '. $response->getReasonPhrase());
                 return $response->getStatusCode();
             } else {
@@ -352,7 +352,7 @@ class InternetArchive extends GuzzleHttp\Client
             return true;
         } catch (RequestException $e) {
             if ($e->hasResponse()) {
-                $responsde = $e->getResponse();
+                $response = $e->getResponse();
                 log_message('error', "Error updating $url: " . $response->getStatusCode() .' '. $response->getReasonPhrase());
                 return $response->getStatusCode();
             } else {
