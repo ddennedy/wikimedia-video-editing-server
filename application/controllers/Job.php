@@ -544,6 +544,20 @@ class Job extends CI_Controller
         }
     }
 
+    /** Resubmit an archive job.
+     *
+     * @param int $file_id The file ID
+     */
+    public function redo_archive($file_id)
+    {
+        // Put job into the queue.
+        $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
+        if ($this->beanstalk->connect()) {
+            $this->createArchiveJob($file_id);
+            $this->beanstalk->disconnect();
+        }
+    }
+
     /**
      * The encode worker that transcodes a media file or renders a project.
      *
@@ -1624,8 +1638,12 @@ class Job extends CI_Controller
      */
     public function archiveAll()
     {
-        $query = $this->db->query('select id from file');
-        foreach ($query->result() as $row)
-            $this->createArchiveJob($row->id);
+        $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
+        if ($this->beanstalk->connect()) {
+            $query = $this->db->query('select id from file');
+            foreach ($query->result() as $row)
+                $this->createArchiveJob($row->id);
+            $this->beanstalk->disconnect();
+        }
     }
 }
