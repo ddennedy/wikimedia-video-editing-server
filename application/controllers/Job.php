@@ -1676,4 +1676,29 @@ class Job extends CI_Controller
             $this->beanstalk->disconnect();
         }
     }
+
+    /**
+     * Update the S3 metadata for a file.
+     *
+     * @param string $file_id A file record ID
+     * @return bool True on success
+     */
+    public function updateMetadata($file_id)
+    {
+        $result = false;
+        $file = $this->file_model->getByID($file_id);
+        if ($file['source_path']) {
+            // Use the file record's creator's S3 credentials if possible.
+            $user = $this->user_model->getByID($file['user_id']);
+            $s3_access_key = empty($user['s3_access_key']) ? config_item('s3_access_key') : $user['s3_access_key'];
+            $s3_secret_key = empty($user['s3_secret_key']) ? config_item('s3_secret_key') : $user['s3_secret_key'];
+
+            $filename = config_item('upload_path') . $file['source_path'];
+            $result = $this->internetarchive->updateMetadata($s3_access_key, $s3_secret_key, $filename, $file);
+
+            $result = ($result === true);
+        }
+        return $result;
+    }
+
 }
