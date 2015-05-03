@@ -476,7 +476,7 @@ class Job extends CI_Controller
     {
         if ($this->beanstalk->connect()) {
             if ($tube)
-                print_r($this->beanstalk->statsTube($tube));
+                print_r($this->beanstalk->statsTube("videoeditserver-$tube"));
             else
                 print_r($this->beanstalk->stats());
             $this->beanstalk->disconnect();
@@ -1643,6 +1643,36 @@ class Job extends CI_Controller
             $query = $this->db->query('select id from file');
             foreach ($query->result() as $row)
                 $this->createArchiveJob($row->id);
+            $this->beanstalk->disconnect();
+        }
+    }
+
+    public function test_archive($file_id)
+    {
+        if ($this->beanstalk->connect()) {
+            $file = $this->file_model->getByID($file_id);
+            if ($file['source_path']) {
+                $filename = config_item('upload_path') . $file['source_path'];
+                if (filesize($filename)) {
+                    echo "Archiving $filename\n";
+                    $success = $this->archiveFile($filename, $file);
+                    if (!$success)
+                        echo "Failed to archive $filename\n";
+                } else {
+                    echo "Skipping $filename\n";
+                }
+            }
+            if ($success && $file['output_path']) {
+                $filename = config_item('transcode_path') . $file['output_path'];
+                if (filesize($filename)) {
+                    echo "Archiving $filename\n";
+                    $success = $this->addToArchive($filename, $file);
+                    if (!$success)
+                        echo "Failed to archive $filename\n";
+                } else {
+                    echo "Skipping $filename\n";
+                }
+            }
             $this->beanstalk->disconnect();
         }
     }
