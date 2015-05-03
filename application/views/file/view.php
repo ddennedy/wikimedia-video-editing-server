@@ -19,7 +19,7 @@
  */
 ?>
 <h2><?= $heading ?></h2>
-<p><?= $description ?></p>
+<p><?= str_replace(["\r", "\n"], ['', '<br>'], htmlspecialchars($description)) ?></p>
 <p><?= $metadata ?>
 <?php if (isset($properties)) echo $properties; ?>
 </p>
