@@ -257,6 +257,8 @@ class InternetArchive extends GuzzleHttp\Client
         $collection = $this->getCollection($mediaType);
         $language = $this->getMARC21($data['language']);
         $licenseURL = $this->getLicenseURL($data['license']);
+        $subject = implode(';', explode("\t", $data['keywords']));
+        $description = str_replace(["\r","\n"], ['','<br>'], htmlspecialchars($data['description']));
         try {
             $this->put($url, [
                 'headers' => [
@@ -269,8 +271,8 @@ class InternetArchive extends GuzzleHttp\Client
                     'x-archive-meta-date' => $data['recording_date'],
                     'x-archive-meta-language' => $language,
                     'x-archive-meta-licenseurl' => $licenseURL,
-                    'x-archive-meta-subject' => implode(';', explode("\t", $data['keywords'])),
-                    'x-archive-meta-description' => $data['description']
+                    'x-archive-meta-subject' => $subject,
+                    'x-archive-meta-description' => $description
                 ],
                 'body' => fopen($path, 'rb')
             ]);
@@ -333,6 +335,8 @@ class InternetArchive extends GuzzleHttp\Client
         $collection = $this->getCollection($mediaType);
         $language = $this->getMARC21($data['language']);
         $licenseURL = $this->getLicenseURL($data['license']);
+        $subject = implode(';', explode("\t", $data['keywords']));
+        $description = str_replace(["\r","\n"], ['','<br>'], htmlspecialchars($data['description']));
         try {
             $this->put($url, [
                 'headers' => [
@@ -345,8 +349,8 @@ class InternetArchive extends GuzzleHttp\Client
                     'x-archive-meta-date' => $data['recording_date'],
                     'x-archive-meta-language' => $language,
                     'x-archive-meta-licenseurl' => $licenseURL,
-                    'x-archive-meta-subject' => implode(';', explode("\t", $data['keywords'])),
-                    'x-archive-meta-description' => $data['description']
+                    'x-archive-meta-subject' => $subject,
+                    'x-archive-meta-description' => $description
                 ]
             ]);
             return true;
