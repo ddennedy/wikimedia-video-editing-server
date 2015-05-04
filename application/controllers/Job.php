@@ -1519,7 +1519,9 @@ class Job extends CI_Controller
                     // lookup job/file in database
                     $file = $this->job_model->getWithFileById($job_id);
                     if ($file) {
-                        if (!$this->archiveFileRecord($file, $job)) {
+                        $result = $this->archiveFileRecord($file, $job);
+                        echo "result = $result\n";
+                        if ($result !== true && $result !== 403 && $result !== 404) {
                             // Requeue the failed job 5 minutes from now.
                             $priority = 10;
                             $delay = 300; // seconds
@@ -1554,9 +1556,8 @@ class Job extends CI_Controller
         $s3_secret_key = empty($user['s3_secret_key']) ? config_item('s3_secret_key') : $user['s3_secret_key'];
 
         $result = $this->internetarchive->createItem($s3_access_key, $s3_secret_key, $filename, $file);
-        $result = ($result === true);
 
-        if ($result) {
+        if ($result === true) {
             // truncate file to 0 bytes
             fclose(fopen($filename, 'w'));
         }
@@ -1578,9 +1579,8 @@ class Job extends CI_Controller
         $s3_secret_key = empty($user['s3_secret_key']) ? config_item('s3_secret_key') : $user['s3_secret_key'];
 
         $result = $this->internetarchive->addFileToItem($s3_access_key, $s3_secret_key, $filename, $file);
-        $result = ($result === true);
 
-        if ($result) {
+        if ($result === true) {
             // truncate file to 0 bytes
             fclose(fopen($filename, 'w'));
         }
@@ -1605,18 +1605,18 @@ class Job extends CI_Controller
             if (filesize($filename)) {
                 $log .= "Archiving $filename\n";
                 $success = $this->archiveFile($filename, $file);
-                if (!$success)
+                if ($success !== true)
                     $log .= "Failed to archive $filename\n";
             } else {
                 $log .= "Skipping $filename\n";
             }
         }
-        if ($success && $file['output_path']) {
+        if ($success === true && $file['output_path']) {
             $filename = config_item('transcode_path') . $file['output_path'];
             if (filesize($filename)) {
                 $log .= "Archiving $filename\n";
                 $success = $this->addToArchive($filename, $file);
-                if (!$success)
+                if ($success !== true)
                     $log .= "Failed to archive $filename\n";
             } else {
                 $log .= "Skipping $filename\n";
@@ -1624,7 +1624,7 @@ class Job extends CI_Controller
         }
         // Update the job table with job results.
         $this->job_model->update($file['job_id'], [
-            'result' => $success ? 0 : 1,
+            'result' => ($success === true) ? 0 : 1,
             'log' => $log
         ]);
         return $success;
@@ -1650,24 +1650,25 @@ class Job extends CI_Controller
     public function test_archive($file_id)
     {
         if ($this->beanstalk->connect()) {
+            $success = true;
             $file = $this->file_model->getByID($file_id);
             if ($file['source_path']) {
                 $filename = config_item('upload_path') . $file['source_path'];
                 if (filesize($filename)) {
                     echo "Archiving $filename\n";
                     $success = $this->archiveFile($filename, $file);
-                    if (!$success)
+                    if ($success !== true)
                         echo "Failed to archive $filename\n";
                 } else {
                     echo "Skipping $filename\n";
                 }
             }
-            if ($success && $file['output_path']) {
+            if ($success === true && $file['output_path']) {
                 $filename = config_item('transcode_path') . $file['output_path'];
                 if (filesize($filename)) {
                     echo "Archiving $filename\n";
                     $success = $this->addToArchive($filename, $file);
-                    if (!$success)
+                    if ($success !== true)
                         echo "Failed to archive $filename\n";
                 } else {
                     echo "Skipping $filename\n";
