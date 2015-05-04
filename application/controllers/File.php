@@ -748,12 +748,14 @@ class File extends CI_Controller
         $file = $this->file_model->getById($id);
         if ($file && ($file['status'] & File_model::STATUS_VALIDATED)) {
             if ($file['source_path']) {
+                $isRestored = false;
                 $filename = config_item('upload_path').$file['source_path'];
                 // Restore file from archive if needed.
                 if (!filesize($filename)) {
                     $log .= "Restoring from archive: $filename.\n";
                     $this->load->library('InternetArchive', $this->config->config);
                     $this->internetarchive->download($id , $filename);
+                    $isRestored = true;
                 }
                 if (filesize($filename)) {
                     $this->load->library('MltXmlHelper');
@@ -770,9 +772,11 @@ class File extends CI_Controller
                         $this->load->library('MltXmlWriter', $childFiles);
                         $xml = $this->mltxmlwriter->run($filename);
 
-                        // Truncate the restored files.
-                        // force_download() calls exit() so we must cleanup now.
-                        fclose(fopen($filename, 'w'));
+                        if ($isRestored) {
+                            // Truncate the restored files.
+                            // force_download() calls exit() so we must cleanup now.
+                            fclose(fopen($filename, 'w'));
+                        }
 
                         $this->load->helper('download');
                         force_download(basename($file['source_path']), $xml);
@@ -797,12 +801,14 @@ class File extends CI_Controller
         $file = $this->file_model->getHistoryById($id);
         if ($file) {
             if ($file['source_path']) {
+                $isRestored = false;
                 $filename = config_item('upload_path').$file['source_path'];
                 // Restore file from archive if needed.
                 if (!filesize($filename)) {
                     $log .= "Restoring from archive: $filename.\n";
                     $this->load->library('InternetArchive', $this->config->config);
                     $this->internetarchive->download($id , $filename);
+                    $isRestored = true;
                 }
                 if (filesize($filename)) {
                     $this->load->library('MltXmlHelper');
@@ -819,9 +825,11 @@ class File extends CI_Controller
                         $this->load->library('MltXmlWriter', $childFiles);
                         $xml = $this->mltxmlwriter->run($filename);
 
-                        // Truncate the restored files.
-                        // force_download() calls exit() so we must cleanup now.
-                        fclose(fopen($filename, 'w'));
+                        if ($isRestored) {
+                            // Truncate the restored files.
+                            // force_download() calls exit() so we must cleanup now.
+                            fclose(fopen($filename, 'w'));
+                        }
 
                         $this->load->helper('download');
                         force_download(basename($file['source_path']), $xml);
