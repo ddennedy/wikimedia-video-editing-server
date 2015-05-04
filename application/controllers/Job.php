@@ -807,6 +807,7 @@ class Job extends CI_Controller
         $result = 0;
         if (!empty($file['source_path'])) {
             $log = "Render: $file[source_path].\n";
+            $isRestored = false;
             $filename = config_item('upload_path') . $file['source_path'];
             // Restore file from archive if needed.
             if (!filesize($filename)) {
@@ -815,6 +816,8 @@ class Job extends CI_Controller
                 if ($status !== true) {
                     $log .= "Restoring failed.\n";
                     $result = -1;
+                } else {
+                    $isRestored = true;
                 }
             }
             if ($result === 0 && filesize($filename)) {
@@ -885,7 +888,7 @@ class Job extends CI_Controller
                         $result = -2;
                         $log .= "Failed to create a temporary file for the XML.\n";
                     }
-                    if ($result === 0) {
+                    if ($result === 0 && $isRestored) {
                         // Truncate the restored project file.
                         fclose(fopen($filename, 'w'));
                     }
@@ -1267,6 +1270,7 @@ class Job extends CI_Controller
                         $text = $this->load->view('file/wikitext', $file, true);
 
                         // Restore the file if needed.
+                        $isRestored = false;
                         if (!filesize($filepath)) {
                             $log .= "Restoring from archive: $filepath.\n";
                             $status = $this->internetarchive->download($file['id'] , $filepath);
@@ -1275,6 +1279,7 @@ class Job extends CI_Controller
                                 $result = -1;
                                 return $result;
                             }
+                            $isRestored = true;
                         }
                         if (filesize($filepath) > $this->chunkSize) {
                             // Do chunked upload.
@@ -1292,8 +1297,11 @@ class Job extends CI_Controller
                             // Upload the entire file at once.
                             $response = $this->uploadFile($filepath, $filename, $text, $token, $accessToken, $log);
                         }
-                        // Truncate the restored file.
-                        fclose(fopen($filepath, 'w'));
+
+                        if ($isRestored) {
+                            // Truncate the restored file.
+                            fclose(fopen($filepath, 'w'));
+                        }
 
                         // Process the upload response.
                         if ($response && !array_key_exists('error', $response)) {
