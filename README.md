@@ -5,7 +5,15 @@
 This web application provides a way to let users revise videos on Wikimedia
 Commons and Wikipedia by sharing video editing projects for subsequent download
 and re-upload. Currently, it is designed for MLT-XML-based video editing
-projects as created by the Kdenlive video editor.
+projects as created by the Kdenlive video editor. More details are in the
+[https://de.wikipedia.org/wiki/Wikipedia:WikiTV/Schnittserver/Specification]
+(requirements specification).
+
+## Status
+
+This project is in a beta state. It is mostly developed, and the critical bugs
+are getting fixed. It is currently hosted at https://wikimedia.meltvideo.com/.
+
 
 ## Credits
 
