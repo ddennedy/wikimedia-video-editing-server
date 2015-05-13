@@ -36,13 +36,13 @@
 <?php if (!empty($S3URL)): ?>
         | <a href="<?= htmlspecialchars($S3URL) ?>"><?= tr('s3_provider') ?></a>
 <?php endif; ?>
-<?php if ($isDownloadable): ?>
-        | <a href="<?= site_url('file/download/' . $id) ?>"><?= tr('download') ?></a>
+<?php if (!empty($downloadURL)): ?>
+        | <a href="<?= htmlspecialchars($downloadURL) ?>" title="<?= htmlspecialchars(tr('download_tooltip')) ?>"><?= tr('download') ?></a>
 <?php endif; ?>
 <?php if ($isProjectDownloadable): ?>
         | <a href="<?= site_url('file/download_project/' . $id) ?>"><?= tr('file_download_project') ?></a>
 <?php endif; ?>
-<?php if ($isEditable && $isProject && $isDownloadable
+<?php if ($isEditable && $isProject && !empty($downloadURL)
           && !($status & File_model::STATUS_APPROVED) && !($status & File_model::STATUS_PUBLISHED)): ?>
         | <a href="<?= site_url('file/publish/' . $id) ?>"><?= tr('publish') ?></a>
 <?php endif; ?>

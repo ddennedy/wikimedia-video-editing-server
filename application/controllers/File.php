@@ -187,7 +187,6 @@ class File extends CI_Controller
         if ($file) {
             $this->data = array_merge($this->data, $file);
             $this->data['isProjectDownloadable'] = false;
-            $this->data['isDownloadable'] = false;
             $this->load->library('MltXmlReader');
             $this->data['isProject'] = $this->mltxmlreader->isMimeTypeMltXml($file['mime_type']);
 
@@ -213,10 +212,10 @@ class File extends CI_Controller
                         } else if ($file['status'] & File_model::STATUS_FINISHED) {
                             $this->load->library('InternetArchive', $this->config->config);
                             $this->data['S3URL'] = $this->internetarchive->getItemURL($file);
-                            $this->data['isDownloadable'] = true;
+                            $this->data['downloadURL'] = $this->getDownloadURL($file);
                             // Show project files as rendered.
                             if ($this->data['isProject'] && is_file(config_item('transcode_path').$file['output_path'])) {
-                                if ($size === 0) { //archived
+                                if (filesize(config_item('transcode_path').$file['output_path']) === 0) { //archived
                                     $status .= ' =&gt; ' . tr('status_rendered');
                                 } else {
                                     $status .= ' =&gt; <a href="' . base_url(config_item('transcode_vdir') . $file['output_path']) . '">';
@@ -235,7 +234,7 @@ class File extends CI_Controller
                             }
                             // Ogg and WebM files are not transcoded and do not set output_path.
                             else if (is_file(config_item('transcode_path').$file['output_path'])) {
-                                if ($size === 0) { // archived
+                                if (filesize(config_item('transcode_path').$file['output_path']) === 0) { // archived
                                     $status .= ' =&gt; ' . tr('status_converted');
                                 } else {
                                     $status .= ' =&gt; <a href="' . base_url(config_item('transcode_vdir') . $file['output_path']) . '">';
@@ -400,11 +399,13 @@ class File extends CI_Controller
                     foreach ($result as &$row) {
                         $src = base_url(iconForMimeType($row['mime_type']));
                         $row['mime_type'] = '<img src="'.$src.'" width="20" height="20" title="'.$row['mime_type'].'">';
-                        $row['title'] = anchor("file/$row[child_id]", htmlspecialchars($row['title']));
-                        $row['download'] = anchor("file/download/$row[child_id]", tr('download'));
-                        unset($row['child_id']);
+                        $row['title'] = anchor("file/$row[id]", htmlspecialchars($row['title']));
+                        $url = $this->getDownloadURL($row);
+                        $row['download'] = anchor($url, tr('download'), 'title="'. tr('download_tooltip') .'"');
+                        unset($row['id']);
                         unset($row['source_path']);
                         unset($row['output_path']);
+                        unset($row['status']);
                     }
                     $this->load->library('table');
                     $this->table->set_heading('', tr('file_title'), tr('file_author'), '');
@@ -701,6 +702,36 @@ class File extends CI_Controller
                 $result = [['id' => $this->input->get('q'), 'text' => $this->input->get('q')]];
         }
         $this->output->set_output(json_encode($result));
+    }
+
+    /**
+     * Get the URL to use to download this file's output if converted or upload if not converted.
+     *
+     * @param file A file record
+     * @return string Return the URL or null if the file is not valid or uploaded.
+     */
+    public function getDownloadURL($file)
+    {
+        if ($file['status'] & File_model::STATUS_VALIDATED) {
+            if ($file['output_path']) {
+                $filename = config_item('transcode_path').$file['output_path'];
+                if (filesize($filename)) {
+                    return site_url('file/download/' . $file['id']);
+                } else {
+                    $this->load->library('InternetArchive', $this->config->config);
+                    return $this->internetarchive->getDownloadURL($file['id'], $file['output_path']);
+                }
+            } else if ($file['source_path']) {
+                $filename = config_item('upload_path').$file['source_path'];
+                if (filesize($filename)) {
+                    return site_url('file/download/' . $file['id']);
+                } else {
+                    $this->load->library('InternetArchive', $this->config->config);
+                    return $this->internetarchive->getDownloadURL($file['id'], $file['source_path']);
+                }
+            }
+        }
+        return null;
     }
 
     /**

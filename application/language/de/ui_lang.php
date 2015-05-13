@@ -63,6 +63,7 @@ $lang['search'] = 'Suchen';
 $lang['delete'] = 'Löschen';
 $lang['restore'] = 'Wiederherstellen';
 $lang['download'] = 'Download';
+$lang['download_tooltip'] = 'Right-click to download';
 
 // Menu items
 $lang['menu_login'] = 'Anmelden';

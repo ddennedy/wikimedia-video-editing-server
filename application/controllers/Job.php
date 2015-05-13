@@ -856,7 +856,7 @@ class Job extends CI_Controller
                                 $childFilePath = config_item('upload_path') . $child['source_path'];
                                 if (!is_file($childFilePath) || !filesize($childFilePath)) {
                                     $log .= "Restoring from archive: $childFilePath.\n";
-                                    $status = $this->internetarchive->download($child['child_id'], $childFilePath);
+                                    $status = $this->internetarchive->download($child['id'], $childFilePath);
                                     if ($status !== true) {
                                         $log .= "Restoring failed.\n";
                                         $result = -1;

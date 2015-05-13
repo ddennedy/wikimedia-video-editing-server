@@ -182,12 +182,10 @@ class InternetArchive extends GuzzleHttp\Client
         switch ($mediaType) {
             case 'audio':
                 return 'opensource_audio';
-            case 'image':
-                return 'image';
             case 'movies':
                 return 'opensource_movies';
             default:
-                return 'data';
+                return 'opensource_media';
         }
     }
 
@@ -412,6 +410,19 @@ class InternetArchive extends GuzzleHttp\Client
         } else {
             return false;
         }
+    }
+
+    /**
+     * Get the URL to a file in an Internet Archive item.
+     *
+     * @param int $file_id A file record ID
+     * @param string $filename The file in the item to download - only base name is used
+     * @return string|bool The URL or False if there was an error
+     */
+    public function getDownloadURL($file_id, $filename)
+    {
+        $base = rawurlencode(basename($filename));
+        return self::downloadEndpoint . self::s3ItemPrefix . "$file_id/$base";
     }
 
     /**
