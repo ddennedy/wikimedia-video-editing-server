@@ -33,7 +33,7 @@ $config['oauth_consumer_secret'] = '2aee3ad868bd51594b42e91450503dee0cfc3426';
 // secret = 95cc2d20d1682bc85fb6cc4d984bed3b809a72fb
 
 $config['oauth_private_key'] = 'other/mediawiki-oauth-key.pem';
-$config['oauth_jwt_issuer'] = 'http://commons.wikimedia.org';
+$config['oauth_jwt_issuer'] = 'https://commons.wikimedia.org';
 $config['cookie_expire_seconds'] = 2592000; // 30 days
 $config['recent_limit'] = 100;
 $config['search_limit'] = 25;
