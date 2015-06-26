@@ -185,6 +185,10 @@ class User extends CI_Controller
                 $secret = $result->secret;
                 $issuer = $this->config->item('oauth_jwt_issuer');
                 $identity = $this->oauth->identify($accessToken, $secret, $issuer);
+                if (!isset($identity->username)) {
+                    show_error('Invalid OAuth response: ' . json_encode($identity), 500, tr('user_error_login_heading'));
+                    return;
+                }
 
                 // See if the user is already registered.
                 $row = $this->user_model->getByName($identity->username);

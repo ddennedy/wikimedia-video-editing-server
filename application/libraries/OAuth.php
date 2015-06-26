@@ -134,6 +134,7 @@ class OAuth
         $identity = $this->decodeJWT($data, config_item('oauth_consumer_secret'));
         // Validate the JWT
         if (!$this->validateJWT($identity, $this->consumerToken, $issuer, $params['oauth_nonce'])) {
+            log_message('error', 'OAuth/identify invalid JWT: ' . json_encode($identity));
             return null;
         } else {
             return $identity;
