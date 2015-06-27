@@ -451,7 +451,7 @@ class File extends CI_Controller
         // Pagination.
         $this->load->library('pagination');
         if (count($result) > $this->pagination->per_page) {
-            $subset = array_slice($result, $offset, $this->pagination->per_page);
+            $subset = array_slice($result, intval($offset), $this->pagination->per_page);
             $this->pagination->initialize([
                 'base_url' => site_url('file/recent'),
                 'total_rows' => count($result)
