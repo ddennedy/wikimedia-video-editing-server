@@ -97,6 +97,7 @@ class Job extends CI_Controller
                             if (!filesize($filename)) {
                                 $log .= "Restoring from archive: $filename.\n";
                                 $status = $this->internetarchive->download($file['id'], $filename);
+                                $this->beanstalk->touch($job['id']);
                                 if ($status !== true) {
                                     $priority = 10;
                                     $delay = 3;
@@ -287,7 +288,7 @@ class Job extends CI_Controller
                     $this->beanstalk->useTube($tube);
                     $priority = 10;
                     $delay = 3;
-                    $ttr = 60; // seconds
+                    $ttr = config_item('beanstalkd_timeout'); // seconds
                     $jobId = $this->beanstalk->put($priority, $delay, $ttr, $transcodeJobId);
                     $tube = config_item('beanstalkd_tube_validate');
                     $this->beanstalk->useTube($tube);
@@ -429,7 +430,7 @@ class Job extends CI_Controller
                         $this->beanstalk->useTube($tube);
                         $priority = 10;
                         $delay = 3;
-                        $ttr = 60; // seconds
+                        $ttr = config_item('beanstalkd_timeout'); // seconds
                         $jobId = $this->beanstalk->put($priority, $delay, $ttr, $renderJobId);
                         $tube = config_item('beanstalkd_tube_validate');
                         $this->beanstalk->useTube($tube);
@@ -498,7 +499,7 @@ class Job extends CI_Controller
             $this->beanstalk->useTube($tube);
             $priority = 10;
             $delay = 0;
-            $ttr = 60; // seconds
+            $ttr = config_item('beanstalkd_timeout'); // seconds
             $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job['id']);
             $this->beanstalk->disconnect();
         }
@@ -518,7 +519,7 @@ class Job extends CI_Controller
             $this->beanstalk->useTube($tube);
             $priority = 10;
             $delay = 0;
-            $ttr = 60; // seconds
+            $ttr = config_item('beanstalkd_timeout'); // seconds
             $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job['id']);
             $this->beanstalk->disconnect();
         }
@@ -538,7 +539,7 @@ class Job extends CI_Controller
             $this->beanstalk->useTube($tube);
             $priority = 10;
             $delay = 0;
-            $ttr = 60; // seconds
+            $ttr = config_item('beanstalkd_timeout'); // seconds
             $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job['id']);
             $this->beanstalk->disconnect();
         }
@@ -656,6 +657,7 @@ class Job extends CI_Controller
                     if (!filesize($filename)) {
                         $log .= "Restoring from archive: $filename.\n";
                         $status = $this->internetarchive->download($file['id'], $filename);
+                        $this->beanstalk->touch($job['id']);
                         if ($status !== true) {
                             $log .= "Restoring failed.\n";
                             $result = -1;
@@ -835,10 +837,8 @@ class Job extends CI_Controller
                 $childFiles = $this->mltxmlhelper->getFilesData($filename, $log);
                 $isValid = $this->mltxmlhelper->substituteoriginalFiles($this->file_model, $file, $childFiles, $log);
 
-                // If still valid, create a new version of the XML with proxy clips.
+                // If still valid, create a new version of the XML with original clips.
                 if ($result === 0 && $isValid) {
-                    // Get new metadata for each proxy file.
-                    $this->mltxmlhelper->getFileMetadata($childFiles, $log);
                     // Prepare the output file.
                     $this->load->library('MltXmlWriter', $childFiles);
                     $tmpFileName = $this->tempfile('ves', '.xml');
@@ -857,6 +857,7 @@ class Job extends CI_Controller
                                 if (!is_file($childFilePath) || !filesize($childFilePath)) {
                                     $log .= "Restoring from archive: $childFilePath.\n";
                                     $status = $this->internetarchive->download($child['id'], $childFilePath);
+                                    $this->beanstalk->touch($job['id']);
                                     if ($status !== true) {
                                         $log .= "Restoring failed.\n";
                                         $result = -1;
@@ -1102,14 +1103,14 @@ class Job extends CI_Controller
             if (!count($results)) {
                 $job_id = $this->job_model->create($missing['file_id'], Job_model::TYPE_VALIDATE);
                 if ($job_id) {
-                    // Put job into the queue.
+                    // Put validate job into the queue.
                     $this->load->library('Beanstalk', ['host' => config_item('beanstalkd_host')]);
                     if ($this->beanstalk->connect()) {
                         $tube = config_item('beanstalkd_tube_validate');
                         $this->beanstalk->useTube($tube);
                         $priority = 10;
                         $delay = 0;
-                        $ttr = 60; // seconds
+                        $ttr = config_item('beanstalkd_timeout'); // seconds
                         $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
                         $this->beanstalk->disconnect();
                     }
@@ -1156,7 +1157,7 @@ class Job extends CI_Controller
             $this->beanstalk->useTube($tube);
             $priority = 10;
             $delay = 0;
-            $ttr = 3600; // seconds
+            $ttr = config_item('beanstalkd_timeout'); // seconds
             $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job['id']);
             $this->beanstalk->disconnect();
         }
@@ -1274,6 +1275,7 @@ class Job extends CI_Controller
                         if (!filesize($filepath)) {
                             $log .= "Restoring from archive: $filepath.\n";
                             $status = $this->internetarchive->download($file['id'] , $filepath);
+                            $this->beanstalk->touch($job['id']);
                             if ($status !== true) {
                                 $log .= "Restoring failed.\n";
                                 $result = -1;
@@ -1498,7 +1500,7 @@ class Job extends CI_Controller
             $this->beanstalk->useTube($tube);
             $priority = 10;
             $delay = 0;
-            $ttr = 3600; // seconds
+            $ttr = config_item('beanstalkd_timeout'); // seconds
             $this->beanstalk->put($priority, $delay, $ttr, $jobId);
             return $jobId;
         } else {
@@ -1633,6 +1635,7 @@ class Job extends CI_Controller
         // Update the job table with job results.
         $this->job_model->update($file['job_id'], [
             'result' => ($success === true) ? 0 : 1,
+            'progress' => 100,
             'log' => $log
         ]);
         return $success;
@@ -1710,4 +1713,12 @@ class Job extends CI_Controller
         return $result;
     }
 
+    public function pause($tube, $seconds = 86400)
+    {
+        if ($this->beanstalk->connect()) {
+            echo $this->beanstalk->pauseTube("videoeditserver-$tube", $seconds);
+            echo "\n";
+            $this->beanstalk->disconnect();
+        }
+    }
 }

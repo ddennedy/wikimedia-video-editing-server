@@ -894,7 +894,7 @@ class File extends CI_Controller
                     $this->beanstalk->useTube($tube);
                     $priority = 10;
                     $delay = 3;
-                    $ttr = 3600; // seconds
+                    $ttr = config_item('beanstalkd_timeout'); // seconds
                     $jobId = $this->beanstalk->put($priority, $delay, $ttr, $job_id);
                     $this->beanstalk->disconnect();
 

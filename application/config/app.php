@@ -50,6 +50,7 @@ $config['beanstalkd_tube_transcode'] = 'videoeditserver-transcode';
 $config['beanstalkd_tube_render'] = 'videoeditserver-render';
 $config['beanstalkd_tube_publish'] = 'videoeditserver-publish';
 $config['beanstalkd_tube_archive'] = 'videoeditserver-archive';
+$config['beanstalkd_timeout'] = 2 * 3600; // seconds
 
 $config['transcode_audio_extension'] = 'ogg';
 $config['transcode_audio_options'] = '-map 0:a -codec libvorbis -qscale:a 5 -y';
