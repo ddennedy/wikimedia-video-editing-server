@@ -307,7 +307,7 @@ class OAuth
         // Verify we are within the time limits of the token. Issued at (iat) should be
         // in the past, Expiration (exp) should be in the future.
         $now = time();
-        if ($identity->iat > $now || $identity->exp < $now) {
+        if ($identity->iat - 10 > $now || $identity->exp < $now) {
             print "Invalid Time";
             return false;
         }
