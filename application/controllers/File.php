@@ -198,7 +198,7 @@ class File extends CI_Controller
                     $status = tr('upload_partialupload');
                 } else {
                     $status = tr('status_uploaded');
-                    if ($file['status'] & File_model::STATUS_VALIDATED && !($file['status'] & File_model::STATUS_ERROR)) {
+                    if ($file['status'] & File_model::STATUS_VALIDATED) {
                         $status .= ' =&gt; ' . tr('status_validated');
                         if ($this->data['isProject'])
                             $this->data['isProjectDownloadable'] = true;
@@ -241,18 +241,9 @@ class File extends CI_Controller
                                     $status .= tr('status_converted') . '</a>';
                                 }
                             }
-                        } else if ($file['status'] & File_model::STATUS_ERROR) {
-                            $this->load->model('job_model');
-                            $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_TRANSCODE);
-                            if (!$job) $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_RENDER);
-                            if ($job) {
-                                $status .= ' =&gt; <a href="' . site_url('job/log/' . $job['id'])  . '">';
-                                $status .= tr('status_error_transcode') . '</a>';
-                            } else {
-                                $status .= ' =&gt; ' . tr('status_error_transcode');
-                            }
                         }
-                    } else if ($file['status'] & File_model::STATUS_ERROR) {
+                    }
+                    if ($file['status'] & File_model::STATUS_ERROR) {
                         $this->load->model('job_model');
                         $job = $this->job_model->getByFileIdAndType($id, Job_model::TYPE_PUBLISH);
                         if ($job) {
