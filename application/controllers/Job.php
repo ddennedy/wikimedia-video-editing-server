@@ -835,11 +835,13 @@ class Job extends CI_Controller
                 // Generate XML using original file references.
                 $this->load->library('MltXmlHelper');
                 $childFiles = $this->mltxmlhelper->getFilesData($filename, $log);
+                $log .= print_r($childFiles, true);
                 $isValid = $this->mltxmlhelper->substituteoriginalFiles($this->file_model, $file, $childFiles, $log);
 
                 // If still valid, create a new version of the XML with original clips.
                 if ($result === 0 && $isValid) {
                     // Prepare the output file.
+                    $log .= print_r($childFiles, true);
                     $this->load->library('MltXmlWriter', $childFiles);
                     $tmpFileName = $this->tempfile('ves', '.xml');
                     if ($tmpFileName) {
@@ -956,7 +958,7 @@ class Job extends CI_Controller
                     $progress = substr($line, $i + strlen('percentage: '), 10);
                     if (!empty($progress) && $progress !== $lastProgress) {
                         $lastProgress = $progress;
-                        $this->job_model->update($file['job_id'], ['progress' => $progress]);
+                        $this->job_model->update($file['job_id'], ['progress' => $progress, 'log' => $log]);
                     }
                 } else {
                     $log .= "$line\n";
@@ -965,7 +967,7 @@ class Job extends CI_Controller
             // Cleanup child process and get its return code.
             fclose($pipes[2]);
             $result = proc_close($process);
-            $this->job_model->update($file['job_id'], ['progress' => 100]);
+            $this->job_model->update($file['job_id'], ['progress' => 100, 'log' => $log]);
             echo "melt returned $result\n";
         } else {
             $result = -11;
@@ -1185,7 +1187,7 @@ class Job extends CI_Controller
                     $file = $this->job_model->getWithFileById($job_id);
                     if ($file) {
                         $result = $this->publishFileRecord($file, $job);
-                        if ($result !== 0) {
+                        if ($result !== 0 && $result !== -2 /* MediaWiki API error */) {
                             // Requeue the failed job 5 minutes from now.
                             $priority = 10;
                             $delay = 3;

@@ -772,6 +772,7 @@ class File extends CI_Controller
             if ($file['source_path']) {
                 $isRestored = false;
                 $filename = config_item('upload_path').$file['source_path'];
+                $log = '';
                 // Restore file from archive if needed.
                 if (!filesize($filename)) {
                     $log .= "Restoring from archive: $filename.\n";
@@ -781,7 +782,6 @@ class File extends CI_Controller
                 }
                 if (filesize($filename)) {
                     $this->load->library('MltXmlHelper');
-                    $log = '';
                     $childFiles = $this->mltxmlhelper->getFilesData($filename, $log);
                     $isValid = $this->mltxmlhelper->substituteProxyFiles($this->file_model, $file, $childFiles, $log);
 
