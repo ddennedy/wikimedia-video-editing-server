@@ -192,6 +192,8 @@ return array(
 	'mts'   => 'video/MP2T',
 	'm2ts'  => 'video/MP2T',
 	'kdenlive' => 'application/x-kdenlive',
+	'dv'    => 'video/DV',
+	'dif'   => 'video/DV',
 );
 
 /* End of file mimes.php */
