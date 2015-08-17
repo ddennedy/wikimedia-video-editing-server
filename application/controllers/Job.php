@@ -741,7 +741,8 @@ class Job extends CI_Controller
             // Get ffmpeg output while running.
             while ($line = stream_get_line($pipes[2], 255, "\r")) {
                 $this->beanstalk->touch($job['id']);
-                $log .= "$line\n";
+                if (strlen($log) + strlen($line) < 1024 * 1024 - 200)
+                    $log .= "$line\n";
                 // Calculate progress as a percentage.
                 $i = strpos($line, 'time=');
                 $time = substr($line, $i + strlen('time='), 11);
@@ -842,12 +843,12 @@ class Job extends CI_Controller
                 if ($result === 0 && $isValid) {
                     // Prepare the output file.
                     $log .= print_r($childFiles, true);
-                    $this->load->library('MltXmlWriter', $childFiles);
+                    $this->load->library('MltXmlWriter');
                     $tmpFileName = $this->tempfile('ves', '.xml');
                     if ($tmpFileName) {
                         // Create XML input file.
                         $fixLumas = true;
-                        $this->mltxmlwriter->run($filename, $tmpFileName, $fixLumas);
+                        $this->mltxmlwriter->run($childFiles, $filename, $tmpFileName, $fixLumas);
                         $this->load->helper('file');
                         $log .= read_file($tmpFileName);
 
@@ -960,7 +961,7 @@ class Job extends CI_Controller
                         $lastProgress = $progress;
                         $this->job_model->update($file['job_id'], ['progress' => $progress, 'log' => $log]);
                     }
-                } else {
+                } else if (strlen($log) + strlen($line) < 1024 * 1024 - 200) {
                     $log .= "$line\n";
                 }
             }

@@ -27,21 +27,14 @@ require APPPATH.'libraries/KdenliveTitleWriter.php';
  */
 class MltXmlWriter
 {
-    /** @var array Data about external file references */
-    private $fileData;
-
     /** @var string Saves the root attribute on the root element to qualify relative paths */
     private $root;
 
     /**
      * Construct a MltXmlWriter.
-     *
-     * @param array $fileData An array of external file references prepared
-     * using functions in MltXmlHelper
      */
-    public function __construct($fileData)
+    public function __construct()
     {
-        $this->fileData = $fileData;
         $CI =& get_instance();
         $CI->load->helper('path');
     }
@@ -49,6 +42,7 @@ class MltXmlWriter
     /**
      * Transform a MLT XML file.
      *
+     * @param array $fileData An array of external file references prepared
      * @param string $inFilename Path to the input MLT XML file
      * @param string $outFilename Optional path the output MLT XML file to write
      * @param bool $fixLumaPaths Whether to try to adjust the path to luma
@@ -56,7 +50,7 @@ class MltXmlWriter
      * @return string|null The output XML as a string if no $outFilename
      * @see XMLWritingIteration
      */
-    public function run($inFilename, $outFilename = null, $fixLumaPaths = false)
+    public function run($fileData, $inFilename, $outFilename = null, $fixLumaPaths = false)
     {
         $prevNonPropertyEl = null;
         $reader = new XMLReader();
@@ -122,8 +116,8 @@ class MltXmlWriter
                                         [config_item('kdenlive_lumas_path'), $parentDir, $baseName]);
                                     if (file_exists($fullpath)) $current = $fullpath;
                                 }
-                            } else if (isset($this->fileData[$current])) {
-                                $current = $this->fileData[$current]['resource'];
+                            } else if (isset($fileData[$current])) {
+                                $current = $fileData[$current]['resource'];
                             }
                             $writer->text($current);
                         }
@@ -132,8 +126,8 @@ class MltXmlWriter
                     } else if ($name === 'xmldata') {
                         try {
                             $value = $reader->readString();
-                            $kdenlivetitle = new KdenliveTitleWriter($this->fileData);
-                            $xml = $kdenlivetitle->run(html_entity_decode($value, ENT_XML1), $fixLumaPaths);
+                            $kdenlivetitle = new KdenliveTitleWriter($fileData);
+                            $xml = $kdenlivetitle->run($value, $fixLumaPaths);
                             $writer->startElement($node->name);
                             $writer->writeAttribute('name', $name);
                             $writer->text($xml);
@@ -151,9 +145,9 @@ class MltXmlWriter
             } else if ($isElement && $node->name === 'kdenlive_producer') {
                 $data = array();
                 $xml = $reader->getAttribute('xmldata');
-                if (isset($this->fileData[$reader->getAttribute('resource')])) {
+                if (isset($fileData[$reader->getAttribute('resource')])) {
                     $writer->startElement($node->name);
-                    $data = $this->fileData[$reader->getAttribute('resource')];
+                    $data = $fileData[$reader->getAttribute('resource')];
                     if ($reader->moveToFirstAttribute()) {
                         do {
                             if (isset($data[$reader->name]))
@@ -166,8 +160,8 @@ class MltXmlWriter
                     $reader->next();
                 } else if (!empty($xml)) {
                     try {
-                        $kdenlivetitle = new KdenliveTitleWriter($this->fileData);
-                        $xml = $kdenlivetitle->run(html_entity_decode($xml, ENT_XML1), $fixLumaPaths);
+                        $kdenlivetitle = new KdenliveTitleWriter($fileData);
+                        $xml = $kdenlivetitle->run($xml, $fixLumaPaths);
                         $writer->startElement($node->name);
                         if ($reader->moveToFirstAttribute()) {
                             do {

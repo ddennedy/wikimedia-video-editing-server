@@ -791,8 +791,8 @@ class File extends CI_Controller
                         //TODO: Generate this proxy version of the project at validation time and store it.
                         //$this->mltxmlhelper->getFileMetadata($childFiles, $log);
                         // Prepare the output file.
-                        $this->load->library('MltXmlWriter', $childFiles);
-                        $xml = $this->mltxmlwriter->run($filename);
+                        $this->load->library('MltXmlWriter');
+                        $xml = $this->mltxmlwriter->run($childFiles, $filename);
 
                         if ($isRestored) {
                             // Truncate the restored files.
@@ -827,7 +827,7 @@ class File extends CI_Controller
                 $filename = config_item('upload_path').$file['source_path'];
                 // Restore file from archive if needed.
                 if (!filesize($filename)) {
-                    $log .= "Restoring from archive: $filename.\n";
+                    $log = "Restoring from archive: $filename.\n";
                     $this->load->library('InternetArchive', $this->config->config);
                     $this->internetarchive->download($id , $filename);
                     $isRestored = true;
@@ -844,8 +844,8 @@ class File extends CI_Controller
                         //TODO: Generate this proxy version of the project at validation time and store it.
                         //$this->mltxmlhelper->getFileMetadata($childFiles, $log);
                         // Prepare the output file.
-                        $this->load->library('MltXmlWriter', $childFiles);
-                        $xml = $this->mltxmlwriter->run($filename);
+                        $this->load->library('MltXmlWriter');
+                        $xml = $this->mltxmlwriter->run($childFiles, $filename);
 
                         if ($isRestored) {
                             // Truncate the restored files.

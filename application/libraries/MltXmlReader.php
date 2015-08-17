@@ -132,9 +132,8 @@ class MltXmlReader extends SimpleXMLReader
                     }
                 } else if ($reader->value === 'xmldata') {
                     try {
-                        $xml = html_entity_decode($value, ENT_XML1);
                         $reader = new KdenlivetitleReader();
-                        $this->files = array_merge($this->files, $reader->getFiles($xml));
+                        $this->files = array_merge($this->files, $reader->getFiles($value));
                     } catch (Exception $e) {
                     }
                 }
